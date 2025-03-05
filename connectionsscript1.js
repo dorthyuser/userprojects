@@ -5,7 +5,7 @@ const dbConnection = mysql.createConnection({
   port: 8081,
   user: 'yourUsername',
   password: 'yourPassword',
-  database: 'weatherDB'
+  database: 'weatherDBaaaaaaaaaaa'
 });
 
 dbConnection.connect(function(err) {
