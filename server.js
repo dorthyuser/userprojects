@@ -1,41 +1,46 @@
 const express = require('express');
-const mysql = require('mysql');
+const app = express();
 const axios = require('axios');
 
-const app = express();
-const port = 3000;
+const config = require('./config.yaml');
+const mysql = require('mysql');
 
 const dbConnection = mysql.createConnection({
-  host: '128.98.09.0',
-  port: 8081,
-  user: 'yourUsername',
-  password: 'yourPassword',
-  database: 'weatherDB'
+  host: config.http.host,
+  port: config.http.port,
+  user: config.mysql.user,
+  password: config.mysql.password,
+  database: config.mysql.database
 });
 
-dbConnection.connect(function(err) {
+dbConnection.connect((err) => {
   if (err) {
-    console.error('Error connecting: ' + err.stack);
+    console.error('Database connection failed: ' + err.stack);
     return;
   }
-  console.log('Connected as id ' + dbConnection.threadId);
+  console.log('Connected to the database');
 });
 
-app.get('/weather', async (req, res) => {
+app.get('/weather', (req, res) => {
   const { city, date } = req.query;
 
-  if (!city || (date && !/\d{4}-\d{2}-\d{2}/.test(date))) {
-    return res.status(400).json({ error: 'Invalid input parameters.' });
+  if (!city || !date) {
+    return res.status(400).json({ error: 'City and date are required' });
   }
 
-  try {
-    const weatherData = await axios.get(`http://128.98.09.0:8081/weather`, { params: { city, date } });
-    res.json(weatherData.data);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch weather details.' });
-  }
+  axios.get(`http://128.98.09.0:8081/weather`, {
+    params: { city, date }
+  })
+    .then(response => {
+      res.json({ output: response.data });
+    })
+    .catch(err => {
+      console.error('Error fetching weather data: ' + err);
+      res.status(500).json({ error: 'Weather data fetch error' });
+    });
 });
 
-app.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}`);
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
 });

@@ -1,17 +1,27 @@
+const yaml = require('js-yaml');
+const fs = require('fs');
+
+let config;
+try {
+  config = yaml.load(fs.readFileSync('config.yaml', 'utf8'));
+} catch (e) {
+  console.error(e);
+}
+
 const mysql = require('mysql');
 
-const dbConnection = mysql.createConnection({
-  host: '128.98.09.0',
-  port: 8081,
-  user: 'yourUsername',
-  password: 'yourPassword',
-  database: 'weatherDB'
+const connection = mysql.createConnection({
+  host: config.http.host,
+  port: config.http.port,
+  user: config.mysql.user,
+  password: config.mysql.password,
+  database: config.mysql.database
 });
 
-dbConnection.connect(function(err) {
+connection.connect((err) => {
   if (err) {
-    console.error('Error connecting: ' + err.stack);
+    console.error('Database connection failed: ' + err.stack);
     return;
   }
-  console.log('Connected as id ' + dbConnection.threadId);
+  console.log('Connected to database as id ' + connection.threadId);
 });

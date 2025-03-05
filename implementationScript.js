@@ -1,22 +1,23 @@
 const express = require('express');
 const app = express();
-const port = 3000;
 
-app.get('/weather', async (req, res) => {
+app.get('/weather', (req, res) => {
   const { city, date } = req.query;
 
-  if (!city || (date && !/\d{4}-\d{2}-\d{2}/.test(date))) {
-    return res.status(400).json({ error: 'Invalid input parameters.' });
+  if (!city || !date) {
+    return res.status(400).json({ error: 'City and date are required' });
   }
 
-  try {
-    const weatherData = await backendService.getWeather(city, date);
-    res.json(weatherData);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+  getWeatherData(city, date)
+    .then(data => {
+      res.json({ output: data });
+    })
+    .catch(err => {
+      res.status(500).json({ error: err.message });
+    });
 });
 
-app.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}`);
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
 });
