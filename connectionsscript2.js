@@ -2,7 +2,7 @@
 const axios = require('axios');
 
 const backendService = {
-  host: '128.98.09.0152',
+  host: '128.98.09.0223',
   port: 8081,
   getWeather: async function(city, date) {
     try {
