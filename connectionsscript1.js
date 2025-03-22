@@ -1,0 +1,3 @@
+{
+  "script": "const mysql = require('mysql');\n\nconst dbConfig = {\n    host: process.env.DB_HOST || 'your_database_host',\n    user: process.env.DB_USER || 'your_database_user',\n    password: process.env.DB_PASSWORD || 'your_database_password',\n    database: process.env.DB_NAME || 'your_database_name',\n    port: process.env.DB_PORT || 3000\n};\n\nconst connection = mysql.createConnection(dbConfig);\n\nconnection.connect((err) => {\n    if (err) {\n        console.error('Error connecting to the database:', err);\n    } else {\n        console.log('Connected to the database!');\n    }\n});"
+}
