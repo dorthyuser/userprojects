@@ -1,7 +1,7 @@
 const axios = require('axios');
 
 const guessAge = async (req, res) => {
-  const name = req.query.name;
+  const name = 'developer';
   if (!name) {
     return res.status(400).json({ error: 'Name is required' });
   }
