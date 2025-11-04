@@ -1,0 +1,11 @@
+micronaut:
+  application:
+    name: randomnumberlambda
+  server:
+    port: 0
+
+logging:
+  level:
+    io.micronaut: INFO
+
+# Configuration for AWS Lambda environment can be extended here
