@@ -22,14 +22,13 @@ repositories {
 }
 
 dependencies {
-    annotationProcessor("io.micronaut:micronaut-inject-java")
-    implementation("io.micronaut:micronaut-runtime")
-    implementation("io.micronaut.aws:micronaut-function-aws")
-    implementation("io.micronaut.aws:micronaut-function-aws-api-proxy")
-    implementation("io.micronaut.aws:micronaut-function-aws-runtime:4.0.0") 
-    implementation("com.amazonaws:aws-lambda-java-core:1.2.1")
-    implementation("com.amazonaws:aws-lambda-java-events:3.11.0")
-    implementation("jakarta.annotation:jakarta.annotation-api")
+    annotationProcessor "io.micronaut:micronaut-inject-java"
+    implementation "io.micronaut:micronaut-runtime"
+    implementation "io.micronaut.aws:micronaut-function-aws:4.0.0"
+    implementation "io.micronaut.aws:micronaut-function-aws-api-proxy:4.0.0"
+    implementation "com.amazonaws:aws-lambda-java-core:1.2.1"
+    implementation "com.amazonaws:aws-lambda-java-events:3.11.0"
+    implementation "jakarta.annotation:jakarta.annotation-api:2.1.1"
 }
 
 application {
