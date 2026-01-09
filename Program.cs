@@ -36,7 +36,7 @@ namespace AccountsFunction
  })
  .Build();
 
- host.Run();
+await host.RunAsync();
  }
  }
 }
