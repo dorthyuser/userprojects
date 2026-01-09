@@ -3,6 +3,6 @@
   "Values": {
     "AzureWebJobsStorage": "UseDevelopmentStorage=true",
     "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
-    "PostgresConnectionString": "Host=localhost;Port=5432;Database=yourdb;Username=youruser;Password=yourpassword"
+    "PostgresConnectionString": "Host=161.97.137.17;Port=5432;Database=admin_rails;Username=test_user_ps;Password=test_user454_ps"
   }
 }
