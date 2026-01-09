@@ -1,0 +1,16 @@
+{
+  "example": [
+    {
+      "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+      "name": "Alice Doe",
+      "email": "alice@example.com",
+      "address": "123 Main St, City, Country"
+    },
+    {
+      "id": "4fa85f64-5717-4562-b3fc-2c963f66afa7",
+      "name": "Bob Smith",
+      "email": "bob@example.com",
+      "address": "456 Side Ave, City, Country"
+    }
+  ]
+}
