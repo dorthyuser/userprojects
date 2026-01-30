@@ -1,0 +1,7 @@
+micronaut:
+  application:
+    name: test-hello-java
+
+logging:
+  level:
+    ROOT: INFO
