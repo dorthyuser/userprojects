@@ -125,7 +125,7 @@ namespace AccountsFunction.Functions
  return bad;
  }
 
- // Validate each account: id mandatory and must be valid GUID
+ // Validate each account: id mandatory and must be valid GUID (Account.Id cannot be Guid.Empty)
  var invalids = new List<object>();
  foreach (var acc in accounts)
  {
