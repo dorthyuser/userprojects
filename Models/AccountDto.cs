@@ -1,0 +1,1 @@
+namespace MyProject.Models\n{\n public class AccountDto\n {\n public string Id { get; set; }\n public string Name { get; set; }\n public string Phone { get; set; }\n public string Website { get; set; }\n }\n}

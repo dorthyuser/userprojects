@@ -1,0 +1,1 @@
+using System.Collections.Generic;\n\nnamespace MyProject.Models\n{\n public class PagedResult<T>\n {\n public List<T> Items { get; set; } = new List<T>();\n public int PageNumber { get; set; }\n public int PageSize { get; set; }\n public int TotalCount { get; set; }\n public int TotalPages => PageSize == 0 ? 0 : (int)System.Math.Ceiling((double)TotalCount / PageSize);\n }\n}

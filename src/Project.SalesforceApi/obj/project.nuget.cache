@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "dgSpecHash": "w3Sm68hKDVA=",
+  "success": true,
+  "projectFilePath": "/var/www/vhosts/devninja.ai2dev.com/backend-devninja.ai2dev.com/ai2dev-folders/projects/dn3010@yahoo.co.in/accounts-management-mode/generatedRepos/src/Project.SalesforceApi/Project.SalesforceApi.csproj",
+  "expectedPackageFiles": [
+    "/var/www/vhosts/devninja.ai2dev.com/.nuget/packages/microsoft.netcore.app.ref/6.0.36/microsoft.netcore.app.ref.6.0.36.nupkg.sha512",
+    "/var/www/vhosts/devninja.ai2dev.com/.nuget/packages/microsoft.aspnetcore.app.ref/6.0.36/microsoft.aspnetcore.app.ref.6.0.36.nupkg.sha512",
+    "/var/www/vhosts/devninja.ai2dev.com/.nuget/packages/microsoft.netcore.app.host.linux-x64/6.0.36/microsoft.netcore.app.host.linux-x64.6.0.36.nupkg.sha512"
+  ],
+  "logs": []
+}
