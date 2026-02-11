@@ -1,63 +1,89 @@
 module.exports = (function () {
-  try {
-    const express = require("express");
-    const router = express.Router();
+ try {
+ const express = require("express");
+ const router = express.Router();
 
-    // POST /convert - accepts query parameters or JSON body
-    router.post("/", async (req, res) => {
-      try {
-        const fromRaw = (req.query.from || (req.body && req.body.from) || "USD");
-        const toRaw = (req.query.to || (req.body && req.body.to) || "INR");
-        const amountRaw = req.query.amount || (req.body && req.body.amount);
+ // POST /convert - accepts query parameters or JSON body
+ router.post("/", async (req, res) => {
+ try {
+ const fromRaw = (req.query.from || (req.body && req.body.from) || "USD");
+ const toRaw = (req.query.to || (req.body && req.body.to) || "INR");
+ const amountRaw = req.query.amount || (req.body && req.body.amount);
 
-        const from = String(fromRaw).toUpperCase();
-        const to = String(toRaw).toUpperCase();
-        const amount = parseFloat(amountRaw);
+ const from = String(fromRaw).toUpperCase();
+ const to = String(toRaw).toUpperCase();
+ const amount = parseFloat(amountRaw);
 
-        if (!isFinite(amount)) {
-          const error = { error: "Invalid amount" };
-          console.error("Failed", error);
-          return res.status(400).json(error);
-        }
+ if (!isFinite(amount)) {
+ const error = { error: "Invalid amount" };
+ console.error("Failed", error);
+ return res.status(400).json(error);
+ }
 
-        // Determine rate using environment variable RATE_USD_INR
-        const envRate = parseFloat(process.env.RATE_USD_INR || process.env.BACKEND_RATE_USD_INR || "82.5");
-        let rate;
+ // Determine base rates using environment variables
+ // USD -> INR
+ const usdInrEnv = parseFloat(process.env.RATE_USD_INR || process.env.BACKEND_RATE_USD_INR || "82.5");
+ // USD -> AUD
+ const usdAudEnv = parseFloat(process.env.RATE_USD_AUD || process.env.BACKEND_RATE_USD_AUD || "1.5");
 
-        if (from === to) {
-          rate = 1;
-        } else if (from === "USD" && to === "INR") {
-          rate = envRate;
-        } else if (from === "INR" && to === "USD") {
-          rate = envRate ? 1 / envRate : 1;
-        } else {
-          const error = { error: "Conversion not supported" };
-          console.error("Failed", error);
-          return res.status(400).json(error);
-        }
+ let rate;
 
-        const converted = +(amount * rate);
+ if (from === to) {
+ rate = 1;
+ } else if (from === "USD" && to === "INR") {
+ rate = usdInrEnv;
+ } else if (from === "INR" && to === "USD") {
+ rate = usdInrEnv ? 1 / usdInrEnv : 1;
+ } else if (from === "USD" && to === "AUD") {
+ rate = usdAudEnv;
+ } else if (from === "AUD" && to === "USD") {
+ rate = usdAudEnv ? 1 / usdAudEnv : 1;
+ } else if (from === "INR" && to === "AUD") {
+ // INR -> USD -> AUD
+ if (usdInrEnv && usdAudEnv) {
+ rate = (1 / usdInrEnv) * usdAudEnv;
+ } else {
+ const error = { error: "Conversion not supported" };
+ console.error("Failed", error);
+ return res.status(400).json(error);
+ }
+ } else if (from === "AUD" && to === "INR") {
+ // AUD -> USD -> INR
+ if (usdInrEnv && usdAudEnv) {
+ rate = (1 / usdAudEnv) * usdInrEnv;
+ } else {
+ const error = { error: "Conversion not supported" };
+ console.error("Failed", error);
+ return res.status(400).json(error);
+ }
+ } else {
+ const error = { error: "Conversion not supported" };
+ console.error("Failed", error);
+ return res.status(400).json(error);
+ }
 
-        const result = {
-          amount: amount,
-          from: from,
-          to: to,
-          rate: rate,
-          converted: converted,
-          timestamp: new Date().toISOString()
-        };
+ const converted = +(amount * rate);
 
-        return res.status(200).json(result);
-      } catch (err) {
-        console.error("Failed", err);
-        return res.status(500).json({ error: "Internal Server Error" });
-      }
-    });
+ const result = {
+ amount: amount,
+ from: from,
+ to: to,
+ rate: rate,
+ converted: converted,
+ timestamp: new Date().toISOString()
+ };
 
-    console.log("Connected");
-    return router;
-  } catch (err) {
-    console.error("Failed", err);
-    throw err;
-  }
+ return res.status(200).json(result);
+ } catch (err) {
+ console.error("Failed", err);
+ return res.status(500).json({ error: "Internal Server Error" });
+ }
+ });
+
+ console.log("Connected");
+ return router;
+ } catch (err) {
+ console.error("Failed", err);
+ throw err;
+ }
 })();
