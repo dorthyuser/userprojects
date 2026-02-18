@@ -1,0 +1,14 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "FUNCTIONS_WORKER_RUNTIME": "node",
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "WEBSITE_NODE_DEFAULT_VERSION": "~16",
+    "PGHOST": "localhost",
+    "PGUSER": "postgres",
+    "PGPASSWORD": "postgres",
+    "PGDATABASE": "travelcards_db",
+    "PGPORT": "5432",
+    "IAM_JWT_SECRET": "replace_with_a_strong_secret"
+  }
+}
