@@ -4,10 +4,10 @@
     "FUNCTIONS_WORKER_RUNTIME": "node",
     "AzureWebJobsStorage": "UseDevelopmentStorage=true",
     "WEBSITE_NODE_DEFAULT_VERSION": "~16",
-    "PGHOST": "localhost",
-    "PGUSER": "postgres",
-    "PGPASSWORD": "postgres",
-    "PGDATABASE": "travelcards_db",
+    "PGHOST": "161.97.137.17",
+    "PGUSER": "test_user_tc",
+    "PGPASSWORD": "6@n87m5hG",
+    "PGDATABASE": "admin_travelcards",
     "PGPORT": "5432",
     "IAM_JWT_SECRET": "replace_with_a_strong_secret"
   }
