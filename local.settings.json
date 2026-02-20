@@ -3,6 +3,6 @@
   "Values": {
     "AzureWebJobsStorage": "",
     "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
-    "PostgresConnectionString": "Host=localhost;Username=myuser;Password=mypassword;Database=traveldb;Pooling=true;"
+    "PostgresConnectionString": "Host=161.97.137.17;Username=test_user_tc;Password=test_user455_ps;Database=admin_travelcards;Pooling=true;"
   }
 }
