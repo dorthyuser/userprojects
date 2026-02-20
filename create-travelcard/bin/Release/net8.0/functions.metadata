@@ -1,0 +1,29 @@
+[
+  {
+    "name": "CreateTravelcard",
+    "scriptFile": "create-travelcard.dll",
+    "entryPoint": "CreateTravelcard.Functions.CreateTravelcardFunction.Run",
+    "language": "dotnet-isolated",
+    "properties": {
+      "IsCodeless": false
+    },
+    "bindings": [
+      {
+        "name": "req",
+        "direction": "In",
+        "type": "httpTrigger",
+        "authLevel": "Function",
+        "methods": [
+          "post"
+        ],
+        "route": "api/travelcards",
+        "properties": {}
+      },
+      {
+        "name": "$return",
+        "type": "http",
+        "direction": "Out"
+      }
+    ]
+  }
+]
