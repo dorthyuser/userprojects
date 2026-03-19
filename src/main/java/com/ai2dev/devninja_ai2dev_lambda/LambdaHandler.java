@@ -22,16 +22,14 @@ public class LambdaHandler extends MicronautRequestHandler<APIGatewayProxyReques
     public APIGatewayProxyResponseEvent execute(APIGatewayProxyRequestEvent input)
     {
         System.out.println("LambdaHandler: request received path=" + input.getPath());
-
-        String clientId      = getHeader(input, "client_id");
-        String correlationId = getHeader(input, "X-Correlation-Cust-Id");
-        System.out.println("LambdaHandler: clientId=" + clientId + " correlationId=" + correlationId);
+        System.out.println("LambdaHandler: clientId=" + getHeader(input, "client_id")
+                + " correlationId=" + getHeader(input, "X-Correlation-Cust-Id"));
 
         APIGatewayProxyResponseEvent response = new APIGatewayProxyResponseEvent();
         try
         {
             CreateTravelcardRequest request = objectMapper.readValue(input.getBody(), CreateTravelcardRequest.class);
-            CreateTravelcardResponse result = travelcardService.createTravelcard(request, clientId, correlationId);
+            CreateTravelcardResponse result = travelcardService.createTravelcard(request);
 
             System.out.println("LambdaHandler: success travelcardId=" + result.getTravelcardId());
             response.setStatusCode(201);
@@ -41,7 +39,7 @@ public class LambdaHandler extends MicronautRequestHandler<APIGatewayProxyReques
         {
             System.err.println("LambdaHandler: invalid input - " + e.getMessage());
             response.setStatusCode(400);
-            response.setBody("{\"error\": \"Invalid input: " + e.getMessage() + "\"}");
+            response.setBody("{\"error\": \"" + e.getMessage() + "\"}");
         }
         catch (Exception e)
         {
