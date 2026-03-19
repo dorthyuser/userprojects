@@ -27,8 +27,6 @@ dependencies {
   implementation("io.micronaut.data:micronaut-data-jdbc")
   implementation("io.micronaut.sql:micronaut-jdbc-hikari")
   implementation("org.postgresql:postgresql")
-  runtimeOnly("io.micronaut.sql:micronaut-jdbc-hikari")
-  runtimeOnly("io.micronaut:micronaut-jdbc")
 
 }
 
