@@ -1,0 +1,21 @@
+micronaut:
+  application:
+    name: devninja-ai2dev-lambda
+
+datasources:
+  default:
+    url: 'jdbc:postgresql://localhost:5432/devdb'
+    username: devuser
+    password: devpass
+    driverClassName: org.postgresql.Driver
+
+jpa:
+  default:
+    properties:
+      hibernate:
+        temp:
+          use_jdbc_metadata_defaults: false
+
+logging:
+  level:
+    ROOT: INFO
