@@ -17,7 +17,7 @@ public class LambdaHandler extends MicronautRequestHandler<APIGatewayProxyReques
         System.out.println("LambdaHandler: request received");
         try
         {
-            APIGatewayProxyResponseEvent result = super.handleRequest(input, null);
+            APIGatewayProxyResponseEvent result = super.execute(input); 
             System.out.println("LambdaHandler: request completed successfully");
             return result;
         }
