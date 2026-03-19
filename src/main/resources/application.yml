@@ -4,9 +4,9 @@ micronaut:
 
 datasources:
   default:
-    url: 'jdbc:postgresql://localhost:5432/devdb'
-    username: devuser
-    password: devpass
+    url: 'jdbc:postgresql://161.97.137.17:5432/admin_rails'
+    username: test_user_ps
+    password: test_user454_ps
     driverClassName: org.postgresql.Driver
 
 jpa:
