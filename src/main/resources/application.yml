@@ -9,6 +9,7 @@ datasources:
     password: test_user454_ps
     driver-class-name: org.postgresql.Driver
     db-type: postgres
+    dialect: POSTGRES
 
 logging:
   level:
