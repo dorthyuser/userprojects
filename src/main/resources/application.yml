@@ -4,18 +4,13 @@ micronaut:
 
 datasources:
   default:
-    url: 'jdbc:postgresql://161.97.137.17:5432/admin_rails'
+    url: jdbc:postgresql://161.97.137.17:5432/admin_rails
     username: test_user_ps
     password: test_user454_ps
-    driverClassName: org.postgresql.Driver
-
-jpa:
-  default:
-    properties:
-      hibernate:
-        temp:
-          use_jdbc_metadata_defaults: false
+    driver-class-name: org.postgresql.Driver
+    db-type: postgres
 
 logging:
   level:
     ROOT: INFO
+    com.ai2dev: DEBUG
