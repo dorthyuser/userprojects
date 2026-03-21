@@ -23,7 +23,7 @@ namespace Ddctravelcard2026Lambda
         /// <summary>
         /// Lambda handler must be named Ddctravelcard2026
         /// </summary>
-        public async Task<APIGatewayProxyResponse> Ddctravelcard2026(APIGatewayProxyRequest request, ILambdaContext context)
+        public async Task<APIGatewayProxyResponse> ddctravelcard2026(APIGatewayProxyRequest request, ILambdaContext context)
         {
             Console.WriteLine("Received request");
 
