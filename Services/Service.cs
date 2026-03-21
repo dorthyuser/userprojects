@@ -7,6 +7,7 @@ using Ddctravelcard2026Lambda.Models;
 using Npgsql;
 using NpgsqlTypes;
 using Amazon.Lambda.APIGatewayEvents;
+using System.Net;
 
 namespace Ddctravelcard2026Lambda.Services
 {
@@ -20,21 +21,60 @@ namespace Ddctravelcard2026Lambda.Services
             // Read from environment or appsettings; fallback placeholder
             _connectionString = Environment.GetEnvironmentVariable("PostgreSql__ConnectionString") ?? "Host=your-host;Port=5432;Database=your-db;Username=your-user;Password=your-password;Pooling=true;Maximum Pool Size=20;";
 
-            var builder = new NpgsqlDataSourceBuilder(_connectionString);
+            // Attempt to resolve DNS for the host portion proactively to avoid runtime DNS failures in some Lambda/VPC configurations
+            try
+            {
+                var connStringBuilder = new NpgsqlConnectionStringBuilder(_connectionString);
+                var host = connStringBuilder.Host;
+                if (!string.IsNullOrEmpty(host) && !IPAddress.TryParse(host, out _))
+                {
+                    try
+                    {
+                        var addresses = Dns.GetHostAddressesAsync(host).GetAwaiter().GetResult();
+                        if (addresses != null && addresses.Length > 0)
+                        {
+                            string chosen = null;
+                            foreach (var a in addresses)
+                            {
+                                if (a.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+                                {
+                                    chosen = a.ToString();
+                                    break;
+                                }
+                            }
+                            if (chosen == null) chosen = addresses[0].ToString();
+                            connStringBuilder.Host = chosen;
+                            _connectionString = connStringBuilder.ToString();
+                            Console.WriteLine($"Resolved host '{host}' to '{chosen}'");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Host resolution failed for '{host}': {ex.Message}");
+                        // Leave the connection string as-is; Npgsql will attempt its own resolution later
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Connection string processing failed: {ex.Message}");
+            }
+
+            var dsBuilder = new NpgsqlDataSourceBuilder(_connectionString);
 
             // Map enums to pg enum type name exactly
             // Use overload that does not require a custom name translator to avoid API differences
             try
             {
-                builder.MapEnum<TravelcardType>("travelcard_type_enum");
-                builder.MapEnum<CardholderType>("cardholder_type_enum");
+                dsBuilder.MapEnum<TravelcardType>("travelcard_type_enum");
+                dsBuilder.MapEnum<CardholderType>("cardholder_type_enum");
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Enum mapping: {ex.Message}");
             }
 
-            _dataSource = builder.Build();
+            _dataSource = dsBuilder.Build();
         }
 
         public (bool IsValid, string ErrorMessage) ValidateRequest(Request request)
