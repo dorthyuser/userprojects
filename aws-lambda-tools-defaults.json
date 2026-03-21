@@ -1,0 +1,11 @@
+{
+  "profile": "default",
+  "region": "us-east-1",
+  "configuration": "Release",
+  "framework": "net8.0",
+  "function-runtime": "dotnet8",
+  "function-handler": "Ddctravelcard2026Lambda::Ddctravelcard2026Lambda.Function::ddctravelcard2026",
+  "lambda-name": "ddctravelcard2026-lambda",
+  "memory-size": 256,
+  "timeout": 30
+}
