@@ -1,0 +1,11 @@
+datasources:
+  postgresql:
+    url: ${DATASOURCE_POSTGRESQL_URL:jdbc:postgresql://HOST:5432/DB}
+    username: ${DATASOURCE_POSTGRESQL_USERNAME:user}
+    password: ${DATASOURCE_POSTGRESQL_PASSWORD:secret}
+    dialect: POSTGRES
+    connection-timeout: 30000
+    maximum-pool-size: ${DB_POOL_SIZE:10}
+    minimum-idle: 2
+    idle-timeout: 600000
+    max-lifetime: 1800000
