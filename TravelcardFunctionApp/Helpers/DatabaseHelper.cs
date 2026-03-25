@@ -27,8 +27,8 @@ namespace TravelcardFunctionApp.Helpers
             var conn = configuration.GetValue<string>("PostgresConnectionString") ?? "Host=localhost;Username=postgres;Password=postgres;Database=travelcardsdb";
             var builder = new NpgsqlDataSourceBuilder(conn);
             // Map enums to Postgres enum types preserving exact names
-            builder.MapEnum<TravelcardType>("travelcard_type_enum", new ExactNameTranslator());
-            builder.MapEnum<CardholderType>("cardholder_type_enum", new ExactNameTranslator());
+            builder.MapEnum<TravelcardType>("travelcard_type_enum");
+            builder.MapEnum<CardholderType>("cardholder_type_enum");
             _dataSource = builder.Build();
         }
 
