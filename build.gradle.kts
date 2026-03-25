@@ -20,8 +20,22 @@ dependencies {
   runtimeOnly("org.postgresql:postgresql")
   testImplementation("org.springframework.boot:spring-boot-starter-test")
 }
+// Stop Spring Boot creating its own fat JAR — Shadow owns it
+tasks.getByName<org.springframework.boot.gradle.tasks.bundling.BootJar>("bootJar") {
+  enabled = false
+}
+tasks.getByName<Jar>("jar") {
+  enabled = true
+}
+
 tasks.shadowJar {
   archiveClassifier.set("")
   mergeServiceFiles()
+
+  // THE FIX — without these two lines Shadow overwrites instead of merges
+  // causing Spring Boot's entire auto-configuration system to go missing
+  append("META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports")
+  append("META-INF/spring.factories")
 }
+
 tasks.build { dependsOn(tasks.shadowJar) }
