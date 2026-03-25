@@ -18,6 +18,7 @@ dependencies {
   implementation("org.springframework.boot:spring-boot-starter-data-jdbc")
   implementation("com.zaxxer:HikariCP")
   runtimeOnly("org.postgresql:postgresql")
+  implementation("net.logstash.logback:logstash-logback-encoder:7.4") 
   testImplementation("org.springframework.boot:spring-boot-starter-test")
 }
 // Stop Spring Boot creating its own fat JAR — Shadow owns it
