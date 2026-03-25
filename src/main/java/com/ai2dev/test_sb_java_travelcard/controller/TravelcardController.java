@@ -66,10 +66,7 @@ public class TravelcardController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "client_id pattern invalid");
         }
 
-        if (contentType == null || !MediaType.APPLICATION_JSON_VALUE.equalsIgnoreCase(contentType)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Content-Type must be application/json");
-        }
-
+      
         if (correlationId != null) {
             if (correlationId.length() > 100) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "X-Correlation-Cust-Id too long");
