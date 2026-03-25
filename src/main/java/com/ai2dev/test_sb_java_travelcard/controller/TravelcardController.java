@@ -42,10 +42,7 @@ public class TravelcardController {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid client_id header");
             }
 
-            if (contentType == null || !contentType.contains(MediaType.APPLICATION_JSON_VALUE)) {
-                logger.error("Content-Type must be application/json");
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Content-Type must be application/json");
-            }
+           
 
             if (correlationId != null && (correlationId.length() > 100 || !correlationId.matches("^[A-Za-z0-9_-]+$"))) {
                 logger.error("Invalid X-Correlation-Cust-Id header");
