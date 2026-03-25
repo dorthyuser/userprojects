@@ -45,7 +45,7 @@ namespace TravelcardFunction.Helpers
                 cmd.Parameters.Add(new NpgsqlParameter("@name", NpgsqlDbType.Varchar) { Value = (object)request.TravelcardName ?? DBNull.Value });
                 cmd.Parameters.Add(new NpgsqlParameter("@number", NpgsqlDbType.Varchar) { Value = request.TravelcardNumber });
                 cmd.Parameters.Add(new NpgsqlParameter("@requestedDate", NpgsqlDbType.TimestampTz) { Value = request.TravelcardRequestedDate });
-                cmd.Parameters.Add(new NpgsqlParameter("@transactionRef", NpgsqlDbType.InternalChar) { Value = request.TravelcardTransactionReference });
+                cmd.Parameters.AddWithValue("@transactionRef", request.TravelcardTransactionReference );
                 cmd.Parameters.Add(new NpgsqlParameter("@usableTo", NpgsqlDbType.TimestampTz) { Value = (object)request.TravelcardUsableTo ?? DBNull.Value });
 
                 var newIdObj = await cmd.ExecuteScalarAsync();
