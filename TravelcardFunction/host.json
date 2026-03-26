@@ -1,0 +1,14 @@
+{
+  "version": "2.0",
+  "extensions": {},
+  "customHandler": {},
+  "logging": {
+    "applicationInsights": {
+      "samplingSettings": {
+        "isEnabled": true
+      }
+    }
+  },
+  "extensionsConfiguration": {},
+  "routePrefix": "api"
+}
