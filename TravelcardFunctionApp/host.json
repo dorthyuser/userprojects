@@ -1,0 +1,19 @@
+{
+  "version": "2.0",
+  "extensions": {
+    "http": {}
+  },
+  "logging": {
+    "applicationInsights": {
+      "samplingSettings": {
+        "isEnabled": true
+      }
+    }
+  },
+  "extensionBundle": {
+    "id": "Microsoft.Azure.Functions.ExtensionBundle",
+    "version": "[3.*, 4.0.0)"
+  },
+  "customHandler": {},
+  "routePrefix": "api"
+}
