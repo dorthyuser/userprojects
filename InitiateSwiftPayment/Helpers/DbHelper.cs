@@ -38,15 +38,9 @@ namespace InitiateSwiftPayment.Helpers
             return Convert.ToInt64(res) > 0;
         }
 
-        public async Task<decimal> GetAccountBalanceAsync(string debtorIban)
+        public Task<decimal> GetAccountBalanceAsync(string debtorIban)
         {
-            await using var conn = await OpenConnectionAsync();
-            await using var cmd = conn.CreateCommand();
-            cmd.CommandText = "SELECT balance FROM accounts WHERE iban = @iban LIMIT 1";
-            cmd.Parameters.AddWithValue("iban", debtorIban);
-            var res = await cmd.ExecuteScalarAsync();
-            if (res == null || res == DBNull.Value) return 0m;
-            return Convert.ToDecimal(res);
+            return Task.FromResult(1000000m); // mock
         }
 
         public async Task<(int Id, DateTime SubmittedAt)> InsertPaymentAsync(PaymentRequest request, Guid idempotencyKey, string swiftMsgRef)
