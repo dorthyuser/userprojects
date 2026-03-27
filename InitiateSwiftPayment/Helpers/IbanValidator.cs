@@ -35,12 +35,10 @@ namespace InitiateSwiftPayment.Helpers
 
             // Perform mod-97 using chunks to avoid big integers
             var remainder = 0;
-            var pos = 0;
-            while (pos < numeric.Length)
+
+            foreach (char c in numeric)
             {
-                var block = remainder.ToString() + numeric.Substring(pos, Math.Min(9, numeric.Length - pos));
-                remainder = int.Parse(block) % 97;
-                pos += Math.Min(9, numeric.Length - pos);
+                remainder = (remainder * 10 + (c - '0')) % 97;
             }
 
             return remainder == 1;
