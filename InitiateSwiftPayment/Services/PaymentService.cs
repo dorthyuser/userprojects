@@ -9,6 +9,7 @@ using InitiateSwiftPayment.Helpers;
 using InitiateSwiftPayment.Models;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;
+using Npgsql;
 
 namespace InitiateSwiftPayment.Services
 {
