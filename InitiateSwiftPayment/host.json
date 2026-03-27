@@ -1,0 +1,19 @@
+{
+  "version": "2.0",
+  "extensions": {},
+  "logging": {
+    "applicationInsights": {
+      "samplingSettings": {
+        "isEnabled": true
+      }
+    }
+  },
+  "extensionBundle": {},
+  "routes": {},
+  "custom": {},
+  "managedDependency": {},
+  "functionTimeout": "00:05:00",
+  "http": {
+    "routePrefix": "api"
+  }
+}
