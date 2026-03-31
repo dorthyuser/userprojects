@@ -1,0 +1,17 @@
+{
+  "connection": {
+    "name": "azure-function-oauth",
+    "protocol": "HTTPS",
+    "authMethod": "oauth2"
+  },
+  "auth": {
+    "oauth2": {
+      "clientId": "$http-client-id",
+      "clientSecret": "$http-client-secret",
+      "tokenUrl": "$http-token-url",
+      "grantType": "client_credentials",
+      "authorizationUrl": null,
+      "scopes": ["$http-scope"]
+    }
+  }
+}

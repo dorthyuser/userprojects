@@ -1,0 +1,12 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
+    "PG_CONNECTION_STRING": "Host=localhost;Username=postgres;Password=postgres;Database=travelcards",
+    "$http-client-id": "your-client-id",
+    "$http-client-secret": "your-client-secret",
+    "$http-token-url": "https://auth.example.com/oauth2/token",
+    "$http-scope": "api.read"
+  }
+}
