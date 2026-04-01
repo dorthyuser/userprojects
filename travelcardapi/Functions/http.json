@@ -6,12 +6,12 @@
   },
   "auth": {
     "oauth2": {
-      "clientId": "$AZURE_CLIENT_ID",
-      "clientSecret": "$AZURE_CLIENT_SECRET",
-      "tokenUrl": "$AZURE_TOKEN_URL",
+      "clientId": "$AZURE-CLIENT-ID",
+      "clientSecret": "$AZURE-CLIENT-SECRET",
+      "tokenUrl": "$AZURE-TOKEN-URL",
       "grantType": "client_credentials",
       "authorizationUrl": null,
-      "scopes": ["$AZURE_SCOPES"]
+      "scopes": ["$AZURE-SCOPES"]
     }
   }
 }
