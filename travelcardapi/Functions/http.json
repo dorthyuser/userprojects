@@ -1,0 +1,17 @@
+{
+  "connection": {
+    "name": "travelcard-connection",
+    "protocol": "HTTPS",
+    "authMethod": "oauth2"
+  },
+  "auth": {
+    "oauth2": {
+      "clientId": "$AZURE_CLIENT_ID",
+      "clientSecret": "$AZURE_CLIENT_SECRET",
+      "tokenUrl": "$AZURE_TOKEN_URL",
+      "grantType": "client_credentials",
+      "authorizationUrl": null,
+      "scopes": ["$AZURE_SCOPES"]
+    }
+  }
+}
