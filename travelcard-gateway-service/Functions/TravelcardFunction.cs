@@ -58,15 +58,7 @@ namespace TravelcardGatewayService.Functions
                     await badResp.WriteStringAsync(JsonSerializer.Serialize(error));
                     return badResp;
                 }
-
-                if (requestModel == null)
-                {
-                    logger.LogWarning("Request model is null");
-                    var badResp = req.CreateResponse(HttpStatusCode.BadRequest);
-                    var error = new ErrorResponse { Error = "InvalidRequest", Details = "Request body is invalid" };
-                    await badResp.WriteStringAsync(JsonSerializer.Serialize(error));
-                    return badResp;
-                }    
+    
 
                 logger.LogInformation("Forwarding request to backend API");
 
