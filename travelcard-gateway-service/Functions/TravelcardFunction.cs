@@ -59,15 +59,14 @@ namespace TravelcardGatewayService.Functions
                     return badResp;
                 }
 
-                if (requestModel == null || string.IsNullOrWhiteSpace(requestModel.FullName) || string.IsNullOrWhiteSpace(requestModel.Destination))
+                if (requestModel == null)
                 {
-                    logger.LogWarning("Validation failed for request payload");
+                    logger.LogWarning("Request model is null");
                     var badResp = req.CreateResponse(HttpStatusCode.BadRequest);
-                    var error = new ErrorResponse { Error = "ValidationFailed", Details = "FullName and Destination are required" };
+                    var error = new ErrorResponse { Error = "InvalidRequest", Details = "Request body is invalid" };
                     await badResp.WriteStringAsync(JsonSerializer.Serialize(error));
-                    logger.LogInformation("Exit TravelcardFunction with BadRequest (validation)");
                     return badResp;
-                }
+                }    
 
                 logger.LogInformation("Forwarding request to backend API");
 
