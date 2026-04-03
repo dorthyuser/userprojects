@@ -71,7 +71,7 @@ namespace travelcard_service.Functions
                 }
                 logger.LogInformation("Token Accquired = ", tokenResult.AccessToken);
                 logger.LogInformation("Forwarding request to backend Travelcard API");
-                var backendResponse = await _httpHelper.PostTravelcardAsync(travelcardRequest, tokenResult.AccessToken);
+                var backendResponse = await _httpHelper.PostRawAsync(requestBody, tokenResult.AccessToken);
 
                 if (!backendResponse.IsSuccess)
                 {
