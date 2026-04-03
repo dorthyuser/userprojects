@@ -2,10 +2,8 @@ using System;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
-using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using travelcard_service.Models;
 
 namespace travelcard_service.Helpers
 {
@@ -35,7 +33,8 @@ namespace travelcard_service.Helpers
             }
         }
 
-        public async Task<BackendResponse> PostTravelcardAsync(TravelcardRequest request, string bearerToken)
+        // ✅ NEW METHOD — USE THIS
+        public async Task<BackendResponse> PostRawAsync(string json, string bearerToken)
         {
             try
             {
@@ -49,19 +48,14 @@ namespace travelcard_service.Helpers
                 var functionKey = Environment.GetEnvironmentVariable("TRAVELCARD_FUNCTION_KEY") ?? string.Empty;
                 var url = new Uri(new Uri(_baseUrl), $"api/travelcard?code={functionKey}");
 
-                var options = new JsonSerializerOptions
-                {
-                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-                };
+                _logger.LogInformation("Forwarding RAW JSON Payload: {json}", json);
 
-                var json = JsonSerializer.Serialize(request, options);
-                _logger.LogInformation("Outgoing JSON Payload: {json}", json);
                 using var httpReq = new HttpRequestMessage(HttpMethod.Post, url)
                 {
                     Content = new StringContent(json, Encoding.UTF8, "application/json")
                 };
 
-                // Required headers
+                // Headers
                 if (!string.IsNullOrWhiteSpace(_clientIdHeaderValue))
                 {
                     httpReq.Headers.Add("client_id", _clientIdHeaderValue);
@@ -74,25 +68,52 @@ namespace travelcard_service.Helpers
                     httpReq.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearerToken);
                 }
 
-                _logger.LogInformation("Sending request to backend {Url} with CardNumber {CardNumber}", url, request.CardNumber);
-
                 var response = await _httpClient.SendAsync(httpReq);
                 var content = await response.Content.ReadAsStringAsync();
 
                 if (!response.IsSuccessStatusCode)
                 {
                     _logger.LogError("Backend responded with {Status}. Content: {Content}", (int)response.StatusCode, content);
-                    return new BackendResponse { IsSuccess = false, StatusCode = (int)response.StatusCode, Content = content };
+                    return new BackendResponse
+                    {
+                        IsSuccess = false,
+                        StatusCode = (int)response.StatusCode,
+                        Content = content
+                    };
                 }
 
                 _logger.LogInformation("Backend responded successfully with status {Status}", (int)response.StatusCode);
-                return new BackendResponse { IsSuccess = true, StatusCode = (int)response.StatusCode, Content = content };
+
+                return new BackendResponse
+                {
+                    IsSuccess = true,
+                    StatusCode = (int)response.StatusCode,
+                    Content = content
+                };
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Exception while calling backend API");
-                return new BackendResponse { IsSuccess = false, StatusCode = 500, Content = ex.Message };
+
+                return new BackendResponse
+                {
+                    IsSuccess = false,
+                    StatusCode = 500,
+                    Content = ex.Message
+                };
             }
+        }
+
+        // ❌ OLD METHOD (optional – can delete later)
+        public async Task<BackendResponse> PostTravelcardAsync(object request, string bearerToken)
+        {
+            _logger.LogWarning("PostTravelcardAsync is deprecated. Use PostRawAsync instead.");
+            return new BackendResponse
+            {
+                IsSuccess = false,
+                StatusCode = 500,
+                Content = "Deprecated method"
+            };
         }
     }
 
