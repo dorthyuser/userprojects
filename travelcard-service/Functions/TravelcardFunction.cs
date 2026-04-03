@@ -69,7 +69,7 @@ namespace travelcard_service.Functions
                     logger.LogError("Token acquisition failed: {Error}", tokenResult.Error);
                     return resp;
                 }
-
+                logger.LogInformation("Token Accquired = ", tokenResult.AccessToken);
                 logger.LogInformation("Forwarding request to backend Travelcard API");
                 var backendResponse = await _httpHelper.PostTravelcardAsync(travelcardRequest, tokenResult.AccessToken);
 
