@@ -46,7 +46,8 @@ namespace travelcard_service.Helpers
                     return new BackendResponse { IsSuccess = false, StatusCode = 500, Content = msg };
                 }
 
-                var url = new Uri(new Uri(_baseUrl), "api/travelcard");
+                var functionKey = Environment.GetEnvironmentVariable("TRAVELCARD_FUNCTION_KEY") ?? string.Empty;
+                var url = new Uri(new Uri(_baseUrl), $"api/travelcard?code={functionKey}");
 
                 var json = JsonSerializer.Serialize(request);
                 using var httpReq = new HttpRequestMessage(HttpMethod.Post, url)
