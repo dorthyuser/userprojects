@@ -24,10 +24,10 @@ namespace travelcard_service.Helpers
         {
             try
             {
-                var clientId = Environment.GetEnvironmentVariable("AZURE_CLIENT_ID");
-                var clientSecret = Environment.GetEnvironmentVariable("AZURE_CLIENT_SECRET");
-                var tokenUrl = Environment.GetEnvironmentVariable("AZURE_TOKEN_URL");
-                var scopes = Environment.GetEnvironmentVariable("AZURE_SCOPES");
+                var clientId = "6e0541cd-1228-4808-9296-9168b51eff87"; //Environment.GetEnvironmentVariable("AZURE_CLIENT_ID");
+                var clientSecret = "j2_8Q~rRE3Fb.OnjHawA8971_2yKKGQBE8XWVbHN"; //Environment.GetEnvironmentVariable("AZURE_CLIENT_SECRET");
+                var tokenUrl = "https://login.microsoftonline.com/f511e351-8335-4819-96aa-66d1ad695f56/oauth2/v2.0/token"; //Environment.GetEnvironmentVariable("AZURE_TOKEN_URL");
+                var scopes = "api://b4602da5-c997-4bb3-8bfb-a97461954bff/.default"; //Environment.GetEnvironmentVariable("AZURE_SCOPES");
 
                 if (string.IsNullOrWhiteSpace(clientId) || string.IsNullOrWhiteSpace(clientSecret) || string.IsNullOrWhiteSpace(tokenUrl))
                 {
