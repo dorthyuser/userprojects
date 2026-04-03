@@ -1,0 +1,13 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "",
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
+    "AZURE_CLIENT_ID": "<your-azure-client-id>",
+    "AZURE_CLIENT_SECRET": "<your-azure-client-secret>",
+    "AZURE_TOKEN_URL": "https://login.microsoftonline.com/<tenant>/oauth2/v2.0/token",
+    "AZURE_SCOPES": "api://<scope>/.default",
+    "CLIENT_ID_HEADER": "<client-id-header-value>",
+    "TRAVELCARD_API_BASE_URL": "https://example.com/"
+  }
+}
