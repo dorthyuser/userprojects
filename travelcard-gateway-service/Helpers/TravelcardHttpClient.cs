@@ -23,6 +23,48 @@ namespace TravelcardGatewayService.Helpers
             _logger = logger;
             _clientIdHeader = Environment.GetEnvironmentVariable("TRAVELCARD_CLIENT_ID") ?? string.Empty;
         }
+        public async Task<TravelcardResponse> ForwardRawAsync(string jsonBody)
+        {
+            _logger.LogInformation("Forwarding raw payload to backend");
+
+            if (string.IsNullOrWhiteSpace(_clientIdHeader))
+            {
+                _logger.LogError("TRAVELCARD_CLIENT_ID environment variable is missing");
+                throw new BackendException("Missing TRAVELCARD_CLIENT_ID");
+            }
+            var token = await _tokenService.GetAccessTokenAsync();
+
+            var httpReq = new HttpRequestMessage(HttpMethod.Post, "/api/travelcard")
+            {
+            Content = new StringContent(jsonBody, Encoding.UTF8, "application/json")
+            };
+
+            httpReq.Headers.Add("client_id", _clientIdHeader);
+            httpReq.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+            HttpResponseMessage resp;
+            try
+            {
+                resp = await _httpClient.SendAsync(httpReq);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "HTTP call to backend failed");
+                throw new BackendException("Failed to call backend API");
+            }
+
+            var respBody = await resp.Content.ReadAsStringAsync();
+
+            if (!resp.IsSuccessStatusCode)
+            {
+                _logger.LogError("Backend returned error {Status}: {Body}", resp.StatusCode, respBody);
+                throw new BackendException($"Backend error: {resp.StatusCode}, Body: {respBody}");
+            }
+            return JsonSerializer.Deserialize<TravelcardResponse>(
+            respBody,
+            new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
+            )!;
+        }
 
         public async Task<TravelcardResponse> ForwardTravelcardAsync(TravelcardRequest request)
         {
