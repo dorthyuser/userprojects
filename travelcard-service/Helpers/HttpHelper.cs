@@ -49,7 +49,12 @@ namespace travelcard_service.Helpers
                 var functionKey = Environment.GetEnvironmentVariable("TRAVELCARD_FUNCTION_KEY") ?? string.Empty;
                 var url = new Uri(new Uri(_baseUrl), $"api/travelcard?code={functionKey}");
 
-                var json = JsonSerializer.Serialize(request);
+                var options = new JsonSerializerOptions
+                {
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                };
+
+                var json = JsonSerializer.Serialize(request, options);
                 using var httpReq = new HttpRequestMessage(HttpMethod.Post, url)
                 {
                     Content = new StringContent(json, Encoding.UTF8, "application/json")
