@@ -55,6 +55,7 @@ namespace travelcard_service.Helpers
                 };
 
                 var json = JsonSerializer.Serialize(request, options);
+                _logger.LogInformation("Outgoing JSON Payload: {json}", json);
                 using var httpReq = new HttpRequestMessage(HttpMethod.Post, url)
                 {
                     Content = new StringContent(json, Encoding.UTF8, "application/json")
