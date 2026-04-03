@@ -5,6 +5,6 @@ namespace TravelcardGatewayService.Helpers
 {
     public interface ITravelcardHttpClient
     {
-        Task<TravelcardResponse> ForwardTravelcardAsync(TravelcardRequest request);
+        Task<TravelcardResponse> ForwardRawAsync(string jsonBody);
     }
 }
