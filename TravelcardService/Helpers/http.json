@@ -1,0 +1,35 @@
+{
+  "connections": [
+    {
+      "name": "travelcard-api-http",
+      "protocol": "HTTPS",
+      "baseUrl": "BASE_URL",
+      "resources": [
+        {
+          "endpoints": "POST api/travelcard",
+          "authMethod": "basic",
+          "auth": {
+            "basic": {
+              "username": "",
+              "password": ""
+            }
+          }
+        },
+        {
+          "endpoints": "POST api/travelcard",
+          "authMethod": "oauth2",
+          "auth": {
+            "oauth2": {
+              "clientId": "AZURE-CLIENT-ID",
+              "clientSecret": "AZURE-CLIENT-VALUE",
+              "tokenUrl": "AZURE-TOKEN-URL",
+              "grantType": "client_credentials",
+              "scopes": "AZURE-SCOPES",
+              "authorizationUrl": null
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

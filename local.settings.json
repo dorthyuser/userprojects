@@ -1,0 +1,9 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
+    "KeyVaultUri": "https://your-vault.vault.azure.net/",
+    "TRAVELCARD_API_BASEURL": "https://api.travelcard.example"
+  }
+}
