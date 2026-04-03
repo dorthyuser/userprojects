@@ -42,6 +42,4 @@ services.AddHttpClient<TokenService>();
         host.Run();
     }
 }
-```
-
 }
