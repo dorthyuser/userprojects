@@ -44,10 +44,11 @@ namespace TravelcardGatewayService.Functions
                     return badResp;
                 }
 
-                TravelcardRequest? requestModel;
+                JsonElement requestModel;
+
                 try
                 {
-                    requestModel = JsonSerializer.Deserialize<TravelcardRequest>(body, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    requestModel = JsonSerializer.Deserialize<JsonElement>(body);
                 }
                 catch (Exception ex)
                 {
@@ -55,7 +56,6 @@ namespace TravelcardGatewayService.Functions
                     var badResp = req.CreateResponse(HttpStatusCode.BadRequest);
                     var error = new ErrorResponse { Error = "InvalidJson", Details = "Unable to parse JSON body" };
                     await badResp.WriteStringAsync(JsonSerializer.Serialize(error));
-                    logger.LogInformation("Exit TravelcardFunction with BadRequest (invalid JSON)");
                     return badResp;
                 }
 
@@ -70,7 +70,7 @@ namespace TravelcardGatewayService.Functions
 
                 logger.LogInformation("Forwarding request to backend API");
 
-                TravelcardResponse backendResponse = await _travelcardHttpClient.ForwardTravelcardAsync(requestModel);
+                TravelcardResponse backendResponse = await _travelcardHttpClient.ForwardRawAsync(body);
 
                 var resp = req.CreateResponse(HttpStatusCode.OK);
                 await resp.WriteStringAsync(JsonSerializer.Serialize(backendResponse));
