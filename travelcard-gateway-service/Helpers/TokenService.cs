@@ -5,8 +5,6 @@ using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-private string? _cachedToken;
-private DateTime _tokenExpiry = DateTime.MinValue;
 
 namespace TravelcardGatewayService.Helpers
 {
@@ -18,6 +16,8 @@ namespace TravelcardGatewayService.Helpers
         private readonly string _clientSecret;
         private readonly string _tokenUrl;
         private readonly string _scopes;
+        private string? _cachedToken;
+        private DateTime _tokenExpiry = DateTime.MinValue;
 
         public TokenService(HttpClient httpClient, ILogger<TokenService> logger)
         {
