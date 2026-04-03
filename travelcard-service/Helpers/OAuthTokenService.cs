@@ -69,7 +69,9 @@ namespace travelcard_service.Helpers
                 if (doc.RootElement.TryGetProperty("access_token", out var tokenElement))
                 {
                     var token = tokenElement.GetString();
+                    _logger.LogInformation("acess token Acquired from OAuth service {Token} ", token);
                     return new TokenResult { Success = true, AccessToken = token };
+                    
                 }
 
                 _logger.LogError("Token response did not contain access_token. Raw: {Content}", content);
