@@ -17,8 +17,6 @@ var host = new HostBuilder()
 {
 // Token service (uses HttpClient internally)
 services.AddHttpClient<TokenService>();
-
-```
                 // Typed HttpClient for backend API
                 services.AddHttpClient<ITravelcardHttpClient, TravelcardHttpClient>(client =>
                 {
