@@ -69,6 +69,12 @@ namespace TravelcardService.Helpers
                     clientId = resource.Auth.Oauth2.ClientId;
                     clientSecret = resource.Auth.Oauth2.ClientSecret;
                     tokenUrl = resource.Auth.Oauth2.TokenUrl;
+                    var scopes = resource.Auth.Oauth2.Scopes;
+
+                    if (!string.IsNullOrEmpty(scopes) && scopes.StartsWith("AZURE-"))
+                    {
+                        scopes = await _keyVaultService.GetSecretAsync(scopes);
+                    }
 
                     if (!string.IsNullOrEmpty(clientId) && clientId.StartsWith("AZURE-"))
                     {
