@@ -42,6 +42,13 @@ namespace TravelcardService.Helpers
 
             // For this project we assume single connection named travelcard-api-http
             _connectionConfig = doc.Connections[0];
+            // OVERRIDE baseUrl from environment variable
+            var baseUrlFromEnv = Environment.GetEnvironmentVariable("BASE_URL");
+
+            if (!string.IsNullOrEmpty(baseUrlFromEnv))
+            {
+                _connectionConfig = _connectionConfig with { BaseUrl = baseUrlFromEnv };
+            }
             _logger.LogInformation("HttpHelper initialized with baseUrl {BaseUrl}", _connectionConfig.BaseUrl);
         }
 
