@@ -25,7 +25,9 @@ namespace TravelcardService.Helpers
             _keyVaultService = keyVaultService ?? throw new ArgumentNullException(nameof(keyVaultService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-            _configPath = Path.Combine(Directory.GetCurrentDirectory(), "Helpers", "http.json");
+            var basePath = AppContext.BaseDirectory;
+            _configPath = Path.Combine(basePath, "Helpers", "http.json");
+            _logger.LogInformation("Resolved http.json path: {Path}", _configPath);
             if (!File.Exists(_configPath))
             {
                 throw new FileNotFoundException("http.json configuration not found", _configPath);
