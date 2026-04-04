@@ -90,7 +90,7 @@ namespace TravelcardService.Helpers
                     // Acquire token
                     if (!string.IsNullOrEmpty(tokenUrl) && !string.IsNullOrEmpty(clientId) && !string.IsNullOrEmpty(clientSecret))
                     {
-                        bearerToken = await AcquireOAuth2TokenAsync(tokenUrl, clientId, clientSecret);
+                        bearerToken = await AcquireOAuth2TokenAsync(tokenUrl, clientId, clientSecret, scopes);
                     }
 
                     break;
@@ -142,7 +142,7 @@ namespace TravelcardService.Helpers
             return response;
         }
 
-        private async Task<string> AcquireOAuth2TokenAsync(string tokenUrl, string clientId, string clientSecret)
+        private async Task<string> AcquireOAuth2TokenAsync(string tokenUrl, string clientId, string clientSecret, string scopes)
         {
             _logger.LogInformation("Acquiring OAuth2 token from {TokenUrl}", tokenUrl);
             try
@@ -152,7 +152,8 @@ namespace TravelcardService.Helpers
                 {
                     new KeyValuePair<string, string>("grant_type", "client_credentials"),
                     new KeyValuePair<string, string>("client_id", clientId),
-                    new KeyValuePair<string, string>("client_secret", clientSecret)
+                    new KeyValuePair<string, string>("client_secret", clientSecret),
+                    new KeyValuePair<string, string>("scope", scopes)
                 });
 
                 var resp = await client.PostAsync(tokenUrl, content);
