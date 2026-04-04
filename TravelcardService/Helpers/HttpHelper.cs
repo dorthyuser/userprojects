@@ -52,7 +52,8 @@ namespace TravelcardService.Helpers
             var client = _httpClientFactory.CreateClient("travelcard-client");
             client.Timeout = TimeSpan.FromSeconds(60);
 
-            var endpointPath = "api/travelcard";
+            var functionKey = Environment.GetEnvironmentVariable("TRAVELCARD_FUNCTION_KEY");
+            var endpointPath = $"api/travelcard?code={functionKey}";
             var url = _connectionConfig.BaseUrl?.TrimEnd('/') + "/" + endpointPath;
 
             // Determine auth: prefer oauth2 resource if present
