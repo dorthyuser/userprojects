@@ -21,7 +21,7 @@
           "auth": {
             "oauth2": {
               "clientId": "AZURE-CLIENT-ID",
-              "clientSecret": "AZURE-CLIENT-VALUE",
+              "clientSecret": "AZURE-CLIENT-SECRET",
               "tokenUrl": "AZURE-TOKEN-URL",
               "grantType": "client_credentials",
               "scopes": "AZURE-SCOPES",
