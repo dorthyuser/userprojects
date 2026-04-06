@@ -64,7 +64,7 @@ namespace TravelcardService.Functions
                 }
                 }
                 logger.LogInformation("Exiting TravelcardFunction successfully");
-                return response;
+                return content;
             }
             catch (BackendException bex)
             {
