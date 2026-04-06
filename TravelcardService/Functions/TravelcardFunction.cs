@@ -50,21 +50,10 @@ namespace TravelcardService.Functions
 
                 var response = req.CreateResponse(backendResponse.StatusCode);
                 var content = await backendResponse.Content.ReadAsStringAsync();
+                response.Headers.TryAddWithoutValidation("Content-Type", "application/json");
                 await response.WriteStringAsync(content);
-                logger.LogInformation("backend respone json: {backendResponse}", content);
-
-                foreach (var header in backendResponse.Headers)
-                {
-                try
-                    {
-                        response.Headers.Add(header.Key, string.Join(",", header.Value));
-                    }
-                catch {
-                logger.LogInformation("error in catch block: {backendResponse}", content);
-                }
-                }
-                logger.LogInformation("Exiting TravelcardFunction successfully");
-                return content;
+                logger.LogInformation("backend response json: {backendResponse}", content);
+                return response;
             }
             catch (BackendException bex)
             {
