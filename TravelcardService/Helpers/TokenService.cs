@@ -35,7 +35,7 @@ namespace TravelcardService.Helpers
             _logger.LogInformation("Requesting new access token from token endpoint");
 
             string clientId = await _keyVaultHelper.GetSecretAsync("AZURE-CLIENT-ID").ConfigureAwait(false) ?? throw new InvalidOperationException("AZURE-CLIENT-ID not found in Key Vault");
-            string clientSecret = await _keyVaultHelper.GetSecretAsync("AZURE-CLIENT-VALUE").ConfigureAwait(false) ?? throw new InvalidOperationException("AZURE-CLIENT-VALUE not found in Key Vault");
+            string clientSecret = await _keyVaultHelper.GetSecretAsync("AZURE-CLIENT-SECRET").ConfigureAwait(false) ?? throw new InvalidOperationException("AZURE-CLIENT-VALUE not found in Key Vault");
             string tokenUrl = await _keyVaultHelper.GetSecretAsync("AZURE-TOKEN-URL").ConfigureAwait(false) ?? throw new InvalidOperationException("AZURE-TOKEN-URL not found in Key Vault");
             string scopes = await _keyVaultHelper.GetSecretAsync("AZURE-SCOPES").ConfigureAwait(false) ?? string.Empty;
 
