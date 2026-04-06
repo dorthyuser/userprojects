@@ -32,8 +32,8 @@ namespace TravelcardService.Helpers
                 }
 
                 // 🔐 Get base URL
-                var baseUrl = await _keyVaultHelper.GetSecretAsync("TRAVELCARD-BASE-URL")
-                    ?? throw new InvalidOperationException("TRAVELCARD-BASE-URL not found");
+                var baseUrl = await _keyVaultHelper.GetSecretAsync("TRAVELCARD_BASE_URL")
+                    ?? throw new InvalidOperationException("TRAVELCARD_BASE_URL not found");
 
                 // 🔐 Get client_id
                 var clientId = await _keyVaultHelper.GetSecretAsync("AZURE-CLIENT-ID")
@@ -47,7 +47,7 @@ namespace TravelcardService.Helpers
 
                 if (string.IsNullOrWhiteSpace(functionKey))
                 {
-                    functionKey = await _keyVaultHelper.GetSecretAsync("TRAVELCARD-FUNCTION-KEY");
+                    functionKey = await _keyVaultHelper.GetSecretAsync("TRAVELCARD_FUNCTION_KEY");
                 }
 
                 // 🔗 Build URL safely
