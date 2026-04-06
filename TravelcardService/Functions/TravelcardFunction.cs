@@ -42,15 +42,24 @@ namespace TravelcardService.Functions
                     logger.LogInformation("Exiting TravelcardFunction with BadRequest");
                     return badResponse;
                 }
+                logger.LogInformation("Incoming request URL: {Url}", req.Url);
 
                 logger.LogInformation("Forwarding request to backend travelcard API");
 
-                string backendResponse = await _travelcardHttpHelper.ForwardAsync(body, logger).ConfigureAwait(false);
+                var backendResponse = await _travelcardHttpHelper.ForwardAsync(body, logger);
 
-                var response = req.CreateResponse(System.Net.HttpStatusCode.OK);
-                response.Headers.Add("Content-Type", "application/json");
-                await response.WriteStringAsync(backendResponse).ConfigureAwait(false);
+                var response = req.CreateResponse(backendResponse.StatusCode);
+                var content = await backendResponse.Content.ReadAsStringAsync();
+                await response.WriteStringAsync(content);
 
+                foreach (var header in backendResponse.Headers)
+                {
+                try
+                    {
+                        response.Headers.Add(header.Key, string.Join(",", header.Value));
+                    }
+                catch { }
+                }
                 logger.LogInformation("Exiting TravelcardFunction successfully");
                 return response;
             }
