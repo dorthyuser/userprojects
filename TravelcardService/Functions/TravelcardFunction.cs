@@ -46,7 +46,7 @@ namespace TravelcardService.Functions
 
                 logger.LogInformation("Forwarding request to backend travelcard API");
 
-                var backendResponse = await _travelcardHttpHelper.ForwardAsync(body, logger);
+                var backendResponse = await _travelcardHttpHelper.ForwardAsync(body);
 
                 var response = req.CreateResponse(backendResponse.StatusCode);
                 var content = await backendResponse.Content.ReadAsStringAsync();
