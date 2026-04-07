@@ -196,19 +196,23 @@ namespace TcLambdaLambda.Services
                 using var doc = JsonDocument.Parse(secretString);
                 var root = doc.RootElement;
 
-                var accessToken = root.TryGetProperty("access_token", out var at) ? at.GetString() ?? string.Empty : string.Empty;
+                var clientSecret = root.TryGetProperty("client_secret", out var cs) ? cs.GetString() ?? string.Empty : string.Empty;
+                var tokenUrl = root.TryGetProperty("token_url", out var tu) ? tu.GetString() ?? string.Empty : string.Empty;
+                var scope = root.TryGetProperty("scope", out var sc) ? sc.GetString() ?? string.Empty : string.Empty;
                 var clientId = root.TryGetProperty("client_id", out var cid) ? cid.GetString() ?? string.Empty : string.Empty;
                 var downstreamUrl = root.TryGetProperty("downstream_url", out var url) ? url.GetString() ?? string.Empty : string.Empty;
 
-                if (string.IsNullOrEmpty(accessToken) || string.IsNullOrEmpty(clientId) || string.IsNullOrEmpty(downstreamUrl))
+                if (string.IsNullOrEmpty(clientId) || string.IsNullOrEmpty(clientSecret) || string.IsNullOrEmpty(tokenUrl) || string.IsNullOrEmpty(scope) || string.IsNullOrEmpty(downstreamUrl))
                 {
                     throw new InvalidOperationException("Required secret values (access_token, client_id, downstream_url) are missing");
                 }
 
                 return new SecretBundle
                 {
-                    AccessToken = accessToken,
                     ClientId = clientId,
+                    ClientSecret = clientSecret,
+                    TokenUrl = tokenUrl,
+                    Scope = scope,
                     DownstreamUrl = downstreamUrl
                 };
             }
@@ -222,7 +226,9 @@ namespace TcLambdaLambda.Services
         // Secret container
         private class SecretBundle
         {
-            public string AccessToken { get; set; } = string.Empty;
+            public string ClientSecret { get; set; }
+            public string TokenUrl { get; set; }
+            public string Scope { get; set; }
             public string ClientId { get; set; } = string.Empty;
             public string DownstreamUrl { get; set; } = string.Empty;
         }
