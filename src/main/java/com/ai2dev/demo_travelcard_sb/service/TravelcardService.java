@@ -6,6 +6,7 @@ import com.ai2dev.demo_travelcard_sb.dto.CreateTravelcardResponse;
 import com.ai2dev.demo_travelcard_sb.model.Cardholder;
 import com.ai2dev.demo_travelcard_sb.model.Travelcard;
 import com.ai2dev.demo_travelcard_sb.model.TravelcardType;
+import com.ai2dev.demo_travelcard_sb.repository.CardholderRepository;
 import com.ai2dev.demo_travelcard_sb.repository.TravelcardRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,9 +26,11 @@ public class TravelcardService {
  private static final Logger log = LoggerFactory.getLogger(TravelcardService.class);
 
  private final TravelcardRepository travelcardRepository;
+ private final CardholderRepository cardholderRepository;
 
- public TravelcardService(TravelcardRepository travelcardRepository) {
+ public TravelcardService(TravelcardRepository travelcardRepository, CardholderRepository cardholderRepository) {
  this.travelcardRepository = travelcardRepository;
+ this.cardholderRepository = cardholderRepository;
  }
 
  @Transactional
@@ -89,6 +92,9 @@ public class TravelcardService {
  toSave.setTravelcardTransactionReference(req.travelcardTransactionReference());
  toSave.setTravelcardUsableTo(req.travelcardUsableTo());
 
+ // Persist the travelcard first to obtain generated id, then persist cardholders separately to avoid batch insert dependency issues
+ Travelcard savedRoot = travelcardRepository.save(toSave);
+
  List<Cardholder> cardholders = ch.stream().map(dto -> {
  Cardholder c = new Cardholder();
  c.setCardholderTitle(dto.cardholderTitle());
@@ -99,16 +105,23 @@ public class TravelcardService {
  c.setCardholderPhotoRrsKey(dto.cardholderPhotoRrsKey());
  c.setCardholderPhotoUrl(dto.cardholderPhotoUrl());
  c.setCardholderPhotoKey(dto.cardholderPhotoKey());
+ // set foreign key to saved travelcard id
+ c.setTravelcardId(savedRoot.getId());
  return c;
  }).collect(Collectors.toCollection(ArrayList::new));
 
- toSave.setCardholders(cardholders);
+ // Save cardholders separately
+ Iterable<Cardholder> savedCardholders = cardholderRepository.saveAll(cardholders);
 
- Travelcard saved = travelcardRepository.save(toSave);
+ // attach saved cardholders back to travelcard object
+ savedRoot.setCardholders(new ArrayList<>());
+ for (Cardholder chSaved : savedCardholders) {
+ savedRoot.getCardholders().add(chSaved);
+ }
 
  String token = generateToken(6);
 
- CreateTravelcardResponse resp = new CreateTravelcardResponse(saved.getId(), token);
+ CreateTravelcardResponse resp = new CreateTravelcardResponse(savedRoot.getId(), token);
  log.info("Exit createTravelcard service");
  return resp;
  }

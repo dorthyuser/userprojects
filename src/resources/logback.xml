@@ -1,14 +1,14 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version=\"1.0\" encoding=\"UTF-8\"?>
 <configuration>
- <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
- <property name="LOG_PATTERN" value="%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %-5level %logger{36} - %msg%n"/>
- <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
- <encoder class="net.logstash.logback.encoder.LogstashEncoder">
- <customFields>{"app":"demo-travelcard-sb"}</customFields>
+ <include resource=\"org/springframework/boot/logging/logback/defaults.xml\"/>
+ <property name=\"LOG_PATTERN\" value=\"%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %-5level %logger{36} - %msg%n\"/>
+ <appender name=\"STDOUT\" class=\"ch.qos.logback.core.ConsoleAppender\">
+ <encoder class=\"net.logstash.logback.encoder.LogstashEncoder\">
+ <customFields>{\"app\":\"demo-travelcard-sb\"}</customFields>
  </encoder>
  </appender>
 
- <root level="INFO">
- <appender-ref ref="STDOUT"/>
+ <root level=\"INFO\">
+ <appender-ref ref=\"STDOUT\"/>
  </root>
 </configuration>
