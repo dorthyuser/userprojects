@@ -1,0 +1,22 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+
+group 'com.example'
+version '1.0-SNAPSHOT'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+application {
+    // main class for the application plugin
+    mainClass = 'com.example.ResponseHttpApplication'
+}
+
+repositories {
+    mavenCentral()
+}
