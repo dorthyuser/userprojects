@@ -9,32 +9,29 @@ using System.Text.Json;
 using System.Text;
 using System.Net;
 using TcLambdaLambda.Models;
+using System.Collections.Generic;
 
 namespace TcLambdaLambda.Services
 {
     public class Service
     {
         private readonly IAmazonSecretsManager _secretsClient;
-        private readonly HttpClient _httpClient;
+        private static readonly HttpClient _httpClient = new HttpClient();
 
         public Service()
         {
             _secretsClient = new AmazonSecretsManagerClient();
-            _httpClient = new HttpClient();
         }
 
         public async Task<APIGatewayProxyResponse> HandleAsync(APIGatewayProxyRequest request, ILambdaContext context)
         {
             Console.WriteLine("[Service] Handling request");
 
-            // Validate incoming request minimally
             if (request == null)
             {
-                Console.WriteLine("[Service] Request is null");
                 return CreateErrorResponse(HttpStatusCode.BadRequest, "invalid_request", "Request was null");
             }
 
-            // Fetch secrets dynamically from AWS Secrets Manager
             SecretBundle secrets;
             try
             {
@@ -42,60 +39,32 @@ namespace TcLambdaLambda.Services
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[Service] Token generation / secrets retrieval failed: {ex}");
-                return CreateErrorResponse(HttpStatusCode.InternalServerError, "token_generation_failed", ex.Message);
+                return CreateErrorResponse(HttpStatusCode.InternalServerError, "secrets_failed", ex.Message);
             }
 
-            if (string.IsNullOrEmpty(secrets.DownstreamUrl))
-            {
-                Console.WriteLine("[Service] Downstream URL not configured in secrets");
-                return CreateErrorResponse(HttpStatusCode.InternalServerError, "configuration_error", "Downstream URL missing in secrets");
-            }
-
-            // Forward the request body exactly as received
             var payload = request.Body ?? string.Empty;
 
             try
             {
                 var upstreamResponse = await CallExternalApiAsync(secrets, payload, request);
 
-                // If upstream returned error (4xx, 5xx) we must preserve and return meaningful structured error
-                if ((int)upstreamResponse.StatusCode >= 400)
-                {
-                    var upstreamBody = await upstreamResponse.Content.ReadAsStringAsync();
-                    Console.WriteLine($"[Service] Upstream error: {(int)upstreamResponse.StatusCode} - {upstreamBody}");
-
-                    var error = new
-                    {
-                        error = new
-                        {
-                            code = "upstream_error",
-                            message = "Upstream Travelcard API returned an error",
-                            upstreamStatus = (int)upstreamResponse.StatusCode,
-                            upstreamBody = TryParseBody(upstreamBody)
-                        }
-                    };
-
-                    return new APIGatewayProxyResponse
-                    {
-                        StatusCode = (int)upstreamResponse.StatusCode,
-                        Body = JsonSerializer.Serialize(error),
-                        Headers = new System.Collections.Generic.Dictionary<string, string>
-                        {
-                            { "Content-Type", "application/json" }
-                        }
-                    };
-                }
-
-                // Success: return upstream response body and status code
-                var successBody = await upstreamResponse.Content.ReadAsStringAsync();
-                Console.WriteLine($"[Service] Upstream success: {(int)upstreamResponse.StatusCode}");
+                var responseBody = await upstreamResponse.Content.ReadAsStringAsync();
 
                 return new APIGatewayProxyResponse
                 {
                     StatusCode = (int)upstreamResponse.StatusCode,
-                    Body = successBody,
-                    Headers = new System.Collections.Generic.Dictionary<string, string>
+                    Body = upstreamResponse.IsSuccessStatusCode
+                        ? responseBody
+                        : JsonSerializer.Serialize(new
+                        {
+                            error = new
+                            {
+                                code = "upstream_error",
+                                status = (int)upstreamResponse.StatusCode,
+                                body = TryParseBody(responseBody)
+                            }
+                        }),
+                    Headers = new Dictionary<string, string>
                     {
                         { "Content-Type", "application/json" }
                     }
@@ -103,134 +72,107 @@ namespace TcLambdaLambda.Services
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[Service] External API call failed: {ex}");
                 return CreateErrorResponse(HttpStatusCode.BadGateway, "external_api_failure", ex.Message);
             }
         }
 
+        // 🔥 NEW: Token Generation
+        private async Task<string> GetAccessTokenAsync(SecretBundle secrets)
+        {
+            var body = new FormUrlEncodedContent(new[]
+            {
+                new KeyValuePair<string, string>("grant_type", "client_credentials"),
+                new KeyValuePair<string, string>("client_id", secrets.ClientId),
+                new KeyValuePair<string, string>("client_secret", secrets.ClientSecret),
+                new KeyValuePair<string, string>("scope", secrets.Scope)
+            });
+
+            var response = await _httpClient.PostAsync(secrets.TokenUrl, body);
+            var content = await response.Content.ReadAsStringAsync();
+
+            if (!response.IsSuccessStatusCode)
+            {
+                Console.WriteLine($"[Service] Token failed: {content}");
+                throw new Exception("Token generation failed");
+            }
+
+            using var doc = JsonDocument.Parse(content);
+            return doc.RootElement.GetProperty("access_token").GetString();
+        }
+
+        private async Task<HttpResponseMessage> CallExternalApiAsync(SecretBundle secrets, string payload, APIGatewayProxyRequest request)
+        {
+            var token = await GetAccessTokenAsync(secrets); // ✅ FIX
+
+            var httpRequest = new HttpRequestMessage(HttpMethod.Post, secrets.DownstreamUrl)
+            {
+                Content = new StringContent(payload, Encoding.UTF8, "application/json")
+            };
+
+            httpRequest.Headers.Add("client_id", secrets.ClientId);
+            httpRequest.Headers.Add("Authorization", $"Bearer {token}");
+
+            if (request.Headers != null && request.Headers.TryGetValue("X-Request-Id", out var rid))
+            {
+                httpRequest.Headers.TryAddWithoutValidation("X-Request-Id", rid);
+            }
+
+            return await _httpClient.SendAsync(httpRequest);
+        }
+
+        private async Task<SecretBundle> GetSecretsAsync()
+        {
+            var secretName = Environment.GetEnvironmentVariable("SECRET_NAME");
+            if (string.IsNullOrEmpty(secretName))
+                throw new Exception("SECRET_NAME not set");
+
+            var response = await _secretsClient.GetSecretValueAsync(new GetSecretValueRequest
+            {
+                SecretId = secretName
+            });
+
+            using var doc = JsonDocument.Parse(response.SecretString);
+            var root = doc.RootElement;
+
+            return new SecretBundle
+            {
+                ClientId = root.GetProperty("AZURE-CLIENT-ID").GetString(),
+                ClientSecret = root.GetProperty("AZURE-CLIENT-SECRET").GetString(),
+                TokenUrl = root.GetProperty("AZURE-TOKEN-URL").GetString(),
+                Scope = root.GetProperty("AZURE-SCOPES").GetString(),
+                DownstreamUrl = root.GetProperty("downstream_url").GetString()
+            };
+        }
+
         private object TryParseBody(string body)
         {
-            if (string.IsNullOrEmpty(body)) return null;
-            try
-            {
-                return JsonSerializer.Deserialize<object>(body);
-            }
-            catch
-            {
-                return body; // return raw string if not JSON
-            }
+            try { return JsonSerializer.Deserialize<object>(body); }
+            catch { return body; }
         }
 
         private APIGatewayProxyResponse CreateErrorResponse(HttpStatusCode code, string errorCode, string message)
         {
-            var resp = new
-            {
-                error = new
-                {
-                    code = errorCode,
-                    message = message
-                }
-            };
             return new APIGatewayProxyResponse
             {
                 StatusCode = (int)code,
-                Body = JsonSerializer.Serialize(resp),
-                Headers = new System.Collections.Generic.Dictionary<string, string>
+                Body = JsonSerializer.Serialize(new
+                {
+                    error = new { code = errorCode, message }
+                }),
+                Headers = new Dictionary<string, string>
                 {
                     { "Content-Type", "application/json" }
                 }
             };
         }
 
-        private async Task<HttpResponseMessage> CallExternalApiAsync(SecretBundle secrets, string payload, APIGatewayProxyRequest request)
-        {
-            var httpRequest = new HttpRequestMessage(HttpMethod.Post, secrets.DownstreamUrl)
-            {
-                Content = new StringContent(payload ?? string.Empty, Encoding.UTF8, "application/json")
-            };
-
-            // Mandatory headers for outgoing request
-            httpRequest.Headers.Remove("client_id");
-            httpRequest.Headers.Add("client_id", secrets.ClientId);
-            httpRequest.Headers.Remove("Authorization");
-            httpRequest.Headers.Add("Authorization", $"Bearer {secrets.AccessToken}");
-
-            // If incoming request contains additional headers we might forward certain ones (e.g., tracing)
-            if (request.Headers != null)
-            {
-                if (request.Headers.TryGetValue("X-Request-Id", out var rid))
-                {
-                    httpRequest.Headers.TryAddWithoutValidation("X-Request-Id", rid);
-                }
-            }
-
-            Console.WriteLine($"[Service] Sending request to {secrets.DownstreamUrl}");
-            var response = await _httpClient.SendAsync(httpRequest);
-            return response;
-        }
-
-        private async Task<SecretBundle> GetSecretsAsync()
-        {
-            // The secret name must be provided via environment variable to avoid hardcoding credentials
-            var secretName = Environment.GetEnvironmentVariable("SECRET_NAME");
-            if (string.IsNullOrEmpty(secretName))
-            {
-                throw new InvalidOperationException("SECRET_NAME environment variable is not set");
-            }
-
-            Console.WriteLine($"[Service] Retrieving secret: {secretName}");
-            GetSecretValueRequest request = new GetSecretValueRequest
-            {
-                SecretId = secretName
-            };
-
-            var response = await _secretsClient.GetSecretValueAsync(request);
-            var secretString = response.SecretString;
-            if (string.IsNullOrEmpty(secretString))
-            {
-                throw new InvalidOperationException("Secret string is empty");
-            }
-
-            try
-            {
-                using var doc = JsonDocument.Parse(secretString);
-                var root = doc.RootElement;
-
-                var clientSecret = root.TryGetProperty("client_secret", out var cs) ? cs.GetString() ?? string.Empty : string.Empty;
-                var tokenUrl = root.TryGetProperty("token_url", out var tu) ? tu.GetString() ?? string.Empty : string.Empty;
-                var scope = root.TryGetProperty("scope", out var sc) ? sc.GetString() ?? string.Empty : string.Empty;
-                var clientId = root.TryGetProperty("client_id", out var cid) ? cid.GetString() ?? string.Empty : string.Empty;
-                var downstreamUrl = root.TryGetProperty("downstream_url", out var url) ? url.GetString() ?? string.Empty : string.Empty;
-
-                if (string.IsNullOrEmpty(clientId) || string.IsNullOrEmpty(clientSecret) || string.IsNullOrEmpty(tokenUrl) || string.IsNullOrEmpty(scope) || string.IsNullOrEmpty(downstreamUrl))
-                {
-                    throw new InvalidOperationException("Required secret values (access_token, client_id, downstream_url) are missing");
-                }
-
-                return new SecretBundle
-                {
-                    ClientId = clientId,
-                    ClientSecret = clientSecret,
-                    TokenUrl = tokenUrl,
-                    Scope = scope,
-                    DownstreamUrl = downstreamUrl
-                };
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[Service] Failed to parse secret JSON: {ex}");
-                throw;
-            }
-        }
-
-        // Secret container
         private class SecretBundle
         {
+            public string ClientId { get; set; }
             public string ClientSecret { get; set; }
             public string TokenUrl { get; set; }
             public string Scope { get; set; }
-            public string ClientId { get; set; } = string.Empty;
-            public string DownstreamUrl { get; set; } = string.Empty;
+            public string DownstreamUrl { get; set; }
         }
     }
 }
