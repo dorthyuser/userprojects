@@ -1,0 +1,10 @@
+{
+  "profile": "default",
+  "region": "us-east-1",
+  "function-runtime": "dotnet8",
+  "function-memory-size": 256,
+  "function-timeout": 30,
+  "function-handler": "TcLambdaLambda::TcLambdaLambda.Function::tc-lambda",
+  "framework": "net8.0",
+  "function-name": "tc-lambda"
+}
