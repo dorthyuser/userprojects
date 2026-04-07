@@ -12,34 +12,34 @@ import java.time.OffsetDateTime;
 import java.util.List;
 
 public record CreateTravelcardRequest(
-    @NotNull
-    TravelcardType travelcardType,
+ @NotNull
+ TravelcardType travelcardType,
 
-    @NotNull
-    OffsetDateTime travelcardValidFrom,
+ @NotNull
+ OffsetDateTime travelcardValidFrom,
 
-    @NotNull
-    OffsetDateTime travelcardValidTo,
+ @NotNull
+ OffsetDateTime travelcardValidTo,
 
-    @Size(max = 255)
-    @Pattern(regexp = "^[A-Za-z0-9 ]*$")
-    String travelcardName,
+ @Size(max = 255)
+ @Pattern(regexp = "^[A-Za-z0-9 ]*$")
+ String travelcardName,
 
-    @NotBlank
-    @Size(min = 11, max = 22)
-    @Pattern(regexp = "^[A-Za-z0-9]+$")
-    String travelcardNumber,
+ @NotBlank
+ @Size(min = 11, max = 22)
+ @Pattern(regexp = "^[A-Za-z0-9]+$")
+ String travelcardNumber,
 
-    @NotNull
-    OffsetDateTime travelcardRequestedDate,
+ @NotNull
+ OffsetDateTime travelcardRequestedDate,
 
-    @NotBlank
-    @Size(min = 15, max = 15)
-    String travelcardTransactionReference,
+ @NotBlank
+ @Size(min = 15, max = 15)
+ String travelcardTransactionReference,
 
-    OffsetDateTime travelcardUsableTo,
+ OffsetDateTime travelcardUsableTo,
 
-    @NotEmpty
-    @Valid
-    List<CardholderDto> cardholders
+ @NotEmpty
+ @Valid
+ List<CardholderDto> cardholders
 ) {}

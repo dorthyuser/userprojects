@@ -11,18 +11,18 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 public class LambdaHandler implements RequestStreamHandler {
-    private static SpringBootLambdaContainerHandler<AwsProxyRequest, AwsProxyResponse> handler;
+ private static SpringBootLambdaContainerHandler<AwsProxyRequest, AwsProxyResponse> handler;
 
-    static {
-        try {
-            handler = SpringBootLambdaContainerHandler.getAwsProxyHandler(Application.class);
-        } catch (ContainerInitializationException e) {
-            throw new RuntimeException("Spring Boot container init failed", e);
-        }
-    }
+ static {
+ try {
+ handler = SpringBootLambdaContainerHandler.getAwsProxyHandler(Application.class);
+ } catch (ContainerInitializationException e) {
+ throw new RuntimeException("Spring Boot container init failed", e);
+ }
+ }
 
-    @Override
-    public void handleRequest(InputStream in, OutputStream out, Context ctx) throws IOException {
-        handler.proxyStream(in, out, ctx);
-    }
+ @Override
+ public void handleRequest(InputStream in, OutputStream out, Context ctx) throws IOException {
+ handler.proxyStream(in, out, ctx);
+ }
 }

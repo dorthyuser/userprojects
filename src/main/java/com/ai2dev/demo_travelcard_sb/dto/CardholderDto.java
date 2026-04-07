@@ -7,32 +7,32 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 public record CardholderDto(
-    @NotBlank
-    @Size(min = 1, max = 15)
-    String cardholderTitle,
+ @NotBlank
+ @Size(min = 1, max = 15)
+ String cardholderTitle,
 
-    @NotBlank
-    @Size(min = 1, max = 100)
-    String cardholderForename,
+ @NotBlank
+ @Size(min = 1, max = 100)
+ String cardholderForename,
 
-    @NotBlank
-    @Size(min = 1, max = 100)
-    String cardholderSurname,
+ @NotBlank
+ @Size(min = 1, max = 100)
+ String cardholderSurname,
 
-    @NotNull
-    CardholderType cardholderType,
+ @NotNull
+ CardholderType cardholderType,
 
-    @NotBlank
-    @Size(min = 1, max = 100)
-    String cardholderPhotoName,
+ @NotBlank
+ @Size(min = 1, max = 100)
+ String cardholderPhotoName,
 
-    @Size(min = 39, max = 42)
-    String cardholderPhotoRrsKey,
+ @Size(min = 39, max = 42)
+ String cardholderPhotoRrsKey,
 
-    @Size(min = 20, max = 2048)
-    @Pattern(regexp = "^(https?://)[A-Za-z0-9._~:/?#@!$&'()*+,;=%-]+$")
-    String cardholderPhotoUrl,
+ @Size(min = 20, max = 2048)
+ @Pattern(regexp = "^(https?://)[A-Za-z0-9._~:/?#@!$&'()*+,;=%-]+$")
+ String cardholderPhotoUrl,
 
-    @Size(min = 39, max = 42)
-    String cardholderPhotoKey
+ @Size(min = 39, max = 42)
+ String cardholderPhotoKey
 ) {}
