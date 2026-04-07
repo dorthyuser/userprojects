@@ -111,6 +111,14 @@ namespace TcLambdaLambda.Services
 
             httpRequest.Headers.Add("client_id", secrets.ClientId);
             httpRequest.Headers.Add("Authorization", $"Bearer {token}");
+            var functionKey = Environment.GetEnvironmentVariable("FUNCTION_KEY");
+
+            if (string.IsNullOrEmpty(functionKey))
+            {
+                throw new Exception("FUNCTION_KEY not set");
+            }
+
+            httpRequest.Headers.Add("x-functions-key", functionKey);
 
             if (request.Headers != null && request.Headers.TryGetValue("X-Request-Id", out var rid))
             {
