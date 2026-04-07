@@ -20,9 +20,9 @@ public class DataSourceConfig {
         log.info("Configuring HikariDataSource from environment variables");
 
         HikariConfig config = new HikariConfig();
-        config.setJdbcUrl(System.getenv().getOrDefault("JDBC_DATABASE_URL", "jdbc:postgresql://localhost:5432/db_name"));
-        config.setUsername(System.getenv().getOrDefault("JDBC_DATABASE_USERNAME", "user"));
-        config.setPassword(System.getenv().getOrDefault("JDBC_DATABASE_PASSWORD", "password"));
+        config.setJdbcUrl(System.getenv().getOrDefault("JDBC_DATABASE_URL", "jdbc:postgresql://161.97.137.17:5432/admin_travelcards"));
+        config.setUsername(System.getenv().getOrDefault("JDBC_DATABASE_USERNAME", "test_user_tc"));
+        config.setPassword(System.getenv().getOrDefault("JDBC_DATABASE_PASSWORD", "test_user455_ps"));
         config.setDriverClassName("org.postgresql.Driver");
         config.setMaximumPoolSize(10);
         config.setMinimumIdle(1);
