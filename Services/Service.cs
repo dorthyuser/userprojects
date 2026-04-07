@@ -140,7 +140,7 @@ namespace TcLambdaLambda.Services
                 ClientSecret = root.GetProperty("AZURE-CLIENT-SECRET").GetString(),
                 TokenUrl = root.GetProperty("AZURE-TOKEN-URL").GetString(),
                 Scope = root.GetProperty("AZURE-SCOPES").GetString(),
-                DownstreamUrl = root.GetProperty("downstream_url").GetString()
+                DownstreamUrl = Environment.GetEnvironmentVariable("DOWNSTREAM_URL")
             };
         }
 
