@@ -2,6 +2,7 @@ plugins {
   java
   id("org.springframework.boot") version "3.5.9"
   id("io.spring.dependency-management") version "1.1.7"
+id("com.gradleup.shadow") version "8.3.9"
 }
 group = "com.ai2dev.test_tc_sb_api"
 version = "0.0.1-SNAPSHOT"
