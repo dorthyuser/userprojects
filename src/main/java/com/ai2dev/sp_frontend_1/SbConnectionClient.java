@@ -175,7 +175,7 @@ public class SbConnectionClient {
 
     private String fetchSecret(String secretName) {
         logger.info("Fetching secret from AWS Secrets Manager: {}", secretName);
-        try (SecretsManagerClient client = SecretsManagerClient.builder().region(Region.AWS_GLOBAL).build()) {
+        try (SecretsManagerClient client = SecretsManagerClient.builder().region(Region.of(System.getenv().getOrDefault("AWS_REGION", "us-east-1"))).build()) {
             GetSecretValueRequest req = GetSecretValueRequest.builder().secretId(secretName).build();
             GetSecretValueResponse resp = client.getSecretValue(req);
             if (resp.secretString() != null) {
