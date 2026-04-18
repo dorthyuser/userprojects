@@ -33,13 +33,12 @@ jobs:
             travelcard \
             ${{ secrets.DOCKER_USERNAME }} \
             ${{ secrets.DOCKER_PASSWORD }} \
-            latest \
+            ${{ github.sha }} \
             8.0
-            echo "Verifying image availability..."
-            docker pull ${{ secrets.DOCKER_USERNAME }}/travelcard:latest
+          echo "Verifying image availability..."
+          docker pull ${{ secrets.DOCKER_USERNAME }}/travelcard:${{ github.sha }}
       - name: Wait for image availability
         run: sleep 15
-
       # 5. Deploy to Azure Container Instance
       - name: Deploy to ACI
         run: |
@@ -49,6 +48,6 @@ jobs:
           ./azure-container-instance.sh \
             travelcard-api \
             ${{ secrets.DOCKER_USERNAME }}/travelcard \
-            latest \
+            ${{ github.sha }} \
             dev-luffy \
             8080
