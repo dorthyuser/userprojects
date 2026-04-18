@@ -42,8 +42,6 @@ jobs:
       # 5. Deploy to Azure Container Instance
       - name: Deploy to ACI
         run: |
-          DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }} \
-          DOCKER_PASSWORD=${{ secrets.DOCKER_PASSWORD }} \
           AZURE_KEY_VAULT=${{ secrets.AZURE_KEY_VAULT }} \
           ./azure-container-instance.sh \
             travelcard-api \
