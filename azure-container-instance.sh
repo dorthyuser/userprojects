@@ -23,34 +23,58 @@ LOCATION=$(az group show --name "$RESOURCE_GROUP" --query location -o tsv)
 FULL_IMAGE="$IMAGE_NAME:$IMAGE_TAG"
 DNS_NAME="${APP_NAME}-${RANDOM}"
 
-echo "Deleting old container..."
+echo "Deleting old container (if exists)..."
 az container delete \
   --resource-group "$RESOURCE_GROUP" \
   --name "$APP_NAME" \
   --yes || true
 
-echo "Deploying container..."
+echo "Waiting for cleanup..."
+sleep 10
 
-az container create \
-  --resource-group "$RESOURCE_GROUP" \
-  --name "$APP_NAME" \
-  --image "$FULL_IMAGE" \
-  --dns-name-label "$DNS_NAME" \
-  --ports "$PORT" \
-  --location "$LOCATION" \
-  --os-type Linux \
-  --cpu 1 \
-  --memory 2 \
-  --restart-policy Always \
-  --assign-identity \
-  --environment-variables \
-    AZURE_KEY_VAULT="$AZURE_KEY_VAULT" \
-    ASPNETCORE_URLS="http://+:$PORT" \
-    ZOHO_BASE_URL="https://www.zohoapis.in" \
-    ZOHO_TOKEN_URL="https://accounts.zoho.in/oauth/v2/token" \
-    GRANT_TYPE="refresh_token"
+echo "Deploying container with retry..."
 
-echo "Fetching URL..."
+MAX_RETRIES=3
+RETRY_DELAY=15
+SUCCESS=false
+
+for i in $(seq 1 $MAX_RETRIES); do
+  echo "Attempt $i..."
+
+  if az container create \
+    --resource-group "$RESOURCE_GROUP" \
+    --name "$APP_NAME" \
+    --image "$FULL_IMAGE" \
+    --dns-name-label "$DNS_NAME" \
+    --ports "$PORT" \
+    --location "$LOCATION" \
+    --os-type Linux \
+    --cpu 1 \
+    --memory 2 \
+    --restart-policy Always \
+    --assign-identity \
+    --environment-variables \
+      AZURE_KEY_VAULT="$AZURE_KEY_VAULT" \
+      ASPNETCORE_URLS="http://+:$PORT" \
+      ZOHO_BASE_URL="https://www.zohoapis.in" \
+      ZOHO_TOKEN_URL="https://accounts.zoho.in/oauth/v2/token" \
+      GRANT_TYPE="refresh_token"
+  then
+    echo "Deployment succeeded"
+    SUCCESS=true
+    break
+  else
+    echo "Deployment failed. Retrying in $RETRY_DELAY seconds..."
+    sleep $RETRY_DELAY
+  fi
+done
+
+if [ "$SUCCESS" = false ]; then
+  echo "Deployment failed after $MAX_RETRIES attempts"
+  exit 1
+fi
+
+echo "Fetching public URL..."
 FQDN=$(az container show \
   --resource-group "$RESOURCE_GROUP" \
   --name "$APP_NAME" \
