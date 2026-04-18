@@ -26,7 +26,7 @@ namespace ZohoCrmOauthFinal1.Services
             try
             {
                 var token = await _tokenService.GetAccessTokenAsync();
-                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Zoho-oauthtoken", token);
                 using var resp = await client.GetAsync("/crm/v2/users");
                 var content = await resp.Content.ReadAsStringAsync();
                 if (!resp.IsSuccessStatusCode)
@@ -49,7 +49,7 @@ namespace ZohoCrmOauthFinal1.Services
             try
             {
                 var token = await _tokenService.GetAccessTokenAsync();
-                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Zoho-oauthtoken", token);
                 var json = System.Text.Json.JsonSerializer.Serialize(payload);
                 using var resp = await client.PostAsync("/crm/v2/users", new StringContent(json, Encoding.UTF8, "application/json"));
                 var content = await resp.Content.ReadAsStringAsync();
@@ -73,7 +73,7 @@ namespace ZohoCrmOauthFinal1.Services
             try
             {
                 var token = await _tokenService.GetAccessTokenAsync();
-                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Zoho-oauthtoken", token);
                 var json = System.Text.Json.JsonSerializer.Serialize(payload);
                 using var resp = await client.PutAsync($"/crm/v2/users/{id}", new StringContent(json, Encoding.UTF8, "application/json"));
                 var content = await resp.Content.ReadAsStringAsync();
