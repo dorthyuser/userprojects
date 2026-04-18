@@ -46,5 +46,5 @@ jobs:
             travelcard-api \
             ${{ secrets.DOCKER_USERNAME }}/travelcard \
             latest \
-            <RESOURCE_GROUP> \
+            dev-luffy \
             8080
