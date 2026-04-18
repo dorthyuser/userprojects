@@ -45,7 +45,10 @@ az container create \
   --assign-identity \
   --environment-variables \
     AZURE_KEY_VAULT="$AZURE_KEY_VAULT" \
-    ASPNETCORE_URLS="http://+:$PORT"
+    ASPNETCORE_URLS="http://+:$PORT" \
+    ZOHO_BASE_URL="https://www.zohoapis.in" \
+    ZOHO_TOKEN_URL="https://accounts.zoho.in/oauth/v2/token" \
+    GRANT_TYPE="refresh_token"
 
 echo "Fetching URL..."
 FQDN=$(az container show \
