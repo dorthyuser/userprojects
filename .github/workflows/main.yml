@@ -34,7 +34,7 @@ jobs:
             ${{ secrets.DOCKER_USERNAME }} \
             ${{ secrets.DOCKER_PASSWORD }} \
             latest \
-            8
+            8.0
 
       # 5. Deploy to Azure Container Instance
       - name: Deploy to ACI
