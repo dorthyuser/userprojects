@@ -46,6 +46,7 @@ az container create \
   --name "$APP_NAME" \
   --image "$FULL_IMAGE" \
   --registry-login-server docker.io \
+  --registry-username "$DOCKER_USERNAME" \
   --dns-name-label "$DNS_NAME" \
   --ports "$PORT" \
   --location "$LOCATION" \
