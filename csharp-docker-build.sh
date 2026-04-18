@@ -16,7 +16,8 @@ dotnet restore
 dotnet publish -c Release -o publish
 
 # Find DLL
-PROJECT_NAME=$(basename $(find . -name "*.csproj" | head -n 1) .csproj)
+PROJECT_FILE=$(find . -name "*.csproj" ! -name "*Tests*" | head -n 1)
+PROJECT_NAME=$(basename "$PROJECT_FILE" .csproj)
 DLL_NAME="$PROJECT_NAME.dll"
 
 echo "Using main DLL: $DLL_NAME"
