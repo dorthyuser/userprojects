@@ -35,6 +35,10 @@ jobs:
             ${{ secrets.DOCKER_PASSWORD }} \
             latest \
             8.0
+            echo "Verifying image availability..."
+            docker pull ${{ secrets.DOCKER_USERNAME }}/travelcard:latest
+      - name: Wait for image availability
+        run: sleep 15
 
       # 5. Deploy to Azure Container Instance
       - name: Deploy to ACI
