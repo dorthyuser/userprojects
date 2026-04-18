@@ -16,15 +16,23 @@ dotnet restore
 dotnet publish -c Release -o publish
 
 # Find DLL
-DLL_NAME=$(find publish -name "*.dll" | head -n 1 | xargs basename)
-echo "DLL: $DLL_NAME"
+PROJECT_NAME=$(basename $(find . -name "*.csproj" | head -n 1) .csproj)
+DLL_NAME="$PROJECT_NAME.dll"
+
+echo "Using main DLL: $DLL_NAME"
+
+if [ ! -f "publish/$DLL_NAME" ]; then
+  echo "ERROR: Main DLL not found!"
+  ls publish
+  exit 1
+fi
 
 # Create Dockerfile
 cat > Dockerfile <<EOF
 FROM mcr.microsoft.com/dotnet/aspnet:$DOTNET_VERSION
 WORKDIR /app
 COPY ./publish .
-EXPOSE 8080
+ENV ASPNETCORE_URLS=http://+:8080
 ENTRYPOINT ["dotnet", "$DLL_NAME"]
 EOF
 
