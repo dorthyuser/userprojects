@@ -62,9 +62,9 @@ for i in $(seq 1 $MAX_RETRIES); do
     --environment-variables \
       AZURE_KEY_VAULT="$AZURE_KEY_VAULT" \
       ASPNETCORE_URLS="http://+:$PORT" \
-      ZOHO_BASE_URL="https://www.zohoapis.in" \
-      ZOHO_TOKEN_URL="https://accounts.zoho.in/oauth/v2/token" \
-      GRANT_TYPE="refresh_token"
+      ZOHO-BASE-URL="https://www.zohoapis.in" \
+      ZOHO-TOKEN-URL="https://accounts.zoho.in/oauth/v2/token" \
+      GRANT-TYPE="refresh_token"
   then
     echo "Deployment succeeded"
     SUCCESS=true
