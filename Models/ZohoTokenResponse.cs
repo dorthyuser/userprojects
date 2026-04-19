@@ -15,5 +15,9 @@ namespace ZohoProject2.Models
 
         [JsonPropertyName("status")]
         public string? Status { get; set; }
+
+        // ✅ ADD THIS
+        [JsonPropertyName("api_domain")]
+        public string? ApiDomain { get; set; }
     }
 }
