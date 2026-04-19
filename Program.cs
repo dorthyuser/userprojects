@@ -29,9 +29,9 @@ builder.Services.AddSingleton(secretClient);
 builder.Services.AddHttpClient("zoho-crm-connection").ConfigureHttpClient((sp, client) =>
 {
     var sc = sp.GetRequiredService<SecretClient>();
-    var baseKey = Environment.GetEnvironmentVariable("ZOHO-BASE-URL");
+    var baseKey = Environment.GetEnvironmentVariable("ZOHO_BASE_URL");
     if (string.IsNullOrEmpty(baseKey))
-        throw new InvalidOperationException("Env var 'ZOHO-BASE-URL' is not set");
+        throw new InvalidOperationException("Env var 'ZOHO_BASE_URL' is not set");
 
     var baseUrl = sc.GetSecretAsync(baseKey).GetAwaiter().GetResult().Value.Value;
     client.BaseAddress = new Uri(baseUrl);
