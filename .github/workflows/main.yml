@@ -34,19 +34,19 @@ jobs:
       - name: Wait for image availability
         run: sleep 15
       # 5. Deploy to Azure Container Instance
-     - name: Deploy to ACI
-     run: |
-      DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }} \
-      DOCKER_PASSWORD=${{ secrets.DOCKER_PASSWORD }} \
-      AZURE_KEY_VAULT=${{ secrets.AZURE_KEY_VAULT }} \
-      ZOHO-CLIENT-ID=${{ secrets.ZOHO_CLIENT_ID_KEY }} \
-      ZOHO-CLIENT-SECRET=${{ secrets.ZOHO_CLIENT_SECRET_KEY }} \
-      ZOHO-REFRESH-TOKEN=${{ secrets.ZOHO_REFRESH_TOKEN_KEY }} \
-      ZOHO_TOKEN_URL=https://accounts.zoho.in/oauth/v2/token \
-      ZOHO_BASE_URL=https://www.zohoapis.in \
-      ./azure-container-instance.sh \
-        travelcard-api \
-        ${{ secrets.DOCKER_USERNAME }}/travelcard \
-        ${{ github.sha }} \
-        dev-luffy \
-        8080
+      - name: Deploy to ACI
+        run: |
+          DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }} \
+          DOCKER_PASSWORD=${{ secrets.DOCKER_PASSWORD }} \
+          AZURE_KEY_VAULT=${{ secrets.AZURE_KEY_VAULT }} \
+          ZOHO-CLIENT-ID=${{ secrets.ZOHO_CLIENT_ID_KEY }} \
+          ZOHO-CLIENT-SECRET=${{ secrets.ZOHO_CLIENT_SECRET_KEY }} \ 
+          ZOHO-REFRESH-TOKEN=${{ secrets.ZOHO_REFRESH_TOKEN_KEY }} \    
+          ZOHO_TOKEN_URL=https://accounts.zoho.in/oauth/v2/token \
+          ZOHO_BASE_URL=https://www.zohoapis.in \
+          ./azure-container-instance.sh \
+          travelcard-api \
+          ${{ secrets.DOCKER_USERNAME }}/travelcard \
+          ${{ github.sha }} \
+          dev-luffy \
+          8080
