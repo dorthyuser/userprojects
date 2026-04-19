@@ -35,17 +35,16 @@ jobs:
         run: sleep 15
       # 5. Deploy to Azure Container Instance
       - name: Deploy to ACI
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+          AZURE_KEY_VAULT: ${{ secrets.AZURE_KEY_VAULT }}
+          ZOHO_CLIENT_ID: ZOHO-CLIENT-ID
+          ZOHO_CLIENT_SECRET: ZOHO-CLIENT-SECRET
+          ZOHO_REFRESH_TOKEN: ZOHO-REFRESH-TOKEN
+          ZOHO_TOKEN_URL: ZOHO-TOKEN-URL
+          ZOHO_BASE_URL: ZOHO-BASE-URL
         run: |
-          DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }} \
-          DOCKER_PASSWORD=${{ secrets.DOCKER_PASSWORD }} \
-          AZURE_KEY_VAULT=${{ secrets.AZURE_KEY_VAULT }} \
-          ASPNETCORE_URLS="http://+:$PORT" \
-          ZOHO_BASE_URL="https://www.zohoapis.in" \
-          ZOHO_CLIENT_ID="ZOHO-CLIENT-ID" \
-          ZOHO_CLIENT_SECRET="ZOHO-CLIENT-SECRET" \
-          ZOHO_REFRESH_TOKEN="ZOHO-REFRESH-TOKEN" \
-          ZOHO_TOKEN_URL="ZOHO-TOKEN-URL" \
-          ZOHO_REDIRECT_URL="ZOHO-REDIRECT-URL" \
           ./azure-container-instance.sh \
           travelcard-api \
           ${{ secrets.DOCKER_USERNAME }}/travelcard \
