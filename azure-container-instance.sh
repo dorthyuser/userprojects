@@ -60,7 +60,6 @@ for i in $(seq 1 $MAX_RETRIES); do
     --restart-policy Always \
     --assign-identity \
     --environment-variables \
-    --environment-variables \
     AZURE_KEY_VAULT="$AZURE_KEY_VAULT" \
     ASPNETCORE_URLS="http://+:$PORT" \
     ZOHO_BASE_URL="https://www.zohoapis.in" \
