@@ -1,7 +1,4 @@
 using System;
-using System.Threading.Tasks;
-using Azure.Identity;
-using Azure.Security.KeyVault.Secrets;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -10,31 +7,29 @@ using ZohoProject1.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Optional config file
 builder.Configuration.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
 
-// Initialise SecretClient once
-var kvUrl = Environment.GetEnvironmentVariable("AZURE_KEY_VAULT");
-if (string.IsNullOrEmpty(kvUrl))
-    throw new InvalidOperationException("Env var 'AZURE_KEY_VAULT' is not set");
+// Read values directly from environment variables
+var clientId = Environment.GetEnvironmentVariable("ZOHO_CLIENT_ID")
+    ?? throw new InvalidOperationException("ZOHO_CLIENT_ID not set");
 
-var secretClient = new SecretClient(new Uri(kvUrl), new DefaultAzureCredential());
-builder.Services.AddSingleton(secretClient);
+var clientSecret = Environment.GetEnvironmentVariable("ZOHO_CLIENT_SECRET")
+    ?? throw new InvalidOperationException("ZOHO_CLIENT_SECRET not set");
 
-// Resolve secrets at startup using two-step lookup
-var clientIdKey = Environment.GetEnvironmentVariable("ZOHO_CLIENT_ID") ?? throw new InvalidOperationException("Env var 'ZOHO-CLIENT-ID' is not set");
-var clientSecretKey = Environment.GetEnvironmentVariable("ZOHO_CLIENT_SECRET") ?? throw new InvalidOperationException("Env var 'ZOHO-CLIENT-SECRET' is not set");
-var tokenUrlKey = Environment.GetEnvironmentVariable("ZOHO_TOKEN_URL") ?? throw new InvalidOperationException("Env var 'ZOHO_TOKEN_URL' is not set");
-var refreshTokenKey = Environment.GetEnvironmentVariable("ZOHO_REFRESH_TOKEN") ?? throw new InvalidOperationException("Env var 'ZOHO-REFRESH-TOKEN' is not set");
-var baseUrlKey = Environment.GetEnvironmentVariable("ZOHO_BASE_URL") ?? throw new InvalidOperationException("Env var 'ZOHO_BASE_URL' is not set");
+var tokenUrl = Environment.GetEnvironmentVariable("ZOHO_TOKEN_URL")
+    ?? throw new InvalidOperationException("ZOHO_TOKEN_URL not set");
 
-var clientId = (await secretClient.GetSecretAsync(clientIdKey)).Value.Value ?? throw new InvalidOperationException("ClientId secret not found");
-var clientSecret = (await secretClient.GetSecretAsync(clientSecretKey)).Value.Value ?? throw new InvalidOperationException("ClientSecret secret not found");
-var tokenUrl = (await secretClient.GetSecretAsync(tokenUrlKey)).Value.Value ?? throw new InvalidOperationException("TokenUrl secret not found");
-var refreshToken = (await secretClient.GetSecretAsync(refreshTokenKey)).Value.Value ?? throw new InvalidOperationException("RefreshToken secret not found");
-var baseUrlRaw = (await secretClient.GetSecretAsync(baseUrlKey)).Value.Value ?? throw new InvalidOperationException("BaseUrl secret not found");
+var refreshToken = Environment.GetEnvironmentVariable("ZOHO_REFRESH_TOKEN")
+    ?? throw new InvalidOperationException("ZOHO_REFRESH_TOKEN not set");
 
+var baseUrlRaw = Environment.GetEnvironmentVariable("ZOHO_BASE_URL")
+    ?? throw new InvalidOperationException("ZOHO_BASE_URL not set");
+
+// Normalize base URL
 var baseUrl = baseUrlRaw.TrimEnd('/');
 
+// Bind options
 var zohoOptions = new ZohoOptions
 {
     ClientId = clientId,
