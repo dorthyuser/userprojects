@@ -77,6 +77,10 @@ namespace ZohoProject2.Services
                 }
 
                 _accessToken = tokenResp.AccessToken;
+                if (!string.IsNullOrEmpty(tokenResp.ApiDomain))
+                {
+                    _options.BaseUrl = tokenResp.ApiDomain.TrimEnd('/');
+                }
 
                 var expiresIn = tokenResp.ExpiresIn.GetValueOrDefault();
                 if (expiresIn == 0)
