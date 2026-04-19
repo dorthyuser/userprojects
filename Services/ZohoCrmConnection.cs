@@ -123,10 +123,10 @@ namespace ZohoProject2.Services
                 }
             }
 
-            var requestUri = BuildUri(relativePath);
+            var fullUrl = $"{_options.BaseUrl.TrimEnd('/')}/{relativePath.TrimStart('/')}";
+            using var request = new HttpRequestMessage(method, fullUrl);
             var originalJson = body;
 
-            using var request = new HttpRequestMessage(method, requestUri);
             request.Headers.Add("Authorization", $"Zoho-oauthtoken {_accessToken}");
 
             if (originalJson != null)
@@ -174,7 +174,8 @@ namespace ZohoProject2.Services
                 }
 
                 // Build a brand new request for retry
-                var retryRequest = new HttpRequestMessage(method, requestUri);
+                var retryUrl = $"{_options.BaseUrl.TrimEnd('/')}/{relativePath.TrimStart('/')}";
+                var retryRequest = new HttpRequestMessage(method, retryUrl);
                 retryRequest.Headers.Add("Authorization", $"Zoho-oauthtoken {_accessToken}");
                 if (originalJson != null)
                 {
