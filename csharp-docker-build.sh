@@ -16,11 +16,9 @@ dotnet restore
 dotnet publish -c Release -o publish
 
 # Find DLL
-PROJECT_FILE=$(find . -name "*.csproj" ! -name "*Tests*" | head -n 1)
-PROJECT_NAME=$(basename "$PROJECT_FILE" .csproj)
-DLL_NAME="$PROJECT_NAME.dll"
+DLL_NAME=$(ls publish/*.dll | grep -v "Azure\|Microsoft\|System" | head -n 1 | xargs -n1 basename)
 
-echo "Using main DLL: $DLL_NAME"
+echo "Detected main DLL: $DLL_NAME"
 
 if [ ! -f "publish/$DLL_NAME" ]; then
   echo "ERROR: Main DLL not found!"
