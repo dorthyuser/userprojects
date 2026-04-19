@@ -12,11 +12,6 @@ if [ $# -lt 4 ]; then
   exit 1
 fi
 
-if [ -z "$AZURE_KEY_VAULT" ]; then
-  echo "Error: AZURE_KEY_VAULT must be set"
-  exit 1
-fi
-
 if [ -z "$DOCKER_USERNAME" ] || [ -z "$DOCKER_PASSWORD" ]; then
   echo "Error: DOCKER_USERNAME and DOCKER_PASSWORD must be set"
   exit 1
@@ -58,16 +53,13 @@ for i in $(seq 1 $MAX_RETRIES); do
     --cpu 1 \
     --memory 2 \
     --restart-policy Always \
-    --assign-identity \
     --environment-variables \
-    AZURE_KEY_VAULT="$AZURE_KEY_VAULT" \
     ASPNETCORE_URLS="http://+:$PORT" \
-    ZOHO_BASE_URL="https://www.zohoapis.in" \
-    ZOHO_CLIENT_ID="ZOHO-CLIENT-ID" \
-    ZOHO_CLIENT_SECRET="ZOHO-CLIENT-SECRET" \
-    ZOHO_REFRESH_TOKEN="ZOHO-REFRESH-TOKEN" \
-    ZOHO_TOKEN_URL="ZOHO-TOKEN-URL" \
-    ZOHO_REDIRECT_URL="ZOHO-REDIRECT-URL" 
+    ZOHO_CLIENT_ID="$ZOHO_CLIENT_ID" \
+    ZOHO_CLIENT_SECRET="$ZOHO_CLIENT_SECRET" \
+    ZOHO_REFRESH_TOKEN="$ZOHO_REFRESH_TOKEN" \
+    ZOHO_TOKEN_URL="$ZOHO_TOKEN_URL" \
+    ZOHO_BASE_URL="$ZOHO_BASE_URL"
   then
     echo "Deployment succeeded"
     SUCCESS=true
