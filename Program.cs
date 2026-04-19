@@ -36,10 +36,10 @@ async Task<string> ResolveSecretAsync(string envVarName)
 var baseUrl = await ResolveSecretAsync("ZOHO_BASE_URL").ConfigureAwait(false);
 baseUrl = baseUrl.TrimEnd('/');
 
-var clientId = await ResolveSecretAsync("ZOHO-CLIENT-ID").ConfigureAwait(false);
-var clientSecret = await ResolveSecretAsync("ZOHO-CLIENT-SECRET").ConfigureAwait(false);
+var clientId = await ResolveSecretAsync("ZOHO_CLIENT_ID").ConfigureAwait(false);
+var clientSecret = await ResolveSecretAsync("ZOHO_CLIENT_SECRET").ConfigureAwait(false);
 var tokenUrl = await ResolveSecretAsync("ZOHO_TOKEN_URL").ConfigureAwait(false);
-var refreshToken = await ResolveSecretAsync("ZOHO-REFRESH-TOKEN").ConfigureAwait(false);
+var refreshToken = await ResolveSecretAsync("ZOHO_REFRESH_TOKEN").ConfigureAwait(false);
 
 // Register SecretClient singleton
 builder.Services.AddSingleton(secretClient);
