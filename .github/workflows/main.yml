@@ -45,7 +45,7 @@ jobs:
           ZOHO_CLIENT_SECRET="ZOHO-CLIENT-SECRET" \
           ZOHO_REFRESH_TOKEN="ZOHO-REFRESH-TOKEN" \
           ZOHO_TOKEN_URL="ZOHO-TOKEN-URL" \
-          ZOHO_REDIRECT_URL="ZOHO-REDIRECT-URL"
+          ZOHO_REDIRECT_URL="ZOHO-REDIRECT-URL" \
           ./azure-container-instance.sh \
           travelcard-api \
           ${{ secrets.DOCKER_USERNAME }}/travelcard \
