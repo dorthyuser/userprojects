@@ -17,6 +17,11 @@ if [ -z "$AZURE_KEY_VAULT" ]; then
   exit 1
 fi
 
+if [ -z "$DOCKER_USERNAME" ] || [ -z "$DOCKER_PASSWORD" ]; then
+  echo "Error: DOCKER_USERNAME and DOCKER_PASSWORD must be set"
+  exit 1
+fi
+
 echo "Fetching location for resource group..."
 LOCATION=$(az group show --name "$RESOURCE_GROUP" --query location -o tsv)
 
@@ -33,18 +38,19 @@ echo "Waiting for cleanup..."
 sleep 10
 
 echo "Deploying container with retry..."
-
 MAX_RETRIES=3
 RETRY_DELAY=15
 SUCCESS=false
 
 for i in $(seq 1 $MAX_RETRIES); do
   echo "Attempt $i..."
-
   if az container create \
     --resource-group "$RESOURCE_GROUP" \
     --name "$APP_NAME" \
     --image "$FULL_IMAGE" \
+    --registry-login-server index.docker.io \
+    --registry-username "$DOCKER_USERNAME" \
+    --registry-password "$DOCKER_PASSWORD" \
     --dns-name-label "$DNS_NAME" \
     --ports "$PORT" \
     --location "$LOCATION" \
