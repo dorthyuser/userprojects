@@ -38,12 +38,14 @@ jobs:
         run: |
           DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }} \
           DOCKER_PASSWORD=${{ secrets.DOCKER_PASSWORD }} \
-          AZURE_KEY_VAULT=${{ secrets.AZURE_KEY_VAULT }} \
-          ZOHO-CLIENT-ID=${{ secrets.ZOHO_CLIENT_ID_KEY }} \
-          ZOHO-CLIENT-SECRET=${{ secrets.ZOHO_CLIENT_SECRET_KEY }} \ 
-          ZOHO-REFRESH-TOKEN=${{ secrets.ZOHO_REFRESH_TOKEN_KEY }} \    
-          ZOHO_TOKEN_URL=https://accounts.zoho.in/oauth/v2/token \
-          ZOHO_BASE_URL=https://www.zohoapis.in \
+          AZURE_KEY_VAULT="$AZURE_KEY_VAULT" \
+          ASPNETCORE_URLS="http://+:$PORT" \
+          ZOHO_BASE_URL="https://www.zohoapis.in" \
+          ZOHO_CLIENT_ID="ZOHO-CLIENT-ID" \
+          ZOHO_CLIENT_SECRET="ZOHO-CLIENT-SECRET" \
+          ZOHO_REFRESH_TOKEN="ZOHO-REFRESH-TOKEN" \
+          ZOHO_TOKEN_URL="ZOHO-TOKEN-URL" \
+          ZOHO_REDIRECT_URL="ZOHO-REDIRECT-URL"
           ./azure-container-instance.sh \
           travelcard-api \
           ${{ secrets.DOCKER_USERNAME }}/travelcard \
