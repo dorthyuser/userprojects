@@ -29,9 +29,9 @@ async Task<string> ResolveSecretAsync(string envVarName)
 }
 
 // Fetch required secrets
-var clientId = await ResolveSecretAsync("ZOHO-CLIENT-ID");
-var clientSecret = await ResolveSecretAsync("ZOHO-CLIENT-SECRET");
-var refreshToken = await ResolveSecretAsync("ZOHO-REFRESH-TOKEN");
+var clientId = await ResolveSecretAsync("ZOHO_CLIENT_ID");
+var clientSecret = await ResolveSecretAsync("ZOHO_CLIENT_SECRET");
+var refreshToken = await ResolveSecretAsync("ZOHO_REFRESH_TOKEN");
 var tokenUrl = await ResolveSecretAsync("ZOHO_TOKEN_URL");
 var baseUrl = await ResolveSecretAsync("ZOHO_BASE_URL");
 
