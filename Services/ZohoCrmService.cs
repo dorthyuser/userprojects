@@ -28,18 +28,19 @@ namespace zoho_project_csharp.Services
 
         public async Task<(int StatusCode, string Content)> CreateUserAsync(CreateUserRequest request, CancellationToken cancellationToken)
         {
+            // Zoho Users API requires the "users" wrapper and string IDs for role/profile
             var payload = JsonSerializer.Serialize(new
             {
-                data = new[]
+                users = new[]
                 {
                     new {
                         first_name = request.FirstName,
                         last_name = request.LastName,
                         email = request.Email,
-                        role = new { id = request.Role?.Id },
-                        profile = new { id = request.Profile?.Id },
+                        role = request.Role?.Id,    // Flattened to string
+                        profile = request.Profile?.Id, // Flattened to string
                         country = "India",
-                        locale = "en_US",
+                        locale = "en_IN",
                         time_zone = "Asia/Kolkata"
                     }
                 }
@@ -52,16 +53,17 @@ namespace zoho_project_csharp.Services
 
         public async Task<(int StatusCode, string Content)> UpdateUserAsync(string id, UpdateUserRequest request, CancellationToken cancellationToken)
         {
+            // Update also uses the "users" wrapper and string IDs
             var payload = JsonSerializer.Serialize(new
             {
-                data = new[]
+                users = new[]
                 {
                     new {
                         first_name = request.FirstName,
                         last_name = request.LastName,
                         email = request.Email,
-                        role = request.Role != null ? new { id = request.Role.Id } : null,
-                        profile = request.Profile != null ? new { id = request.Profile.Id } : null
+                        role = request.Role?.Id,    // Flattened to string
+                        profile = request.Profile?.Id // Flattened to string
                     }
                 }
             });
