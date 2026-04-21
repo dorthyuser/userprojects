@@ -2,7 +2,7 @@ name: CSharp Docker + Azure Container Instance
 on:
   push:
     branches:
-      - zoho-project-3
+      - zoho-project-csharp
 jobs:
   build-deploy:
     runs-on: ubuntu-latest
