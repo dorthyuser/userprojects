@@ -37,7 +37,10 @@ namespace zoho_project_csharp.Services
                         last_name = request.LastName,
                         email = request.Email,
                         role = new { id = request.Role?.Id },
-                        profile = new { id = request.Profile?.Id }
+                        profile = new { id = request.Profile?.Id },
+                        country = "India",
+                        locale = "en_US",
+                        time_zone = "Asia/Kolkata"
                     }
                 }
             });
