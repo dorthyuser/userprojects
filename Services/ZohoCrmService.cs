@@ -30,11 +30,16 @@ namespace zoho_project_csharp.Services
         {
             var payload = JsonSerializer.Serialize(new
             {
-                first_name = request.FirstName,
-                last_name = request.LastName,
-                email = request.Email,
-                role = new { id = request.Role?.Id },
-                profile = new { id = request.Profile?.Id }
+                data = new[]
+                {
+                    new {
+                        first_name = request.FirstName,
+                        last_name = request.LastName,
+                        email = request.Email,
+                        role = new { id = request.Role?.Id },
+                        profile = new { id = request.Profile?.Id }
+                    }
+                }
             });
 
             using var response = await _connection.SendAsync(HttpMethod.Post, "/crm/v2/users", payload, cancellationToken);
@@ -46,11 +51,16 @@ namespace zoho_project_csharp.Services
         {
             var payload = JsonSerializer.Serialize(new
             {
-                first_name = request.FirstName,
-                last_name = request.LastName,
-                email = request.Email,
-                role = request.Role != null ? new { id = request.Role.Id } : null,
-                profile = request.Profile != null ? new { id = request.Profile.Id } : null
+                data = new[]
+                {
+                    new {
+                        first_name = request.FirstName,
+                        last_name = request.LastName,
+                        email = request.Email,
+                        role = request.Role != null ? new { id = request.Role.Id } : null,
+                        profile = request.Profile != null ? new { id = request.Profile.Id } : null
+                    }
+                }
             });
 
             var path = $"/crm/v2/users/{Uri.EscapeDataString(id)}";
