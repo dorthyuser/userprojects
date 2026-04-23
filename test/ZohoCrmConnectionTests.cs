@@ -52,7 +52,7 @@ namespace zoho_project_csharp.Tests
             var tokenHandler = new DelegatingHandlerStub((req, ct) =>
             {
                 tokenCalled++;
-                var json = @"{""access_token"":""token1"",""expires_in"":3600,""api_domain"":""https://api.example/""}";
+                var json = "{"access_token":"token1","expires_in":3600,"api_domain":"https://api.example/"}";
                 return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(json, Encoding.UTF8, "application/json") });
             });
 
@@ -90,7 +90,7 @@ namespace zoho_project_csharp.Tests
             {
                 tokenCalls++;
                 var token = tokenCalls == 1 ? "oldtoken" : "newtoken";
-                var json = $@"{{""access_token"":""{token}"",""expires_in"":3600}}";
+                var json = $"{"access_token":"{token}","expires_in":3600}";
                 return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(json, Encoding.UTF8, "application/json") });
             });
 
@@ -147,7 +147,7 @@ namespace zoho_project_csharp.Tests
             var tokenHandler = new DelegatingHandlerStub((req, ct) =>
             {
                 tokenCalls++;
-                var json = $@"{{""access_token"":""t{tokenCalls}"",""expires_in"":30}}";
+                var json = $"{"access_token":"t{tokenCalls}","expires_in":30}";
                 return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(json, Encoding.UTF8, "application/json") });
             });
 
