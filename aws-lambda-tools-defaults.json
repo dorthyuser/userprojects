@@ -1,0 +1,10 @@
+{
+  "profile": "default",
+  "region": "us-east-1",
+  "configuration": "Release",
+  "function-handler": "UpTransportTicketApiLambda::UpTransportTicketApiLambda.Function::up-transport-ticket-api",
+  "framework": "net8.0",
+  "function-name": "UpTransportTicketApi",
+  "function-role": "",
+  "tracing-mode": "PassThrough"
+}
