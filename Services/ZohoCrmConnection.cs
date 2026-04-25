@@ -1,12 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
-using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using Azure.Security.KeyVault.Secrets;
 using Microsoft.Extensions.Logging;
 using ZohoProject2.Models;
 
@@ -25,9 +23,9 @@ namespace ZohoProject2.Services
 
         public ZohoCrmConnection(IHttpClientFactory httpFactory, ZohoOptions options, ILogger<ZohoCrmConnection> logger)
         {
+            _options = options ?? throw new InvalidOperationException("ZohoOptions not provided");
             _apiClient = httpFactory.CreateClient("zoho_api");
             _tokenClient = httpFactory.CreateClient("zoho_token");
-            _options = options ?? throw new InvalidOperationException("ZohoOptions not provided");
             _logger = logger;
         }
 
@@ -191,16 +189,6 @@ namespace ZohoProject2.Services
             }
 
             return response;
-        }
-
-        private Uri BuildUri(string relativePath)
-        {
-            if (string.IsNullOrEmpty(relativePath))
-                throw new ArgumentException("relativePath must be provided", nameof(relativePath));
-
-            var path = relativePath.StartsWith("/") ? relativePath : "/" + relativePath;
-            var baseUri = new Uri(_options.BaseUrl);
-            return new Uri(baseUri, path);
         }
     }
 }

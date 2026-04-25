@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
@@ -24,7 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\zoho-project-2\zoho-project-2.csproj" />
+    <ProjectReference Include="../zoho-project-2.csproj" />
   </ItemGroup>
 
 </Project>

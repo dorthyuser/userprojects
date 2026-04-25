@@ -1,7 +1,9 @@
 // GENERATED_BY_AI_TEST_ENGINE
 using System;
+using System.Net;
 using System.Net.Http;
 using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
@@ -13,29 +15,26 @@ namespace ZohoProject2.Tests.Services
     public class ZohoCrmConnectionTests
     {
         [Fact]
-        public void Constructor_ThrowsInvalidOperationException_WhenOptionsAreNull()
+        public void Ctor_ThrowsInvalidOperationException_WhenOptionsAreNull()
         {
             // Arrange
-            var factoryMock = new Mock<IHttpClientFactory>();
-            var loggerMock = new Mock<ILogger<ZohoCrmConnection>>();
-            ZohoOptions options = null!;
+            var factoryMock = new Mock<IHttpClientFactory>(MockBehavior.Strict);
+            var loggerMock = new Mock<ILogger<ZohoCrmConnection>>(MockBehavior.Loose);
 
             // Act & Assert
-            var ex = Assert.Throws<InvalidOperationException>(() => new ZohoCrmConnection(factoryMock.Object, options, loggerMock.Object));
-            Assert.Equal("ZohoOptions not provided", ex.Message);
-            factoryMock.Verify(f => f.CreateClient(It.IsAny<string>()), Times.Never());
+            var exception = Assert.Throws<InvalidOperationException>(() => new ZohoCrmConnection(factoryMock.Object, null!, loggerMock.Object));
+            Assert.Equal("ZohoOptions not provided", exception.Message);
         }
 
         [Fact]
-        public void Constructor_CreatesNamedClients_WhenOptionsAreProvided()
+        public void Ctor_CreatesClients_WhenOptionsAreProvided()
         {
             // Arrange
-            var apiClient = new HttpClient(new HttpClientHandler());
-            var tokenClient = new HttpClient(new HttpClientHandler());
+            var apiClient = new HttpClient(new HttpMessageHandlerStub(new HttpResponseMessage(HttpStatusCode.OK)));
+            var tokenClient = new HttpClient(new HttpMessageHandlerStub(new HttpResponseMessage(HttpStatusCode.OK)));
             var factoryMock = new Mock<IHttpClientFactory>(MockBehavior.Strict);
-            var loggerMock = new Mock<ILogger<ZohoCrmConnection>>();
+            var loggerMock = new Mock<ILogger<ZohoCrmConnection>>(MockBehavior.Loose);
             var options = new ZohoOptions();
-
             factoryMock.Setup(f => f.CreateClient("zoho_api")).Returns(apiClient);
             factoryMock.Setup(f => f.CreateClient("zoho_token")).Returns(tokenClient);
 
@@ -46,6 +45,21 @@ namespace ZohoProject2.Tests.Services
             Assert.NotNull(connection);
             factoryMock.Verify(f => f.CreateClient("zoho_api"), Times.Once());
             factoryMock.Verify(f => f.CreateClient("zoho_token"), Times.Once());
+        }
+
+        private sealed class HttpMessageHandlerStub : HttpMessageHandler
+        {
+            private readonly HttpResponseMessage _response;
+
+            public HttpMessageHandlerStub(HttpResponseMessage response)
+            {
+                _response = response;
+            }
+
+            protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+            {
+                return Task.FromResult(_response);
+            }
         }
     }
 }

@@ -1,7 +1,7 @@
 // GENERATED_BY_AI_TEST_ENGINE
-using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Moq;
 using Xunit;
 using ZohoProject2.Models;
 using ZohoProject2.Services;
@@ -11,120 +11,101 @@ namespace ZohoProject2.Tests.Services
     public class IZohoCrmServiceTests
     {
         [Fact]
-        public async Task GetUsersAsync_CanBeImplementedAndReturnsObject_WhenCalled()
+        public async Task GetUsersAsync_ReturnsObject_WhenMockIsConfigured()
         {
             // Arrange
-            IZohoCrmService service = new StubService();
+            var serviceMock = new Mock<IZohoCrmService>(MockBehavior.Strict);
             var cancellationToken = CancellationToken.None;
+            var expected = new { users = new[] { new { id = "u1" } } };
+            serviceMock
+                .Setup(s => s.GetUsersAsync(cancellationToken))
+                .ReturnsAsync(expected);
 
             // Act
-            var result = await service.GetUsersAsync(cancellationToken);
+            var result = await serviceMock.Object.GetUsersAsync(cancellationToken);
 
             // Assert
-            Assert.NotNull(result);
+            Assert.Same(expected, result);
+            serviceMock.Verify(s => s.GetUsersAsync(cancellationToken), Times.Once());
         }
 
         [Fact]
-        public async Task CreateUserAsync_CanBeImplementedAndReturnsObject_WhenCalled()
+        public async Task GetUsersAsync_Throws_WhenNotConfigured()
         {
             // Arrange
-            IZohoCrmService service = new StubService();
+            var serviceMock = new Mock<IZohoCrmService>(MockBehavior.Strict);
+
+            // Act & Assert
+            await Assert.ThrowsAsync<MockException>(async () =>
+            {
+                await serviceMock.Object.GetUsersAsync(CancellationToken.None);
+            });
+        }
+
+        [Fact]
+        public async Task CreateUserAsync_ReturnsObject_WhenMockIsConfigured()
+        {
+            // Arrange
+            var serviceMock = new Mock<IZohoCrmService>(MockBehavior.Strict);
+            var cancellationToken = CancellationToken.None;
             var request = new CreateUserRequest();
-            var cancellationToken = CancellationToken.None;
+            var expected = new { id = "u1", status = "created" };
+            serviceMock
+                .Setup(s => s.CreateUserAsync(request, cancellationToken))
+                .ReturnsAsync(expected);
 
             // Act
-            var result = await service.CreateUserAsync(request, cancellationToken);
+            var result = await serviceMock.Object.CreateUserAsync(request, cancellationToken);
 
             // Assert
-            Assert.NotNull(result);
+            Assert.Same(expected, result);
+            serviceMock.Verify(s => s.CreateUserAsync(request, cancellationToken), Times.Once());
         }
 
         [Fact]
-        public async Task UpdateUserAsync_CanBeImplementedAndReturnsObject_WhenCalled()
+        public async Task CreateUserAsync_Throws_WhenNotConfigured()
         {
             // Arrange
-            IZohoCrmService service = new StubService();
-            var request = new UpdateUserRequest();
+            var serviceMock = new Mock<IZohoCrmService>(MockBehavior.Strict);
+
+            // Act & Assert
+            await Assert.ThrowsAsync<MockException>(async () =>
+            {
+                await serviceMock.Object.CreateUserAsync(new CreateUserRequest(), CancellationToken.None);
+            });
+        }
+
+        [Fact]
+        public async Task UpdateUserAsync_ReturnsObject_WhenMockIsConfigured()
+        {
+            // Arrange
+            var serviceMock = new Mock<IZohoCrmService>(MockBehavior.Strict);
             var cancellationToken = CancellationToken.None;
-            var id = "123";
+            var request = new UpdateUserRequest();
+            var expected = new { id = "u1", status = "updated" };
+            serviceMock
+                .Setup(s => s.UpdateUserAsync("u1", request, cancellationToken))
+                .ReturnsAsync(expected);
 
             // Act
-            var result = await service.UpdateUserAsync(id, request, cancellationToken);
+            var result = await serviceMock.Object.UpdateUserAsync("u1", request, cancellationToken);
 
             // Assert
-            Assert.NotNull(result);
+            Assert.Same(expected, result);
+            serviceMock.Verify(s => s.UpdateUserAsync("u1", request, cancellationToken), Times.Once());
         }
 
         [Fact]
-        public async Task GetUsersAsync_Throws_WhenStubConfiguredToThrow()
+        public async Task UpdateUserAsync_Throws_WhenNotConfigured()
         {
             // Arrange
-            IZohoCrmService service = new ThrowingStubService();
-            var cancellationToken = CancellationToken.None;
+            var serviceMock = new Mock<IZohoCrmService>(MockBehavior.Strict);
 
             // Act & Assert
-            await Assert.ThrowsAsync<InvalidOperationException>(() => service.GetUsersAsync(cancellationToken));
-        }
-
-        [Fact]
-        public async Task CreateUserAsync_Throws_WhenStubConfiguredToThrow()
-        {
-            // Arrange
-            IZohoCrmService service = new ThrowingStubService();
-            var request = new CreateUserRequest();
-            var cancellationToken = CancellationToken.None;
-
-            // Act & Assert
-            await Assert.ThrowsAsync<InvalidOperationException>(() => service.CreateUserAsync(request, cancellationToken));
-        }
-
-        [Fact]
-        public async Task UpdateUserAsync_Throws_WhenStubConfiguredToThrow()
-        {
-            // Arrange
-            IZohoCrmService service = new ThrowingStubService();
-            var request = new UpdateUserRequest();
-            var cancellationToken = CancellationToken.None;
-            var id = "123";
-
-            // Act & Assert
-            await Assert.ThrowsAsync<InvalidOperationException>(() => service.UpdateUserAsync(id, request, cancellationToken));
-        }
-
-        private sealed class StubService : IZohoCrmService
-        {
-            public Task<object> GetUsersAsync(CancellationToken cancellationToken)
+            await Assert.ThrowsAsync<MockException>(async () =>
             {
-                return Task.FromResult<object>(new { ok = true });
-            }
-
-            public Task<object> CreateUserAsync(CreateUserRequest request, CancellationToken cancellationToken)
-            {
-                return Task.FromResult<object>(new { created = true });
-            }
-
-            public Task<object> UpdateUserAsync(string id, UpdateUserRequest request, CancellationToken cancellationToken)
-            {
-                return Task.FromResult<object>(new { updated = id });
-            }
-        }
-
-        private sealed class ThrowingStubService : IZohoCrmService
-        {
-            public Task<object> GetUsersAsync(CancellationToken cancellationToken)
-            {
-                throw new InvalidOperationException("failure");
-            }
-
-            public Task<object> CreateUserAsync(CreateUserRequest request, CancellationToken cancellationToken)
-            {
-                throw new InvalidOperationException("failure");
-            }
-
-            public Task<object> UpdateUserAsync(string id, UpdateUserRequest request, CancellationToken cancellationToken)
-            {
-                throw new InvalidOperationException("failure");
-            }
+                await serviceMock.Object.UpdateUserAsync("u1", new UpdateUserRequest(), CancellationToken.None);
+            });
         }
     }
 }
