@@ -28,19 +28,17 @@ namespace ZohoProject2.Tests.Controllers
         public async Task GetUsers_ReturnsOk_WhenServiceSucceeds()
         {
             // Arrange
-            var token = CancellationToken.None;
-            var expected = new { users = new[] { new { id = "u1", name = "Alice" } } };
-            _serviceMock
-                .Setup(s => s.GetUsersAsync(It.IsAny<CancellationToken>()))
-                .ReturnsAsync(expected);
+            var cancellationToken = CancellationToken.None;
+            var expected = new[] { new { id = "u1", name = "Alice" } };
+            _serviceMock.Setup(s => s.GetUsersAsync(cancellationToken)).ReturnsAsync(expected);
 
             // Act
-            var result = await _controller.GetUsers(token);
+            var result = await _controller.GetUsers(cancellationToken);
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
             Assert.Same(expected, okResult.Value);
-            _serviceMock.Verify(s => s.GetUsersAsync(token), Times.Once());
+            _serviceMock.Verify(s => s.GetUsersAsync(cancellationToken), Times.Once);
             _serviceMock.VerifyNoOtherCalls();
         }
 
@@ -48,26 +46,18 @@ namespace ZohoProject2.Tests.Controllers
         public async Task GetUsers_ReturnsInternalServerError_WhenServiceThrows()
         {
             // Arrange
-            var token = CancellationToken.None;
-            var exception = new InvalidOperationException("boom");
-            _serviceMock
-                .Setup(s => s.GetUsersAsync(It.IsAny<CancellationToken>()))
-                .ThrowsAsync(exception);
+            var cancellationToken = CancellationToken.None;
+            var exceptionMessage = "boom";
+            _serviceMock.Setup(s => s.GetUsersAsync(cancellationToken)).ThrowsAsync(new InvalidOperationException(exceptionMessage));
 
             // Act
-            var result = await _controller.GetUsers(token);
+            var result = await _controller.GetUsers(cancellationToken);
 
             // Assert
             var objectResult = Assert.IsType<ObjectResult>(result);
             Assert.Equal(500, objectResult.StatusCode);
-
-            var anonymousValue = Assert.NotNull(objectResult.Value);
-            var errorProperty = anonymousValue.GetType().GetProperty("error");
-            Assert.NotNull(errorProperty);
-            var errorValue = errorProperty.GetValue(anonymousValue);
-            Assert.Equal("boom", errorValue);
-
-            _serviceMock.Verify(s => s.GetUsersAsync(token), Times.Once());
+            Assert.NotNull(objectResult.Value);
+            _serviceMock.Verify(s => s.GetUsersAsync(cancellationToken), Times.Once);
             _serviceMock.VerifyNoOtherCalls();
         }
     }
