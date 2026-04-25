@@ -1,5 +1,6 @@
 // GENERATED_BY_AI_TEST_ENGINE
 using System;
+using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,24 +12,69 @@ namespace ZohoProject2.Tests.Services
     public class IZohoCrmConnectionTests
     {
         [Fact]
-        public async Task SendAsync_InterfaceContract_AllowsSuccessfulTaskCompletion()
+        public async Task SendAsync_CanBeImplementedForSuccessPath()
         {
-            IZohoCrmConnection connection = null;
-            await Task.CompletedTask;
+            // Arrange
+            var method = HttpMethod.Get;
+            var relativePath = "/crm/v2/users";
+            var body = (string?)null;
+            var token = CancellationToken.None;
+            var expected = new HttpResponseMessage(HttpStatusCode.OK);
+            var connection = new StubConnection((m, p, b, c) =>
+            {
+                Assert.Equal(method, m);
+                Assert.Equal(relativePath, p);
+                Assert.Equal(body, b);
+                Assert.Equal(token, c);
+                return Task.FromResult(expected);
+            });
 
-            var completed = true;
+            // Act
+            var response = await connection.SendAsync(method, relativePath, body, token);
 
-            Assert.True(completed);
+            // Assert
+            Assert.Same(expected, response);
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
 
         [Fact]
-        public void SendAsync_InterfaceContract_CanBeReferencedInDelegateSignature()
+        public async Task SendAsync_CanBeImplementedForFailurePath()
         {
-            Func<HttpMethod, string, string?, CancellationToken, Task<HttpResponseMessage>>? signature = null;
+            // Arrange
+            var method = HttpMethod.Post;
+            var relativePath = "/crm/v2/users";
+            var body = "payload";
+            var token = CancellationToken.None;
+            var exception = new InvalidOperationException("connection failed");
+            var connection = new StubConnection((m, p, b, c) =>
+            {
+                Assert.Equal(method, m);
+                Assert.Equal(relativePath, p);
+                Assert.Equal(body, b);
+                Assert.Equal(token, c);
+                return Task.FromException<HttpResponseMessage>(exception);
+            });
 
-            var hasSignature = signature == null;
+            // Act
+            var thrown = await Assert.ThrowsAsync<InvalidOperationException>(() => connection.SendAsync(method, relativePath, body, token));
 
-            Assert.True(hasSignature);
+            // Assert
+            Assert.Equal("connection failed", thrown.Message);
+        }
+
+        private sealed class StubConnection : IZohoCrmConnection
+        {
+            private readonly Func<HttpMethod, string, string?, CancellationToken, Task<HttpResponseMessage>> _handler;
+
+            public StubConnection(Func<HttpMethod, string, string?, CancellationToken, Task<HttpResponseMessage>> handler)
+            {
+                _handler = handler;
+            }
+
+            public Task<HttpResponseMessage> SendAsync(HttpMethod method, string relativePath, string? body, CancellationToken cancellationToken)
+            {
+                return _handler(method, relativePath, body, cancellationToken);
+            }
         }
     }
 }
