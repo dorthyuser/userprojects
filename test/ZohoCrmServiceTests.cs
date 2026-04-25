@@ -11,7 +11,7 @@ using Xunit;
 using ZohoProject2.Models;
 using ZohoProject2.Services;
 
-namespace ZohoProject2.Tests.Services
+namespace ZohoProject2.Tests
 {
     public class ZohoCrmServiceTests
     {

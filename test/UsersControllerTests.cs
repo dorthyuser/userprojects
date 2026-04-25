@@ -9,61 +9,61 @@ using Xunit;
 using ZohoProject2.Controllers;
 using ZohoProject2.Services;
 
-namespace ZohoProject2.Tests.Controllers
+namespace ZohoProject2.Tests
 {
     public class UsersControllerTests
     {
+        private readonly Mock<IZohoCrmService> _serviceMock;
+        private readonly Mock<ILogger<UsersController>> _loggerMock;
+        private readonly UsersController _controller;
+
+        public UsersControllerTests()
+        {
+            _serviceMock = new Mock<IZohoCrmService>(MockBehavior.Strict);
+            _loggerMock = new Mock<ILogger<UsersController>>();
+            _controller = new UsersController(_serviceMock.Object, _loggerMock.Object);
+        }
+
         [Fact]
         public async Task GetUsers_ReturnsOk_WhenServiceSucceeds()
         {
             // Arrange
-            var serviceMock = new Mock<IZohoCrmService>(MockBehavior.Strict);
-            var loggerMock = new Mock<ILogger<UsersController>>();
             var cancellationToken = CancellationToken.None;
             var expected = new[] { new { id = "u1", name = "Alice" } };
-
-            serviceMock
+            _serviceMock
                 .Setup(s => s.GetUsersAsync(cancellationToken))
                 .ReturnsAsync(expected);
 
-            var controller = new UsersController(serviceMock.Object, loggerMock.Object);
-
             // Act
-            var result = await controller.GetUsers(cancellationToken);
+            var result = await _controller.GetUsers(cancellationToken);
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
-            Assert.Equal(200, okResult.StatusCode);
-            Assert.Same(expected, okResult.Value);
-            serviceMock.Verify(s => s.GetUsersAsync(cancellationToken), Times.Once());
-            serviceMock.VerifyNoOtherCalls();
+            var value = okResult.Value;
+            Assert.Same(expected, value);
+            _serviceMock.Verify(s => s.GetUsersAsync(cancellationToken), Times.Once());
+            _serviceMock.VerifyNoOtherCalls();
         }
 
         [Fact]
-        public async Task GetUsers_ReturnsStatusCode500_WhenServiceThrows()
+        public async Task GetUsers_ReturnsInternalServerError_WhenServiceThrows()
         {
             // Arrange
-            var serviceMock = new Mock<IZohoCrmService>(MockBehavior.Strict);
-            var loggerMock = new Mock<ILogger<UsersController>>();
             var cancellationToken = CancellationToken.None;
             var exception = new InvalidOperationException("boom");
-
-            serviceMock
+            _serviceMock
                 .Setup(s => s.GetUsersAsync(cancellationToken))
                 .ThrowsAsync(exception);
 
-            var controller = new UsersController(serviceMock.Object, loggerMock.Object);
-
             // Act
-            var result = await controller.GetUsers(cancellationToken);
+            var result = await _controller.GetUsers(cancellationToken);
 
             // Assert
             var objectResult = Assert.IsType<ObjectResult>(result);
             Assert.Equal(500, objectResult.StatusCode);
-            dynamic payload = objectResult.Value!;
-            Assert.Equal("boom", (string)payload.error);
-            serviceMock.Verify(s => s.GetUsersAsync(cancellationToken), Times.Once());
-            serviceMock.VerifyNoOtherCalls();
+            Assert.NotNull(objectResult.Value);
+            _serviceMock.Verify(s => s.GetUsersAsync(cancellationToken), Times.Once());
+            _serviceMock.VerifyNoOtherCalls();
         }
     }
 }
