@@ -11,17 +11,14 @@ using ZohoProject2.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Load optional appsettings.json per rule
 builder.Configuration.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
 
-// Initialize SecretClient once at startup
 var kvUrl = Environment.GetEnvironmentVariable("AZURE_KEY_VAULT");
 if (string.IsNullOrEmpty(kvUrl))
     throw new InvalidOperationException("Env var 'AZURE_KEY_VAULT' is not set");
 
 var secretClient = new SecretClient(new Uri(kvUrl), new DefaultAzureCredential());
 
-// Resolve required secret keys (two-step lookups)
 async Task<string> ResolveSecretAsync(string envVarName)
 {
     var secretKeyName = Environment.GetEnvironmentVariable(envVarName);
@@ -32,7 +29,6 @@ async Task<string> ResolveSecretAsync(string envVarName)
     return secret.Value.Value ?? throw new InvalidOperationException($"Secret '{secretKeyName}' returned empty value");
 }
 
-// Resolve secrets
 var baseUrl = await ResolveSecretAsync("ZOHO_BASE_URL").ConfigureAwait(false);
 baseUrl = baseUrl.TrimEnd('/');
 
@@ -41,10 +37,8 @@ var clientSecret = await ResolveSecretAsync("ZOHO_CLIENT_SECRET").ConfigureAwait
 var tokenUrl = await ResolveSecretAsync("ZOHO_TOKEN_URL").ConfigureAwait(false);
 var refreshToken = await ResolveSecretAsync("ZOHO_REFRESH_TOKEN").ConfigureAwait(false);
 
-// Register SecretClient singleton
 builder.Services.AddSingleton(secretClient);
 
-// Register ZohoOptions (single source of truth)
 var zohoOptions = new ZohoOptions
 {
     ClientId = clientId ?? throw new InvalidOperationException("ClientId not configured"),
@@ -58,7 +52,6 @@ var zohoOptions = new ZohoOptions
 
 builder.Services.AddSingleton(zohoOptions);
 
-// Configure named HttpClients per rules
 builder.Services.AddHttpClient("zoho_api", client =>
 {
     client.BaseAddress = new Uri(zohoOptions.BaseUrl);
@@ -68,10 +61,8 @@ builder.Services.AddHttpClient("zoho_api", client =>
 builder.Services.AddHttpClient("zoho_token", client =>
 {
     client.Timeout = TimeSpan.FromSeconds(30);
-    // Intentionally do NOT set BaseAddress for token client
 });
 
-// Register application services
 builder.Services.AddSingleton<IZohoCrmConnection, ZohoCrmConnection>();
 builder.Services.AddScoped<IZohoCrmService, ZohoCrmService>();
 

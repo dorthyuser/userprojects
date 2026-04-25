@@ -90,7 +90,6 @@ namespace ZohoProject2.Services
 
                 if (expiresIn < 60)
                 {
-                    // usable now, but do not cache
                     _tokenExpiry = DateTime.MinValue;
                 }
                 else
@@ -106,7 +105,6 @@ namespace ZohoProject2.Services
 
         public async Task<HttpResponseMessage> SendAsync(HttpMethod method, string relativePath, string? body, CancellationToken cancellationToken)
         {
-            // Ensure token is present (double-checked locking)
             if (IsTokenExpired())
             {
                 await _semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
@@ -150,21 +148,17 @@ namespace ZohoProject2.Services
 
             if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
-                // Dispose original response before retry
                 response.Dispose();
 
-                // Force refresh and retry once
                 await _semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
                 try
                 {
-                    // re-check inside lock
                     if (IsTokenExpired())
                     {
                         await RefreshTokenAsync(cancellationToken).ConfigureAwait(false);
                     }
                     else
                     {
-                        // Token wasn't expired according to local state, still force refresh to follow rule
                         await RefreshTokenAsync(cancellationToken).ConfigureAwait(false);
                     }
                 }
@@ -173,7 +167,6 @@ namespace ZohoProject2.Services
                     _semaphore.Release();
                 }
 
-                // Build a brand new request for retry
                 var retryUrl = $"{_options.BaseUrl.TrimEnd('/')}/{relativePath.TrimStart('/')}";
                 var retryRequest = new HttpRequestMessage(method, retryUrl);
                 retryRequest.Headers.Add("Authorization", $"Zoho-oauthtoken {_accessToken}");
