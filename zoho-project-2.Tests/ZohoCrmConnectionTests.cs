@@ -2,6 +2,7 @@
 using System;
 using System.Net;
 using System.Net.Http;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -57,9 +58,10 @@ namespace ZohoProject2.Tests.Services
             {
                 BaseAddress = new Uri("https://example.com")
             };
+            var tokenJson = JsonSerializer.Serialize(new { access_token = "token", expires_in = 3600 });
             var tokenClient = new HttpClient(new TokenHandlerStub(new HttpResponseMessage(HttpStatusCode.OK)
             {
-                Content = new StringContent("{"access_token":"token","expires_in":3600}")
+                Content = new StringContent(tokenJson)
             }))
             {
                 BaseAddress = new Uri("https://example.com")
@@ -91,9 +93,10 @@ namespace ZohoProject2.Tests.Services
             {
                 BaseAddress = new Uri("https://example.com")
             };
+            var tokenJson = JsonSerializer.Serialize(new { access_token = "token", expires_in = 3600 });
             var tokenClient = new HttpClient(new TokenHandlerStub(new HttpResponseMessage(HttpStatusCode.OK)
             {
-                Content = new StringContent("{"access_token":"token","expires_in":3600}")
+                Content = new StringContent(tokenJson)
             }))
             {
                 BaseAddress = new Uri("https://example.com")

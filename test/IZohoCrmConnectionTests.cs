@@ -10,54 +10,37 @@ namespace ZohoProject2.Tests.Services
     public class IZohoCrmConnectionTests
     {
         [Fact]
-        public async Task SendAsync_InterfaceContract_CanBeImplementedAndInvoked()
+        public async Task SendAsync_IsDeclaredWithExpectedSignature()
         {
             // Arrange
-            IZohoCrmConnection connection = new FakeConnection();
             var method = HttpMethod.Get;
-            var relativePath = "/crm/v2/users";
+            var path = "/crm/v2/users";
             var body = (string?)null;
             var cancellationToken = CancellationToken.None;
 
             // Act
-            var response = await connection.SendAsync(method, relativePath, body, cancellationToken);
-            var content = await response.Content.ReadAsStringAsync();
+            Task<HttpResponseMessage> Invoke(IZohoCrmConnection connection) => connection.SendAsync(method, path, body, cancellationToken);
 
             // Assert
-            Assert.True(response.IsSuccessStatusCode);
-            Assert.Equal("ok", content);
+            await Task.CompletedTask;
+            Assert.NotNull(typeof(IZohoCrmConnection).GetMethod(nameof(IZohoCrmConnection.SendAsync)));
         }
 
         [Fact]
-        public async Task SendAsync_InterfaceContract_HandlesNonNullBody()
+        public void SendAsync_InterfaceMethod_HasExpectedParameters()
         {
             // Arrange
-            IZohoCrmConnection connection = new FakeConnection();
-            var method = HttpMethod.Post;
-            var relativePath = "/crm/v2/users";
-            var body = "payload";
-            var cancellationToken = CancellationToken.None;
+            var methodInfo = typeof(IZohoCrmConnection).GetMethod(nameof(IZohoCrmConnection.SendAsync));
 
             // Act
-            var response = await connection.SendAsync(method, relativePath, body, cancellationToken);
-            var content = await response.Content.ReadAsStringAsync();
+            var parameters = methodInfo!.GetParameters();
 
             // Assert
-            Assert.True(response.IsSuccessStatusCode);
-            Assert.Equal("ok", content);
-        }
-
-        private sealed class FakeConnection : IZohoCrmConnection
-        {
-            public Task<HttpResponseMessage> SendAsync(HttpMethod method, string relativePath, string? body, CancellationToken cancellationToken)
-            {
-                var response = new HttpResponseMessage(System.Net.HttpStatusCode.OK)
-                {
-                    Content = new StringContent("ok")
-                };
-
-                return Task.FromResult(response);
-            }
+            Assert.Equal(4, parameters.Length);
+            Assert.Equal(typeof(HttpMethod), parameters[0].ParameterType);
+            Assert.Equal(typeof(string), parameters[1].ParameterType);
+            Assert.Equal(typeof(string), parameters[2].ParameterType);
+            Assert.Equal(typeof(CancellationToken), parameters[3].ParameterType);
         }
     }
 }
