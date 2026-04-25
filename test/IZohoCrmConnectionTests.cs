@@ -3,6 +3,8 @@ using System;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
+using Moq;
 using Xunit;
 using ZohoProject2.Services;
 
@@ -11,34 +13,24 @@ namespace ZohoProject2.Tests.Services
     public class IZohoCrmConnectionTests
     {
         [Fact]
-        public async Task SendAsync_InterfaceContract_TaskCanBeObserved()
+        public void Interface_ShouldDefineSendAsync_Method()
         {
-            // Arrange
-            IZohoCrmConnection? connection = null;
-            var method = HttpMethod.Get;
-            var relativePath = "/crm/v2/users";
-            string? body = null;
-            var token = CancellationToken.None;
-
-            // Act & Assert
-            await Assert.ThrowsAsync<NullReferenceException>(async () =>
-            {
-                _ = await connection!.SendAsync(method, relativePath, body, token);
-            });
+            var method = typeof(IZohoCrmConnection).GetMethod("SendAsync");
+            Assert.NotNull(method);
+            Assert.Equal(typeof(Task<HttpResponseMessage>), method.ReturnType);
         }
 
         [Fact]
-        public void SendAsync_InterfaceType_IsPublicAndAccessible()
+        public void Interface_ShouldExposeExpectedParameters()
         {
-            // Arrange
-            var type = typeof(IZohoCrmConnection);
-
-            // Act
-            var methods = type.GetMethods();
-
-            // Assert
-            Assert.Single(methods);
-            Assert.Equal("SendAsync", methods[0].Name);
+            var method = typeof(IZohoCrmConnection).GetMethod("SendAsync");
+            Assert.NotNull(method);
+            var parameters = method.GetParameters();
+            Assert.Equal(4, parameters.Length);
+            Assert.Equal(typeof(HttpMethod), parameters[0].ParameterType);
+            Assert.Equal(typeof(string), parameters[1].ParameterType);
+            Assert.Equal(typeof(string), parameters[2].ParameterType);
+            Assert.Equal(typeof(CancellationToken), parameters[3].ParameterType);
         }
     }
 }

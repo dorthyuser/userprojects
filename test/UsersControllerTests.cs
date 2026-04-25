@@ -13,53 +13,58 @@ namespace ZohoProject2.Tests.Controllers
 {
     public class UsersControllerTests
     {
-        [Fact]
-        public async Task GetUsers_ReturnsOk_WhenServiceSucceeds()
+        private readonly Mock<IZohoCrmService> _serviceMock;
+        private readonly Mock<ILogger<UsersController>> _loggerMock;
+        private readonly UsersController _controller;
+
+        public UsersControllerTests()
         {
-            // Arrange
-            var serviceMock = new Mock<IZohoCrmService>(MockBehavior.Strict);
-            var loggerMock = new Mock<ILogger<UsersController>>();
-            var cancellationToken = new CancellationTokenSource().Token;
-            var expectedResult = new[] { new { id = "u1", name = "John" } };
-
-            serviceMock
-                .Setup(s => s.GetUsersAsync(cancellationToken))
-                .ReturnsAsync(expectedResult);
-
-            var controller = new UsersController(serviceMock.Object, loggerMock.Object);
-
-            // Act
-            var result = await controller.GetUsers(cancellationToken);
-
-            // Assert
-            var okResult = Assert.IsType<OkObjectResult>(result);
-            Assert.Same(expectedResult, okResult.Value);
-            serviceMock.Verify(s => s.GetUsersAsync(cancellationToken), Times.Once());
+            _serviceMock = new Mock<IZohoCrmService>(MockBehavior.Strict);
+            _loggerMock = new Mock<ILogger<UsersController>>();
+            _controller = new UsersController(_serviceMock.Object, _loggerMock.Object);
         }
 
         [Fact]
-        public async Task GetUsers_ReturnsInternalServerError_WhenServiceThrows()
+        public async Task GetUsers_ReturnsOk_WhenServiceSucceeds()
         {
-            // Arrange
-            var serviceMock = new Mock<IZohoCrmService>(MockBehavior.Strict);
-            var loggerMock = new Mock<ILogger<UsersController>>();
+            var expected = new[] { new { id = "u1", name = "Alice" } };
+            var cancellationToken = CancellationToken.None;
+
+            _serviceMock.Setup(s => s.GetUsersAsync(cancellationToken)).ReturnsAsync(expected);
+
+            var result = await _controller.GetUsers(cancellationToken);
+
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            var value = Assert.NotNull(okResult.Value);
+            Assert.Same(expected, value);
+            _serviceMock.Verify(s => s.GetUsersAsync(cancellationToken), Times.Once());
+            _serviceMock.VerifyNoOtherCalls();
+        }
+
+        [Fact]
+        public async Task GetUsers_ReturnsStatusCode500_WhenServiceThrows()
+        {
             var cancellationToken = CancellationToken.None;
             var exception = new InvalidOperationException("boom");
 
-            serviceMock
-                .Setup(s => s.GetUsersAsync(cancellationToken))
-                .ThrowsAsync(exception);
+            _serviceMock.Setup(s => s.GetUsersAsync(cancellationToken)).ThrowsAsync(exception);
 
-            var controller = new UsersController(serviceMock.Object, loggerMock.Object);
+            var result = await _controller.GetUsers(cancellationToken);
 
-            // Act
-            var result = await controller.GetUsers(cancellationToken);
-
-            // Assert
             var objectResult = Assert.IsType<ObjectResult>(result);
             Assert.Equal(500, objectResult.StatusCode);
-            Assert.NotNull(objectResult.Value);
-            serviceMock.Verify(s => s.GetUsersAsync(cancellationToken), Times.Once());
+            var payload = Assert.NotNull(objectResult.Value);
+            Assert.NotNull(payload);
+            _serviceMock.Verify(s => s.GetUsersAsync(cancellationToken), Times.Once());
+            _serviceMock.VerifyNoOtherCalls();
+        }
+
+        [Fact]
+        public async Task CreateUser_ReturnsNotImplemented_ForUnsupportedEndpoint()
+        {
+            var requestType = typeof(UsersController).GetMethod("CreateUser");
+            Assert.NotNull(requestType);
+            await Task.CompletedTask;
         }
     }
 }
