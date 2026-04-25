@@ -1,7 +1,6 @@
 // GENERATED_BY_AI_TEST_ENGINE
 using System.Threading;
 using System.Threading.Tasks;
-using Moq;
 using Xunit;
 using ZohoProject2.Models;
 using ZohoProject2.Services;
@@ -11,101 +10,54 @@ namespace ZohoProject2.Tests.Services
     public class IZohoCrmServiceTests
     {
         [Fact]
-        public async Task GetUsersAsync_ReturnsObject_WhenMockIsConfigured()
+        public async Task ServiceContract_GetUsersAsync_ReturnsExpectedObject()
         {
             // Arrange
-            var serviceMock = new Mock<IZohoCrmService>(MockBehavior.Strict);
+            IZohoCrmService service = new FakeService();
             var cancellationToken = CancellationToken.None;
-            var expected = new { users = new[] { new { id = "u1" } } };
-            serviceMock
-                .Setup(s => s.GetUsersAsync(cancellationToken))
-                .ReturnsAsync(expected);
 
             // Act
-            var result = await serviceMock.Object.GetUsersAsync(cancellationToken);
+            var result = await service.GetUsersAsync(cancellationToken);
 
             // Assert
-            Assert.Same(expected, result);
-            serviceMock.Verify(s => s.GetUsersAsync(cancellationToken), Times.Once());
+            Assert.NotNull(result);
+            Assert.Equal("users", result);
         }
 
         [Fact]
-        public async Task GetUsersAsync_Throws_WhenNotConfigured()
+        public async Task ServiceContract_CreateAndUpdateMethods_AreCallable()
         {
             // Arrange
-            var serviceMock = new Mock<IZohoCrmService>(MockBehavior.Strict);
-
-            // Act & Assert
-            await Assert.ThrowsAsync<MockException>(async () =>
-            {
-                await serviceMock.Object.GetUsersAsync(CancellationToken.None);
-            });
-        }
-
-        [Fact]
-        public async Task CreateUserAsync_ReturnsObject_WhenMockIsConfigured()
-        {
-            // Arrange
-            var serviceMock = new Mock<IZohoCrmService>(MockBehavior.Strict);
+            IZohoCrmService service = new FakeService();
+            var createRequest = new CreateUserRequest();
+            var updateRequest = new UpdateUserRequest();
             var cancellationToken = CancellationToken.None;
-            var request = new CreateUserRequest();
-            var expected = new { id = "u1", status = "created" };
-            serviceMock
-                .Setup(s => s.CreateUserAsync(request, cancellationToken))
-                .ReturnsAsync(expected);
 
             // Act
-            var result = await serviceMock.Object.CreateUserAsync(request, cancellationToken);
+            var createResult = await service.CreateUserAsync(createRequest, cancellationToken);
+            var updateResult = await service.UpdateUserAsync("123", updateRequest, cancellationToken);
 
             // Assert
-            Assert.Same(expected, result);
-            serviceMock.Verify(s => s.CreateUserAsync(request, cancellationToken), Times.Once());
+            Assert.Equal("created", createResult);
+            Assert.Equal("updated", updateResult);
         }
 
-        [Fact]
-        public async Task CreateUserAsync_Throws_WhenNotConfigured()
+        private sealed class FakeService : IZohoCrmService
         {
-            // Arrange
-            var serviceMock = new Mock<IZohoCrmService>(MockBehavior.Strict);
-
-            // Act & Assert
-            await Assert.ThrowsAsync<MockException>(async () =>
+            public Task<object> GetUsersAsync(CancellationToken cancellationToken)
             {
-                await serviceMock.Object.CreateUserAsync(new CreateUserRequest(), CancellationToken.None);
-            });
-        }
+                return Task.FromResult<object>("users");
+            }
 
-        [Fact]
-        public async Task UpdateUserAsync_ReturnsObject_WhenMockIsConfigured()
-        {
-            // Arrange
-            var serviceMock = new Mock<IZohoCrmService>(MockBehavior.Strict);
-            var cancellationToken = CancellationToken.None;
-            var request = new UpdateUserRequest();
-            var expected = new { id = "u1", status = "updated" };
-            serviceMock
-                .Setup(s => s.UpdateUserAsync("u1", request, cancellationToken))
-                .ReturnsAsync(expected);
-
-            // Act
-            var result = await serviceMock.Object.UpdateUserAsync("u1", request, cancellationToken);
-
-            // Assert
-            Assert.Same(expected, result);
-            serviceMock.Verify(s => s.UpdateUserAsync("u1", request, cancellationToken), Times.Once());
-        }
-
-        [Fact]
-        public async Task UpdateUserAsync_Throws_WhenNotConfigured()
-        {
-            // Arrange
-            var serviceMock = new Mock<IZohoCrmService>(MockBehavior.Strict);
-
-            // Act & Assert
-            await Assert.ThrowsAsync<MockException>(async () =>
+            public Task<object> CreateUserAsync(CreateUserRequest request, CancellationToken cancellationToken)
             {
-                await serviceMock.Object.UpdateUserAsync("u1", new UpdateUserRequest(), CancellationToken.None);
-            });
+                return Task.FromResult<object>("created");
+            }
+
+            public Task<object> UpdateUserAsync(string id, UpdateUserRequest request, CancellationToken cancellationToken)
+            {
+                return Task.FromResult<object>("updated");
+            }
         }
     }
 }

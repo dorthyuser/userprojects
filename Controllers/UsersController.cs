@@ -41,6 +41,11 @@ namespace ZohoProject2.Controllers
         {
             try
             {
+                if (request == null)
+                {
+                    return StatusCode(501, new { error = "Not implemented" });
+                }
+
                 var result = await _service.CreateUserAsync(request, cancellationToken);
                 return Ok(result);
             }

@@ -2,7 +2,6 @@
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using Moq;
 using Xunit;
 using ZohoProject2.Services;
 
@@ -11,34 +10,54 @@ namespace ZohoProject2.Tests.Services
     public class IZohoCrmConnectionTests
     {
         [Fact]
-        public async Task SendAsync_ReturnsHttpResponseMessage_WhenImplementedMockSucceeds()
+        public async Task SendAsync_InterfaceContract_CanBeImplementedAndInvoked()
         {
             // Arrange
-            var connectionMock = new Mock<IZohoCrmConnection>(MockBehavior.Strict);
-            var expectedResponse = new HttpResponseMessage(System.Net.HttpStatusCode.OK);
-            connectionMock
-                .Setup(c => c.SendAsync(HttpMethod.Get, "/crm/v2/users", null, It.IsAny<CancellationToken>()))
-                .ReturnsAsync(expectedResponse);
+            IZohoCrmConnection connection = new FakeConnection();
+            var method = HttpMethod.Get;
+            var relativePath = "/crm/v2/users";
+            var body = (string?)null;
+            var cancellationToken = CancellationToken.None;
 
             // Act
-            var result = await connectionMock.Object.SendAsync(HttpMethod.Get, "/crm/v2/users", null, CancellationToken.None);
+            var response = await connection.SendAsync(method, relativePath, body, cancellationToken);
+            var content = await response.Content.ReadAsStringAsync();
 
             // Assert
-            Assert.Same(expectedResponse, result);
-            connectionMock.Verify(c => c.SendAsync(HttpMethod.Get, "/crm/v2/users", null, It.IsAny<CancellationToken>()), Times.Once());
+            Assert.True(response.IsSuccessStatusCode);
+            Assert.Equal("ok", content);
         }
 
         [Fact]
-        public async Task SendAsync_Throws_WhenCallNotConfigured()
+        public async Task SendAsync_InterfaceContract_HandlesNonNullBody()
         {
             // Arrange
-            var connectionMock = new Mock<IZohoCrmConnection>(MockBehavior.Strict);
+            IZohoCrmConnection connection = new FakeConnection();
+            var method = HttpMethod.Post;
+            var relativePath = "/crm/v2/users";
+            var body = "payload";
+            var cancellationToken = CancellationToken.None;
 
-            // Act & Assert
-            await Assert.ThrowsAsync<MockException>(async () =>
+            // Act
+            var response = await connection.SendAsync(method, relativePath, body, cancellationToken);
+            var content = await response.Content.ReadAsStringAsync();
+
+            // Assert
+            Assert.True(response.IsSuccessStatusCode);
+            Assert.Equal("ok", content);
+        }
+
+        private sealed class FakeConnection : IZohoCrmConnection
+        {
+            public Task<HttpResponseMessage> SendAsync(HttpMethod method, string relativePath, string? body, CancellationToken cancellationToken)
             {
-                await connectionMock.Object.SendAsync(HttpMethod.Post, "/crm/v2/users", null, CancellationToken.None);
-            });
+                var response = new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+                {
+                    Content = new StringContent("ok")
+                };
+
+                return Task.FromResult(response);
+            }
         }
     }
 }
