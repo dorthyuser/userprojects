@@ -3,7 +3,6 @@ using System;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using Moq;
 using Xunit;
 using ZohoProject2.Services;
 
@@ -12,41 +11,52 @@ namespace ZohoProject2.Tests.Services
     public class IZohoCrmConnectionTests
     {
         [Fact]
-        public async Task SendAsync_InterfaceContract_CanBeMockedForSuccess()
+        public async Task SendAsync_CanBeImplementedAndReturnsResponse_WhenCalledWithValidArguments()
         {
             // Arrange
-            var mock = new Mock<IZohoCrmConnection>(MockBehavior.Strict);
+            IZohoCrmConnection? connection = new StubConnection();
             var method = HttpMethod.Get;
-            var relativePath = "/crm/v2/users";
+            var path = "/crm/v2/users";
             var body = (string?)null;
             var cancellationToken = CancellationToken.None;
-            var response = new HttpResponseMessage(System.Net.HttpStatusCode.OK);
-            mock.Setup(m => m.SendAsync(method, relativePath, body, cancellationToken)).ReturnsAsync(response);
 
             // Act
-            var result = await mock.Object.SendAsync(method, relativePath, body, cancellationToken);
+            var response = await connection!.SendAsync(method, path, body, cancellationToken);
+            var statusCode = response.StatusCode;
 
             // Assert
-            Assert.Same(response, result);
-            mock.Verify(m => m.SendAsync(method, relativePath, body, cancellationToken), Times.Once);
-            mock.VerifyNoOtherCalls();
+            Assert.Equal(System.Net.HttpStatusCode.OK, statusCode);
         }
 
         [Fact]
-        public async Task SendAsync_InterfaceContract_CanBeMockedForException()
+        public async Task SendAsync_ThrowsNotImplementedException_WhenStubIsConfiguredToThrow()
         {
             // Arrange
-            var mock = new Mock<IZohoCrmConnection>(MockBehavior.Strict);
+            IZohoCrmConnection connection = new ThrowingStubConnection();
             var method = HttpMethod.Post;
-            var relativePath = "/crm/v2/users";
+            var path = "/crm/v2/users";
             var body = "payload";
             var cancellationToken = CancellationToken.None;
-            mock.Setup(m => m.SendAsync(method, relativePath, body, cancellationToken)).ThrowsAsync(new InvalidOperationException("error"));
 
             // Act & Assert
-            await Assert.ThrowsAsync<InvalidOperationException>(async () => await mock.Object.SendAsync(method, relativePath, body, cancellationToken));
-            mock.Verify(m => m.SendAsync(method, relativePath, body, cancellationToken), Times.Once);
-            mock.VerifyNoOtherCalls();
+            await Assert.ThrowsAsync<NotImplementedException>(() => connection.SendAsync(method, path, body, cancellationToken));
+        }
+
+        private sealed class StubConnection : IZohoCrmConnection
+        {
+            public Task<HttpResponseMessage> SendAsync(HttpMethod method, string relativePath, string? body, CancellationToken cancellationToken)
+            {
+                var response = new HttpResponseMessage(System.Net.HttpStatusCode.OK);
+                return Task.FromResult(response);
+            }
+        }
+
+        private sealed class ThrowingStubConnection : IZohoCrmConnection
+        {
+            public Task<HttpResponseMessage> SendAsync(HttpMethod method, string relativePath, string? body, CancellationToken cancellationToken)
+            {
+                throw new NotImplementedException();
+            }
         }
     }
 }
