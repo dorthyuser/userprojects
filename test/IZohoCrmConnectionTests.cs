@@ -1,10 +1,7 @@
 // GENERATED_BY_AI_TEST_ENGINE
-using System;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
-using Moq;
 using Xunit;
 using ZohoProject2.Services;
 
@@ -13,19 +10,30 @@ namespace ZohoProject2.Tests.Services
     public class IZohoCrmConnectionTests
     {
         [Fact]
-        public void Interface_ShouldDefineSendAsync_Method()
+        public void InterfaceHasExpectedMembers()
         {
-            var method = typeof(IZohoCrmConnection).GetMethod("SendAsync");
-            Assert.NotNull(method);
-            Assert.Equal(typeof(Task<HttpResponseMessage>), method.ReturnType);
+            // Arrange
+            var type = typeof(IZohoCrmConnection);
+
+            // Act
+            var methods = type.GetMethods();
+
+            // Assert
+            Assert.Single(methods);
+            Assert.Equal("SendAsync", methods[0].Name);
         }
 
         [Fact]
-        public void Interface_ShouldExposeExpectedParameters()
+        public void SendAsyncSignature_IsAsExpected()
         {
+            // Arrange
             var method = typeof(IZohoCrmConnection).GetMethod("SendAsync");
-            Assert.NotNull(method);
-            var parameters = method.GetParameters();
+
+            // Act
+            var parameters = method!.GetParameters();
+
+            // Assert
+            Assert.Equal(typeof(Task<HttpResponseMessage>), method.ReturnType);
             Assert.Equal(4, parameters.Length);
             Assert.Equal(typeof(HttpMethod), parameters[0].ParameterType);
             Assert.Equal(typeof(string), parameters[1].ParameterType);

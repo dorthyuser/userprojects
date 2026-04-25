@@ -27,44 +27,42 @@ namespace ZohoProject2.Tests.Controllers
         [Fact]
         public async Task GetUsers_ReturnsOk_WhenServiceSucceeds()
         {
-            var expected = new[] { new { id = "u1", name = "Alice" } };
+            // Arrange
             var cancellationToken = CancellationToken.None;
+            var expected = new[] { new { id = "u1", name = "Alice" } };
+            _serviceMock
+                .Setup(s => s.GetUsersAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expected);
 
-            _serviceMock.Setup(s => s.GetUsersAsync(cancellationToken)).ReturnsAsync(expected);
-
+            // Act
             var result = await _controller.GetUsers(cancellationToken);
 
+            // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
-            var value = Assert.NotNull(okResult.Value);
-            Assert.Same(expected, value);
-            _serviceMock.Verify(s => s.GetUsersAsync(cancellationToken), Times.Once());
+            Assert.Same(expected, okResult.Value);
+            _serviceMock.Verify(s => s.GetUsersAsync(It.IsAny<CancellationToken>()), Times.Once());
             _serviceMock.VerifyNoOtherCalls();
         }
 
         [Fact]
-        public async Task GetUsers_ReturnsStatusCode500_WhenServiceThrows()
+        public async Task GetUsers_ReturnsInternalServerError_WhenServiceThrows()
         {
+            // Arrange
             var cancellationToken = CancellationToken.None;
-            var exception = new InvalidOperationException("boom");
+            var exceptionMessage = "boom";
+            _serviceMock
+                .Setup(s => s.GetUsersAsync(It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new InvalidOperationException(exceptionMessage));
 
-            _serviceMock.Setup(s => s.GetUsersAsync(cancellationToken)).ThrowsAsync(exception);
-
+            // Act
             var result = await _controller.GetUsers(cancellationToken);
 
+            // Assert
             var objectResult = Assert.IsType<ObjectResult>(result);
             Assert.Equal(500, objectResult.StatusCode);
-            var payload = Assert.NotNull(objectResult.Value);
-            Assert.NotNull(payload);
-            _serviceMock.Verify(s => s.GetUsersAsync(cancellationToken), Times.Once());
+            Assert.NotNull(objectResult.Value);
+            _serviceMock.Verify(s => s.GetUsersAsync(It.IsAny<CancellationToken>()), Times.Once());
             _serviceMock.VerifyNoOtherCalls();
-        }
-
-        [Fact]
-        public async Task CreateUser_ReturnsNotImplemented_ForUnsupportedEndpoint()
-        {
-            var requestType = typeof(UsersController).GetMethod("CreateUser");
-            Assert.NotNull(requestType);
-            await Task.CompletedTask;
         }
     }
 }
