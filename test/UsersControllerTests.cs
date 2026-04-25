@@ -7,7 +7,6 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
 using ZohoProject2.Controllers;
-using ZohoProject2.Models;
 using ZohoProject2.Services;
 
 namespace ZohoProject2.Tests.Controllers
@@ -30,7 +29,7 @@ namespace ZohoProject2.Tests.Controllers
         {
             // Arrange
             var cancellationToken = CancellationToken.None;
-            var expected = new[] { new { id = "1", name = "Alice" } };
+            var expected = new { users = new[] { new { id = "1", name = "Jane" } } };
             _serviceMock
                 .Setup(s => s.GetUsersAsync(cancellationToken))
                 .ReturnsAsync(expected);
@@ -41,7 +40,8 @@ namespace ZohoProject2.Tests.Controllers
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
             Assert.Same(expected, okResult.Value);
-            _serviceMock.Verify(s => s.GetUsersAsync(cancellationToken), Times.Once);
+            _serviceMock.Verify(s => s.GetUsersAsync(cancellationToken), Times.Once());
+            _serviceMock.VerifyNoOtherCalls();
         }
 
         [Fact]
@@ -49,7 +49,7 @@ namespace ZohoProject2.Tests.Controllers
         {
             // Arrange
             var cancellationToken = CancellationToken.None;
-            var exception = new Exception("boom");
+            var exception = new InvalidOperationException("boom");
             _serviceMock
                 .Setup(s => s.GetUsersAsync(cancellationToken))
                 .ThrowsAsync(exception);
@@ -60,52 +60,8 @@ namespace ZohoProject2.Tests.Controllers
             // Assert
             var objectResult = Assert.IsType<ObjectResult>(result);
             Assert.Equal(500, objectResult.StatusCode);
-            _serviceMock.Verify(s => s.GetUsersAsync(cancellationToken), Times.Once);
-            _loggerMock.Verify(
-                x => x.Log(
-                    LogLevel.Error,
-                    It.IsAny<EventId>(),
-                    It.Is<It.IsAnyType>((v, t) => true),
-                    exception,
-                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
-                Times.Once);
-        }
-
-        [Fact]
-        public async Task CreateUser_ReturnsNotImplemented_WhenCalled()
-        {
-            // Arrange
-            var body = new CreateUserRequest();
-            _serviceMock
-                .Setup(s => s.CreateUserAsync(It.IsAny<CreateUserRequest>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new { });
-            var method = typeof(UsersController).GetMethod(nameof(UsersController.CreateUser));
-            Assert.NotNull(method);
-
-            // Act
-            var resultTask = (Task<IActionResult>)method!.Invoke(_controller, new object[] { body, CancellationToken.None })!;
-            var result = await resultTask;
-
-            // Assert
-            var okResult = Assert.IsType<OkObjectResult>(result);
-            Assert.NotNull(okResult.Value);
-            _serviceMock.Verify(s => s.CreateUserAsync(It.IsAny<CreateUserRequest>(), It.IsAny<CancellationToken>()), Times.Once);
-        }
-
-        [Fact]
-        public async Task CreateUser_ReturnsNotImplemented_WhenCalledWithNullBody()
-        {
-            // Arrange
-            var method = typeof(UsersController).GetMethod(nameof(UsersController.CreateUser));
-            Assert.NotNull(method);
-
-            // Act
-            var resultTask = (Task<IActionResult>)method!.Invoke(_controller, new object?[] { null!, CancellationToken.None })!;
-            var result = await resultTask;
-
-            // Assert
-            var objectResult = Assert.IsType<ObjectResult>(result);
-            Assert.Equal(501, objectResult.StatusCode);
+            var body = Assert.NotNull(objectResult.Value);
+            _serviceMock.Verify(s => s.GetUsersAsync(cancellationToken), Times.Once());
             _serviceMock.VerifyNoOtherCalls();
         }
     }

@@ -1,12 +1,10 @@
 // GENERATED_BY_AI_TEST_ENGINE
 using System;
-using System.Net;
 using System.Net.Http;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
+using ZohoProject2.Models;
 using ZohoProject2.Services;
 
 namespace ZohoProject2.Tests.Services
@@ -14,7 +12,7 @@ namespace ZohoProject2.Tests.Services
     public class ZohoCrmConnectionTests
     {
         [Fact]
-        public void Constructor_Throws_WhenOptionsAreNull()
+        public void Constructor_ThrowsInvalidOperationException_WhenOptionsAreNull()
         {
             // Arrange
             var httpFactoryMock = new Mock<IHttpClientFactory>(MockBehavior.Strict);
@@ -25,18 +23,18 @@ namespace ZohoProject2.Tests.Services
 
             // Assert
             Assert.Equal("ZohoOptions not provided", ex.Message);
-            httpFactoryMock.VerifyNoOtherCalls();
         }
 
         [Fact]
         public void Constructor_CreatesClients_WhenOptionsProvided()
         {
             // Arrange
-            var apiClient = new HttpClient(new StubHandler(new HttpResponseMessage(HttpStatusCode.OK)));
-            var tokenClient = new HttpClient(new StubHandler(new HttpResponseMessage(HttpStatusCode.OK)));
             var httpFactoryMock = new Mock<IHttpClientFactory>(MockBehavior.Strict);
             var loggerMock = new Mock<ILogger<ZohoCrmConnection>>();
-            var options = new ZohoProject2.Models.ZohoOptions();
+            var options = new ZohoOptions();
+            var apiClient = new HttpClient(new HttpClientHandler());
+            var tokenClient = new HttpClient(new HttpClientHandler());
+
             httpFactoryMock.Setup(f => f.CreateClient("zoho_api")).Returns(apiClient);
             httpFactoryMock.Setup(f => f.CreateClient("zoho_token")).Returns(tokenClient);
 
@@ -45,18 +43,9 @@ namespace ZohoProject2.Tests.Services
 
             // Assert
             Assert.NotNull(connection);
-            httpFactoryMock.Verify(f => f.CreateClient("zoho_api"), Times.Once);
-            httpFactoryMock.Verify(f => f.CreateClient("zoho_token"), Times.Once);
-        }
-
-        private sealed class StubHandler : HttpMessageHandler
-        {
-            private readonly HttpResponseMessage _response;
-            public StubHandler(HttpResponseMessage response) => _response = response;
-            protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
-            {
-                return Task.FromResult(_response);
-            }
+            httpFactoryMock.Verify(f => f.CreateClient("zoho_api"), Times.Once());
+            httpFactoryMock.Verify(f => f.CreateClient("zoho_token"), Times.Once());
+            httpFactoryMock.VerifyNoOtherCalls();
         }
     }
 }

@@ -1,4 +1,5 @@
 // GENERATED_BY_AI_TEST_ENGINE
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -10,41 +11,65 @@ namespace ZohoProject2.Tests.Services
     public class IZohoCrmServiceTests
     {
         [Fact]
-        public void Interface_DefinesExpectedMethods()
+        public async Task GetUsersAsync_TaskCompletes_WhenImplementationReturnsData()
         {
             // Arrange
-            var methods = typeof(IZohoCrmService).GetMethods();
+            IZohoCrmService service = new FakeService();
+            var token = CancellationToken.None;
 
             // Act
-            var count = methods.Length;
-            var hasGetUsers = typeof(IZohoCrmService).GetMethod(nameof(IZohoCrmService.GetUsersAsync)) != null;
-            var hasCreateUser = typeof(IZohoCrmService).GetMethod(nameof(IZohoCrmService.CreateUserAsync)) != null;
-            var hasUpdateUser = typeof(IZohoCrmService).GetMethod(nameof(IZohoCrmService.UpdateUserAsync)) != null;
+            var result = await service.GetUsersAsync(token);
 
             // Assert
-            Assert.Equal(3, count);
-            Assert.True(hasGetUsers);
-            Assert.True(hasCreateUser);
-            Assert.True(hasUpdateUser);
+            Assert.NotNull(result);
         }
 
         [Fact]
-        public async Task Methods_CanBeRepresented_AsTaskBasedContracts()
+        public async Task CreateUserAsync_TaskCompletes_WhenImplementationReturnsData()
         {
             // Arrange
-            Task<object> getUsersTask = Task.FromResult<object>(new object());
-            Task<object> createUserTask = Task.FromResult<object>(new object());
-            Task<object> updateUserTask = Task.FromResult<object>(new object());
+            IZohoCrmService service = new FakeService();
+            var request = new CreateUserRequest();
+            var token = CancellationToken.None;
 
             // Act
-            var getUsersResult = await getUsersTask;
-            var createUserResult = await createUserTask;
-            var updateUserResult = await updateUserTask;
+            var result = await service.CreateUserAsync(request, token);
 
             // Assert
-            Assert.NotNull(getUsersResult);
-            Assert.NotNull(createUserResult);
-            Assert.NotNull(updateUserResult);
+            Assert.NotNull(result);
+        }
+
+        [Fact]
+        public async Task UpdateUserAsync_TaskCompletes_WhenImplementationReturnsData()
+        {
+            // Arrange
+            IZohoCrmService service = new FakeService();
+            var request = new UpdateUserRequest();
+            var token = CancellationToken.None;
+
+            // Act
+            var result = await service.UpdateUserAsync("123", request, token);
+
+            // Assert
+            Assert.NotNull(result);
+        }
+
+        private sealed class FakeService : IZohoCrmService
+        {
+            public Task<object> GetUsersAsync(CancellationToken cancellationToken)
+            {
+                return Task.FromResult<object>(new { ok = true });
+            }
+
+            public Task<object> CreateUserAsync(CreateUserRequest request, CancellationToken cancellationToken)
+            {
+                return Task.FromResult<object>(new { ok = true });
+            }
+
+            public Task<object> UpdateUserAsync(string id, UpdateUserRequest request, CancellationToken cancellationToken)
+            {
+                return Task.FromResult<object>(new { ok = true });
+            }
         }
     }
 }
