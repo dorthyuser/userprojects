@@ -1,95 +1,47 @@
 // GENERATED_BY_AI_TEST_ENGINE
 using System;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 using ZohoProject2.Models;
 using ZohoProject2.Services;
 
-namespace ZohoProject2.Tests
+namespace ZohoProject2.Tests.Services
 {
     public class IZohoCrmServiceTests
     {
         [Fact]
-        public async Task GetUsersAsync_ReturnsObject_WhenImplementationProvided()
+        public async Task PublicMethods_AreDeclared_OnInterface()
         {
             // Arrange
-            IZohoCrmService service = new FakeService();
-            var cancellationToken = CancellationToken.None;
+            var type = typeof(IZohoCrmService);
 
             // Act
-            var result = await service.GetUsersAsync(cancellationToken);
+            var methods = type.GetMethods();
 
             // Assert
-            Assert.Equal("users", result);
+            Assert.Equal(3, methods.Length);
+            Assert.Contains(methods, m => m.Name == "GetUsersAsync");
+            Assert.Contains(methods, m => m.Name == "CreateUserAsync");
+            Assert.Contains(methods, m => m.Name == "UpdateUserAsync");
         }
 
         [Fact]
-        public async Task CreateUserAsync_ReturnsCreatedPayload_WhenImplementationProvided()
+        public void InterfaceMethods_HaveExpectedSignatures()
         {
             // Arrange
-            IZohoCrmService service = new FakeService();
-            var request = new CreateUserRequest();
-            var cancellationToken = CancellationToken.None;
+            var type = typeof(IZohoCrmService);
 
             // Act
-            var result = await service.CreateUserAsync(request, cancellationToken);
+            var createMethod = type.GetMethod("CreateUserAsync");
+            var updateMethod = type.GetMethod("UpdateUserAsync");
 
             // Assert
-            Assert.Equal("created", result);
-        }
-
-        [Fact]
-        public async Task UpdateUserAsync_ReturnsUpdatedPayload_WhenImplementationProvided()
-        {
-            // Arrange
-            IZohoCrmService service = new FakeService();
-            var request = new UpdateUserRequest();
-            var cancellationToken = CancellationToken.None;
-
-            // Act
-            var result = await service.UpdateUserAsync("id-1", request, cancellationToken);
-
-            // Assert
-            Assert.Equal("updated", result);
-        }
-
-        [Fact]
-        public async Task UpdateUserAsync_ReturnsErrorPayload_WhenInvalidIdProvided()
-        {
-            // Arrange
-            IZohoCrmService service = new FakeService();
-            var request = new UpdateUserRequest();
-            var cancellationToken = CancellationToken.None;
-
-            // Act
-            var result = await service.UpdateUserAsync(string.Empty, request, cancellationToken);
-
-            // Assert
-            Assert.Equal("invalid-id", result);
-        }
-
-        private sealed class FakeService : IZohoCrmService
-        {
-            public Task<object> GetUsersAsync(CancellationToken cancellationToken)
-            {
-                return Task.FromResult<object>("users");
-            }
-
-            public Task<object> CreateUserAsync(CreateUserRequest request, CancellationToken cancellationToken)
-            {
-                return Task.FromResult<object>("created");
-            }
-
-            public Task<object> UpdateUserAsync(string id, UpdateUserRequest request, CancellationToken cancellationToken)
-            {
-                if (string.IsNullOrWhiteSpace(id))
-                {
-                    return Task.FromResult<object>("invalid-id");
-                }
-
-                return Task.FromResult<object>("updated");
-            }
+            Assert.NotNull(createMethod);
+            Assert.NotNull(updateMethod);
+            Assert.Equal(typeof(Task<object>), createMethod!.ReturnType);
+            Assert.Equal(typeof(Task<object>), updateMethod!.ReturnType);
         }
     }
 }
