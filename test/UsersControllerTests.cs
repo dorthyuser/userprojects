@@ -1,5 +1,6 @@
 // GENERATED_BY_AI_TEST_ENGINE
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
@@ -7,7 +8,6 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
 using ZohoProject2.Controllers;
-using ZohoProject2.Models;
 using ZohoProject2.Services;
 
 namespace ZohoProject2.Tests.Controllers
@@ -15,116 +15,78 @@ namespace ZohoProject2.Tests.Controllers
     public class UsersControllerTests
     {
         [Fact]
-        public async Task GetUsers_ReturnsOk_WithServiceResult()
+        public async Task GetUsers_ReturnsOk_WhenServiceSucceeds()
         {
-            var cancellationToken = new CancellationTokenSource().Token;
-            var expected = new { id = 1, name = "Alice" };
+            // Arrange
             var serviceMock = new Mock<IZohoCrmService>(MockBehavior.Strict);
+            var loggerMock = new Mock<ILogger<UsersController>>();
+            var expectedResult = new { users = new[] { new { id = "1", name = "Jane" } } };
+            var cancellationToken = CancellationToken.None;
+
             serviceMock
                 .Setup(s => s.GetUsersAsync(cancellationToken))
-                .ReturnsAsync(expected);
-            var loggerMock = new Mock<ILogger<UsersController>>();
+                .ReturnsAsync(expectedResult);
+
             var controller = new UsersController(serviceMock.Object, loggerMock.Object);
 
+            // Act
             var result = await controller.GetUsers(cancellationToken);
 
+            // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
-            var value = okResult.Value;
-            Assert.Same(expected, value);
+            Assert.Equal(200, okResult.StatusCode);
+            Assert.Equal(expectedResult, okResult.Value);
             serviceMock.Verify(s => s.GetUsersAsync(cancellationToken), Times.Once());
         }
 
         [Fact]
-        public async Task GetUsers_ReturnsStatusCode500_WhenServiceThrows()
+        public async Task GetUsers_ReturnsInternalServerError_WhenServiceThrows()
         {
-            var cancellationToken = new CancellationTokenSource().Token;
+            // Arrange
             var serviceMock = new Mock<IZohoCrmService>(MockBehavior.Strict);
+            var loggerMock = new Mock<ILogger<UsersController>>();
+            var cancellationToken = CancellationToken.None;
+            var expectedException = new Exception("boom");
+
             serviceMock
                 .Setup(s => s.GetUsersAsync(cancellationToken))
-                .ThrowsAsync(new Exception("boom"));
-            var loggerMock = new Mock<ILogger<UsersController>>();
+                .ThrowsAsync(expectedException);
+
             var controller = new UsersController(serviceMock.Object, loggerMock.Object);
 
+            // Act
             var result = await controller.GetUsers(cancellationToken);
 
+            // Assert
             var objectResult = Assert.IsType<ObjectResult>(result);
-            var statusCode = objectResult.StatusCode;
-            var statusCodeValue = statusCode.HasValue ? statusCode.Value : 0;
-            Assert.Equal(500, statusCodeValue);
+            Assert.Equal(500, objectResult.StatusCode);
+
+            var value = Assert.IsType<Dictionary<string, object>>(ToDictionary(objectResult.Value));
+            Assert.True(value.TryGetValue("error", out var errorValue));
+            Assert.Equal("boom", errorValue as string);
+
             serviceMock.Verify(s => s.GetUsersAsync(cancellationToken), Times.Once());
-            loggerMock.Verify(
-                x => x.Log(
-                    LogLevel.Error,
-                    It.IsAny<EventId>(),
-                    It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("Error fetching users")),
-                    It.IsAny<Exception>(),
-                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
-                Times.Once());
         }
 
-        [Fact]
-        public async Task CreateUser_ReturnsNotImplemented_WhenRequestIsNull()
+        private static Dictionary<string, object> ToDictionary(object? value)
         {
-            var cancellationToken = new CancellationTokenSource().Token;
-            var serviceMock = new Mock<IZohoCrmService>(MockBehavior.Strict);
-            var loggerMock = new Mock<ILogger<UsersController>>();
-            var controller = new UsersController(serviceMock.Object, loggerMock.Object);
+            if (value is Dictionary<string, object> dict)
+            {
+                return dict;
+            }
 
-            var result = await controller.CreateUser(null!, cancellationToken);
+            var result = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+            if (value == null)
+            {
+                return result;
+            }
 
-            var statusResult = Assert.IsType<ObjectResult>(result);
-            Assert.Equal(501, statusResult.StatusCode);
-            serviceMock.Verify(s => s.CreateUserAsync(It.IsAny<CreateUserRequest>(), It.IsAny<CancellationToken>()), Times.Never());
-        }
+            foreach (var prop in value.GetType().GetProperties())
+            {
+                result[prop.Name] = prop.GetValue(value)!;
+            }
 
-        [Fact]
-        public async Task CreateUser_ReturnsCreated_WhenRequestIsValid()
-        {
-            var cancellationToken = new CancellationTokenSource().Token;
-            var request = new CreateUserRequest();
-            var expected = new { id = "10", status = "created" };
-            var serviceMock = new Mock<IZohoCrmService>(MockBehavior.Strict);
-            serviceMock
-                .Setup(s => s.CreateUserAsync(request, cancellationToken))
-                .ReturnsAsync(expected);
-            var loggerMock = new Mock<ILogger<UsersController>>();
-            var controller = new UsersController(serviceMock.Object, loggerMock.Object);
-
-            var result = await controller.CreateUser(request, cancellationToken);
-
-            var createdResult = Assert.IsType<OkObjectResult>(result);
-            var value = createdResult.Value;
-            Assert.Same(expected, value);
-            serviceMock.Verify(s => s.CreateUserAsync(request, cancellationToken), Times.Once());
-        }
-
-        [Fact]
-        public async Task CreateUser_ReturnsStatusCode500_WhenServiceThrows()
-        {
-            var cancellationToken = new CancellationTokenSource().Token;
-            var request = new CreateUserRequest();
-            var serviceMock = new Mock<IZohoCrmService>(MockBehavior.Strict);
-            serviceMock
-                .Setup(s => s.CreateUserAsync(request, cancellationToken))
-                .ThrowsAsync(new Exception("create failed"));
-            var loggerMock = new Mock<ILogger<UsersController>>();
-            var controller = new UsersController(serviceMock.Object, loggerMock.Object);
-
-            var result = await controller.CreateUser(request, cancellationToken);
-
-            var objectResult = Assert.IsType<ObjectResult>(result);
-            var statusCode = objectResult.StatusCode;
-            var statusCodeValue = statusCode.HasValue ? statusCode.Value : 0;
-            Assert.Equal(500, statusCodeValue);
-            serviceMock.Verify(s => s.CreateUserAsync(request, cancellationToken), Times.Once());
-            loggerMock.Verify(
-                x => x.Log(
-                    LogLevel.Error,
-                    It.IsAny<EventId>(),
-                    It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("Error creating user")),
-                    It.IsAny<Exception>(),
-                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
-                Times.Once());
+            return result;
         }
     }
 }

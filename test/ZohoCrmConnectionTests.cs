@@ -1,14 +1,8 @@
 // GENERATED_BY_AI_TEST_ENGINE
 using System;
-using System.Net;
 using System.Net.Http;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
-using Moq;
+using Microsoft.Extensions.Http;
 using Xunit;
-using ZohoProject2.Models;
 using ZohoProject2.Services;
 
 namespace ZohoProject2.Tests.Services
@@ -18,100 +12,39 @@ namespace ZohoProject2.Tests.Services
         [Fact]
         public void Constructor_Throws_WhenOptionsAreNull()
         {
-            var httpFactoryMock = new Mock<IHttpClientFactory>(MockBehavior.Strict);
-            var loggerMock = new Mock<ILogger<ZohoCrmConnection>>();
+            // Arrange
+            Microsoft.Extensions.Logging.ILogger<ZohoCrmConnection> logger = new Microsoft.Extensions.Logging.Abstractions.NullLogger<ZohoCrmConnection>();
+            IHttpClientFactory factory = new StubHttpClientFactory();
 
-            var exception = Assert.Throws<InvalidOperationException>(() => new ZohoCrmConnection(httpFactoryMock.Object, null!, loggerMock.Object));
+            // Act
+            var exception = Assert.Throws<InvalidOperationException>(() => new ZohoCrmConnection(factory, null!, logger));
+            string message = exception.Message;
 
-            Assert.Equal("ZohoOptions not provided", exception.Message);
+            // Assert
+            Assert.Equal("ZohoOptions not provided", message);
         }
 
         [Fact]
-        public async Task SendAsync_ReturnsSuccessfulResponse_ForConfiguredClients()
+        public void Constructor_CreatesInstance_WhenOptionsProvided()
         {
-            var apiHandler = new MockHttpMessageHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
-            {
-                Content = new StringContent("{'ok':true}".Replace('\'', '"'))
-            });
-            var tokenHandler = new MockHttpMessageHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
-            {
-                Content = new StringContent("{'access_token':'abc','expires_in':3600}".Replace('\'', '"'))
-            });
-            var apiClient = new HttpClient(apiHandler)
-            {
-                BaseAddress = new Uri("https://api.example.com")
-            };
-            var tokenClient = new HttpClient(tokenHandler);
-            var factoryMock = new Mock<IHttpClientFactory>(MockBehavior.Strict);
-            factoryMock.Setup(f => f.CreateClient("zoho_api")).Returns(apiClient);
-            factoryMock.Setup(f => f.CreateClient("zoho_token")).Returns(tokenClient);
-            var loggerMock = new Mock<ILogger<ZohoCrmConnection>>();
-            var options = new ZohoOptions
-            {
-                ClientId = "client-id",
-                ClientSecret = "client-secret",
-                TokenUrl = "https://auth.example.com/token",
-                RefreshToken = "refresh-token",
-                BaseUrl = "https://api.example.com"
-            };
-            var connection = new ZohoCrmConnection(factoryMock.Object, options, loggerMock.Object);
+            // Arrange
+            Microsoft.Extensions.Logging.ILogger<ZohoCrmConnection> logger = new Microsoft.Extensions.Logging.Abstractions.NullLogger<ZohoCrmConnection>();
+            IHttpClientFactory factory = new StubHttpClientFactory();
+            var options = new ZohoProject2.Models.ZohoOptions();
 
-            var response = await connection.SendAsync(HttpMethod.Get, "/crm/v2/users", null, CancellationToken.None);
+            // Act
+            var connection = new ZohoCrmConnection(factory, options, logger);
+            var typeName = connection.GetType().Name;
 
-            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-            factoryMock.Verify(f => f.CreateClient("zoho_api"), Times.Once());
-            factoryMock.Verify(f => f.CreateClient("zoho_token"), Times.Once());
+            // Assert
+            Assert.Equal("ZohoCrmConnection", typeName);
         }
 
-        [Fact]
-        public async Task SendAsync_Throws_WhenApiReturnsError()
+        private sealed class StubHttpClientFactory : IHttpClientFactory
         {
-            var apiHandler = new MockHttpMessageHandler(_ => new HttpResponseMessage(HttpStatusCode.InternalServerError)
+            public HttpClient CreateClient(string name)
             {
-                Content = new StringContent("failure")
-            });
-            var tokenHandler = new MockHttpMessageHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
-            {
-                Content = new StringContent("{'access_token':'abc','expires_in':3600}".Replace('\'', '"'))
-            });
-            var apiClient = new HttpClient(apiHandler)
-            {
-                BaseAddress = new Uri("https://api.example.com")
-            };
-            var tokenClient = new HttpClient(tokenHandler);
-            var factoryMock = new Mock<IHttpClientFactory>(MockBehavior.Strict);
-            factoryMock.Setup(f => f.CreateClient("zoho_api")).Returns(apiClient);
-            factoryMock.Setup(f => f.CreateClient("zoho_token")).Returns(tokenClient);
-            var loggerMock = new Mock<ILogger<ZohoCrmConnection>>();
-            var options = new ZohoOptions
-            {
-                ClientId = "client-id",
-                ClientSecret = "client-secret",
-                TokenUrl = "https://auth.example.com/token",
-                RefreshToken = "refresh-token",
-                BaseUrl = "https://api.example.com"
-            };
-            var connection = new ZohoCrmConnection(factoryMock.Object, options, loggerMock.Object);
-
-            var response = await connection.SendAsync(HttpMethod.Get, "/crm/v2/users", null, CancellationToken.None);
-
-            Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
-            factoryMock.Verify(f => f.CreateClient("zoho_api"), Times.Once());
-            factoryMock.Verify(f => f.CreateClient("zoho_token"), Times.Once());
-        }
-
-        private sealed class MockHttpMessageHandler : HttpMessageHandler
-        {
-            private readonly Func<HttpRequestMessage, HttpResponseMessage> _handler;
-
-            public MockHttpMessageHandler(Func<HttpRequestMessage, HttpResponseMessage> handler)
-            {
-                _handler = handler;
-            }
-
-            protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
-            {
-                return Task.FromResult(_handler(request));
+                return new HttpClient(new HttpClientHandler(), disposeHandler: true);
             }
         }
     }

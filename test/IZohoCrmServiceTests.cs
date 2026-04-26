@@ -11,52 +11,56 @@ namespace ZohoProject2.Tests.Services
     public class IZohoCrmServiceTests
     {
         [Fact]
-        public async Task GetUsersAsync_InterfaceContract_AllowsSuccessfulCompletion()
+        public void Interface_IsDefined()
         {
             // Arrange
-            var token = CancellationToken.None;
-            Task<object> Act() => Task.FromResult<object>(new { value = 1 });
+            var type = typeof(IZohoCrmService);
 
             // Act
-            var result = await Act();
+            var isInterface = type.IsInterface;
+            var methodCount = type.GetMethods().Length;
 
             // Assert
-            Assert.NotNull(result);
-            Assert.Equal(token, CancellationToken.None);
+            Assert.True(isInterface);
+            Assert.True(methodCount >= 3);
         }
 
         [Fact]
-        public async Task CreateUserAsync_InterfaceContract_ThrowsForInvalidState()
+        public async Task Interface_Methods_CanBeImplementedAndInvoked()
         {
             // Arrange
-            var request = new CreateUserRequest();
+            var service = new StubService();
             var token = CancellationToken.None;
-            Task<object> Act() => throw new InvalidOperationException("invalid");
+            var createRequest = new CreateUserRequest();
+            var updateRequest = new UpdateUserRequest();
 
             // Act
-            var exception = await Assert.ThrowsAsync<InvalidOperationException>(async () => await Act());
+            var users = await service.GetUsersAsync(token);
+            var created = await service.CreateUserAsync(createRequest, token);
+            var updated = await service.UpdateUserAsync("123", updateRequest, token);
 
             // Assert
-            Assert.Equal("invalid", exception.Message);
-            Assert.NotNull(request);
-            Assert.Equal(token, CancellationToken.None);
+            Assert.NotNull(users);
+            Assert.NotNull(created);
+            Assert.NotNull(updated);
         }
 
-        [Fact]
-        public async Task UpdateUserAsync_InterfaceContract_AllowsSuccessfulCompletion()
+        private sealed class StubService : IZohoCrmService
         {
-            // Arrange
-            var request = new UpdateUserRequest();
-            var token = CancellationToken.None;
-            Task<object> Act() => Task.FromResult<object>(new { updated = true });
+            public Task<object> GetUsersAsync(CancellationToken cancellationToken)
+            {
+                return Task.FromResult((object)new { ok = true });
+            }
 
-            // Act
-            var result = await Act();
+            public Task<object> CreateUserAsync(CreateUserRequest request, CancellationToken cancellationToken)
+            {
+                return Task.FromResult((object)new { created = true });
+            }
 
-            // Assert
-            Assert.NotNull(result);
-            Assert.NotNull(request);
-            Assert.Equal(token, CancellationToken.None);
+            public Task<object> UpdateUserAsync(string id, UpdateUserRequest request, CancellationToken cancellationToken)
+            {
+                return Task.FromResult((object)new { updated = true });
+            }
         }
     }
 }
