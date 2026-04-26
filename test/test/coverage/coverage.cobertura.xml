@@ -1,10 +1,10 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<coverage line-rate="0" branch-rate="0" version="1.9" timestamp="1777176428" lines-covered="0" lines-valid="311" branches-covered="0" branches-valid="62">
+<coverage line-rate="0.1414" branch-rate="0.0806" version="1.9" timestamp="1777196426" lines-covered="44" lines-valid="311" branches-covered="5" branches-valid="62">
   <sources>
     <source>/app/</source>
   </sources>
   <packages>
-    <package name="ZohoProject2" line-rate="0" branch-rate="0" complexity="85">
+    <package name="ZohoProject2" line-rate="0.1414" branch-rate="0.0806" complexity="85">
       <classes>
         <class name="Program/&lt;&lt;Main&gt;$&gt;d__0" filename="Program.cs" line-rate="0" branch-rate="0" complexity="16">
           <methods>
@@ -182,7 +182,7 @@
             <line number="30" hits="0" branch="False" />
           </lines>
         </class>
-        <class name="ZohoProject2.Services.ZohoCrmConnection" filename="Services/ZohoCrmConnection.cs" line-rate="0" branch-rate="0" complexity="4">
+        <class name="ZohoProject2.Services.ZohoCrmConnection" filename="Services/ZohoCrmConnection.cs" line-rate="0.6428" branch-rate="0.5" complexity="4">
           <methods>
             <method name="IsTokenExpired" signature="()" line-rate="0" branch-rate="0" complexity="2">
               <lines>
@@ -197,21 +197,21 @@
                 <line number="37" hits="0" branch="False" />
               </lines>
             </method>
-            <method name=".ctor" signature="(System.Net.Http.IHttpClientFactory,ZohoProject2.Models.ZohoOptions,Microsoft.Extensions.Logging.ILogger`1&lt;ZohoProject2.Services.ZohoCrmConnection&gt;)" line-rate="0" branch-rate="0" complexity="2">
+            <method name=".ctor" signature="(System.Net.Http.IHttpClientFactory,ZohoProject2.Models.ZohoOptions,Microsoft.Extensions.Logging.ILogger`1&lt;ZohoProject2.Services.ZohoCrmConnection&gt;)" line-rate="1" branch-rate="1" complexity="2">
               <lines>
-                <line number="21" hits="0" branch="False" />
-                <line number="22" hits="0" branch="False" />
-                <line number="24" hits="0" branch="False" />
-                <line number="25" hits="0" branch="False" />
-                <line number="26" hits="0" branch="True" condition-coverage="0% (0/2)">
+                <line number="21" hits="2" branch="False" />
+                <line number="22" hits="2" branch="False" />
+                <line number="24" hits="2" branch="False" />
+                <line number="25" hits="2" branch="False" />
+                <line number="26" hits="2" branch="True" condition-coverage="100% (2/2)">
                   <conditions>
-                    <condition number="35" type="jump" coverage="0%" />
+                    <condition number="35" type="jump" coverage="100%" />
                   </conditions>
                 </line>
-                <line number="27" hits="0" branch="False" />
-                <line number="28" hits="0" branch="False" />
-                <line number="29" hits="0" branch="False" />
-                <line number="30" hits="0" branch="False" />
+                <line number="27" hits="1" branch="False" />
+                <line number="28" hits="1" branch="False" />
+                <line number="29" hits="1" branch="False" />
+                <line number="30" hits="1" branch="False" />
               </lines>
             </method>
           </methods>
@@ -225,19 +225,19 @@
             <line number="35" hits="0" branch="False" />
             <line number="36" hits="0" branch="False" />
             <line number="37" hits="0" branch="False" />
-            <line number="21" hits="0" branch="False" />
-            <line number="22" hits="0" branch="False" />
-            <line number="24" hits="0" branch="False" />
-            <line number="25" hits="0" branch="False" />
-            <line number="26" hits="0" branch="True" condition-coverage="0% (0/2)">
+            <line number="21" hits="2" branch="False" />
+            <line number="22" hits="2" branch="False" />
+            <line number="24" hits="2" branch="False" />
+            <line number="25" hits="2" branch="False" />
+            <line number="26" hits="2" branch="True" condition-coverage="100% (2/2)">
               <conditions>
-                <condition number="35" type="jump" coverage="0%" />
+                <condition number="35" type="jump" coverage="100%" />
               </conditions>
             </line>
-            <line number="27" hits="0" branch="False" />
-            <line number="28" hits="0" branch="False" />
-            <line number="29" hits="0" branch="False" />
-            <line number="30" hits="0" branch="False" />
+            <line number="27" hits="1" branch="False" />
+            <line number="28" hits="1" branch="False" />
+            <line number="29" hits="1" branch="False" />
+            <line number="30" hits="1" branch="False" />
           </lines>
         </class>
         <class name="ZohoProject2.Services.ZohoCrmConnection/&lt;RefreshTokenAsync&gt;d__9" filename="Services/ZohoCrmConnection.cs" line-rate="0" branch-rate="0" complexity="12">
@@ -574,24 +574,24 @@
             <line number="192" hits="0" branch="False" />
           </lines>
         </class>
-        <class name="ZohoProject2.Services.ZohoCrmService" filename="Services/ZohoCrmService.cs" line-rate="0" branch-rate="1" complexity="1">
+        <class name="ZohoProject2.Services.ZohoCrmService" filename="Services/ZohoCrmService.cs" line-rate="1" branch-rate="1" complexity="1">
           <methods>
-            <method name=".ctor" signature="(ZohoProject2.Services.IZohoCrmConnection,Microsoft.Extensions.Logging.ILogger`1&lt;ZohoProject2.Services.ZohoCrmService&gt;)" line-rate="0" branch-rate="1" complexity="1">
+            <method name=".ctor" signature="(ZohoProject2.Services.IZohoCrmConnection,Microsoft.Extensions.Logging.ILogger`1&lt;ZohoProject2.Services.ZohoCrmService&gt;)" line-rate="1" branch-rate="1" complexity="1">
               <lines>
-                <line number="17" hits="0" branch="False" />
-                <line number="18" hits="0" branch="False" />
-                <line number="19" hits="0" branch="False" />
-                <line number="20" hits="0" branch="False" />
-                <line number="21" hits="0" branch="False" />
+                <line number="17" hits="4" branch="False" />
+                <line number="18" hits="4" branch="False" />
+                <line number="19" hits="4" branch="False" />
+                <line number="20" hits="4" branch="False" />
+                <line number="21" hits="4" branch="False" />
               </lines>
             </method>
           </methods>
           <lines>
-            <line number="17" hits="0" branch="False" />
-            <line number="18" hits="0" branch="False" />
-            <line number="19" hits="0" branch="False" />
-            <line number="20" hits="0" branch="False" />
-            <line number="21" hits="0" branch="False" />
+            <line number="17" hits="4" branch="False" />
+            <line number="18" hits="4" branch="False" />
+            <line number="19" hits="4" branch="False" />
+            <line number="20" hits="4" branch="False" />
+            <line number="21" hits="4" branch="False" />
           </lines>
         </class>
         <class name="ZohoProject2.Services.ZohoCrmService/&lt;CreateUserAsync&gt;d__4" filename="Services/ZohoCrmService.cs" line-rate="0" branch-rate="0" complexity="4">
@@ -678,56 +678,56 @@
             <line number="84" hits="0" branch="False" />
           </lines>
         </class>
-        <class name="ZohoProject2.Services.ZohoCrmService/&lt;GetUsersAsync&gt;d__3" filename="Services/ZohoCrmService.cs" line-rate="0" branch-rate="0" complexity="4">
+        <class name="ZohoProject2.Services.ZohoCrmService/&lt;GetUsersAsync&gt;d__3" filename="Services/ZohoCrmService.cs" line-rate="0.7692" branch-rate="0.75" complexity="4">
           <methods>
-            <method name="MoveNext" signature="()" line-rate="0" branch-rate="0" complexity="4">
+            <method name="MoveNext" signature="()" line-rate="0.7692" branch-rate="0.75" complexity="4">
               <lines>
-                <line number="24" hits="0" branch="False" />
-                <line number="25" hits="0" branch="False" />
-                <line number="26" hits="0" branch="False" />
-                <line number="28" hits="0" branch="True" condition-coverage="0% (0/2)">
+                <line number="24" hits="2" branch="False" />
+                <line number="25" hits="2" branch="False" />
+                <line number="26" hits="2" branch="False" />
+                <line number="28" hits="2" branch="True" condition-coverage="100% (2/2)">
                   <conditions>
-                    <condition number="360" type="jump" coverage="0%" />
+                    <condition number="360" type="jump" coverage="100%" />
                   </conditions>
                 </line>
-                <line number="29" hits="0" branch="False" />
-                <line number="30" hits="0" branch="False" />
-                <line number="34" hits="0" branch="False" />
-                <line number="35" hits="0" branch="False" />
-                <line number="36" hits="0" branch="True" condition-coverage="0% (0/2)">
+                <line number="29" hits="1" branch="False" />
+                <line number="30" hits="1" branch="False" />
+                <line number="34" hits="1" branch="False" />
+                <line number="35" hits="1" branch="False" />
+                <line number="36" hits="1" branch="True" condition-coverage="50% (1/2)">
                   <conditions>
-                    <condition number="487" type="jump" coverage="0%" />
+                    <condition number="487" type="jump" coverage="50%" />
                   </conditions>
                 </line>
                 <line number="38" hits="0" branch="False" />
                 <line number="39" hits="0" branch="False" />
                 <line number="40" hits="0" branch="False" />
-                <line number="42" hits="0" branch="False" />
+                <line number="42" hits="1" branch="False" />
               </lines>
             </method>
           </methods>
           <lines>
-            <line number="24" hits="0" branch="False" />
-            <line number="25" hits="0" branch="False" />
-            <line number="26" hits="0" branch="False" />
-            <line number="28" hits="0" branch="True" condition-coverage="0% (0/2)">
+            <line number="24" hits="2" branch="False" />
+            <line number="25" hits="2" branch="False" />
+            <line number="26" hits="2" branch="False" />
+            <line number="28" hits="2" branch="True" condition-coverage="100% (2/2)">
               <conditions>
-                <condition number="360" type="jump" coverage="0%" />
+                <condition number="360" type="jump" coverage="100%" />
               </conditions>
             </line>
-            <line number="29" hits="0" branch="False" />
-            <line number="30" hits="0" branch="False" />
-            <line number="34" hits="0" branch="False" />
-            <line number="35" hits="0" branch="False" />
-            <line number="36" hits="0" branch="True" condition-coverage="0% (0/2)">
+            <line number="29" hits="1" branch="False" />
+            <line number="30" hits="1" branch="False" />
+            <line number="34" hits="1" branch="False" />
+            <line number="35" hits="1" branch="False" />
+            <line number="36" hits="1" branch="True" condition-coverage="50% (1/2)">
               <conditions>
-                <condition number="487" type="jump" coverage="0%" />
+                <condition number="487" type="jump" coverage="50%" />
               </conditions>
             </line>
             <line number="38" hits="0" branch="False" />
             <line number="39" hits="0" branch="False" />
             <line number="40" hits="0" branch="False" />
-            <line number="42" hits="0" branch="False" />
+            <line number="42" hits="1" branch="False" />
           </lines>
         </class>
         <class name="ZohoProject2.Services.ZohoCrmService/&lt;UpdateUserAsync&gt;d__5" filename="Services/ZohoCrmService.cs" line-rate="0" branch-rate="0" complexity="4">
@@ -878,31 +878,31 @@
             <line number="14" hits="0" branch="False" />
           </lines>
         </class>
-        <class name="ZohoProject2.Models.ZohoOptions" filename="Models/ZohoOptions.cs" line-rate="0" branch-rate="1" complexity="7">
+        <class name="ZohoProject2.Models.ZohoOptions" filename="Models/ZohoOptions.cs" line-rate="0.8571" branch-rate="1" complexity="7">
           <methods>
-            <method name="get_ClientId" signature="()" line-rate="0" branch-rate="1" complexity="1">
+            <method name="get_ClientId" signature="()" line-rate="1" branch-rate="1" complexity="1">
               <lines>
-                <line number="7" hits="0" branch="False" />
+                <line number="7" hits="1" branch="False" />
               </lines>
             </method>
-            <method name="get_ClientSecret" signature="()" line-rate="0" branch-rate="1" complexity="1">
+            <method name="get_ClientSecret" signature="()" line-rate="1" branch-rate="1" complexity="1">
               <lines>
-                <line number="8" hits="0" branch="False" />
+                <line number="8" hits="1" branch="False" />
               </lines>
             </method>
-            <method name="get_TokenUrl" signature="()" line-rate="0" branch-rate="1" complexity="1">
+            <method name="get_TokenUrl" signature="()" line-rate="1" branch-rate="1" complexity="1">
               <lines>
-                <line number="9" hits="0" branch="False" />
+                <line number="9" hits="1" branch="False" />
               </lines>
             </method>
-            <method name="get_RefreshToken" signature="()" line-rate="0" branch-rate="1" complexity="1">
+            <method name="get_RefreshToken" signature="()" line-rate="1" branch-rate="1" complexity="1">
               <lines>
-                <line number="10" hits="0" branch="False" />
+                <line number="10" hits="1" branch="False" />
               </lines>
             </method>
-            <method name="get_BaseUrl" signature="()" line-rate="0" branch-rate="1" complexity="1">
+            <method name="get_BaseUrl" signature="()" line-rate="1" branch-rate="1" complexity="1">
               <lines>
-                <line number="11" hits="0" branch="False" />
+                <line number="11" hits="1" branch="False" />
               </lines>
             </method>
             <method name="get_Port" signature="()" line-rate="0" branch-rate="1" complexity="1">
@@ -910,20 +910,20 @@
                 <line number="12" hits="0" branch="False" />
               </lines>
             </method>
-            <method name="get_Provider" signature="()" line-rate="0" branch-rate="1" complexity="1">
+            <method name="get_Provider" signature="()" line-rate="1" branch-rate="1" complexity="1">
               <lines>
-                <line number="13" hits="0" branch="False" />
+                <line number="13" hits="1" branch="False" />
               </lines>
             </method>
           </methods>
           <lines>
-            <line number="7" hits="0" branch="False" />
-            <line number="8" hits="0" branch="False" />
-            <line number="9" hits="0" branch="False" />
-            <line number="10" hits="0" branch="False" />
-            <line number="11" hits="0" branch="False" />
+            <line number="7" hits="1" branch="False" />
+            <line number="8" hits="1" branch="False" />
+            <line number="9" hits="1" branch="False" />
+            <line number="10" hits="1" branch="False" />
+            <line number="11" hits="1" branch="False" />
             <line number="12" hits="0" branch="False" />
-            <line number="13" hits="0" branch="False" />
+            <line number="13" hits="1" branch="False" />
           </lines>
         </class>
         <class name="ZohoProject2.Models.ZohoTokenResponse" filename="Models/ZohoTokenResponse.cs" line-rate="0" branch-rate="1" complexity="5">
@@ -962,24 +962,24 @@
             <line number="20" hits="0" branch="False" />
           </lines>
         </class>
-        <class name="ZohoProject2.Controllers.UsersController" filename="Controllers/UsersController.cs" line-rate="0" branch-rate="1" complexity="1">
+        <class name="ZohoProject2.Controllers.UsersController" filename="Controllers/UsersController.cs" line-rate="1" branch-rate="1" complexity="1">
           <methods>
-            <method name=".ctor" signature="(ZohoProject2.Services.IZohoCrmService,Microsoft.Extensions.Logging.ILogger`1&lt;ZohoProject2.Controllers.UsersController&gt;)" line-rate="0" branch-rate="1" complexity="1">
+            <method name=".ctor" signature="(ZohoProject2.Services.IZohoCrmService,Microsoft.Extensions.Logging.ILogger`1&lt;ZohoProject2.Controllers.UsersController&gt;)" line-rate="1" branch-rate="1" complexity="1">
               <lines>
-                <line number="18" hits="0" branch="False" />
-                <line number="19" hits="0" branch="False" />
-                <line number="20" hits="0" branch="False" />
-                <line number="21" hits="0" branch="False" />
-                <line number="22" hits="0" branch="False" />
+                <line number="18" hits="4" branch="False" />
+                <line number="19" hits="4" branch="False" />
+                <line number="20" hits="4" branch="False" />
+                <line number="21" hits="4" branch="False" />
+                <line number="22" hits="4" branch="False" />
               </lines>
             </method>
           </methods>
           <lines>
-            <line number="18" hits="0" branch="False" />
-            <line number="19" hits="0" branch="False" />
-            <line number="20" hits="0" branch="False" />
-            <line number="21" hits="0" branch="False" />
-            <line number="22" hits="0" branch="False" />
+            <line number="18" hits="4" branch="False" />
+            <line number="19" hits="4" branch="False" />
+            <line number="20" hits="4" branch="False" />
+            <line number="21" hits="4" branch="False" />
+            <line number="22" hits="4" branch="False" />
           </lines>
         </class>
         <class name="ZohoProject2.Controllers.UsersController/&lt;CreateUser&gt;d__4" filename="Controllers/UsersController.cs" line-rate="0" branch-rate="0" complexity="2">
@@ -1024,32 +1024,32 @@
             <line number="57" hits="0" branch="False" />
           </lines>
         </class>
-        <class name="ZohoProject2.Controllers.UsersController/&lt;GetUsers&gt;d__3" filename="Controllers/UsersController.cs" line-rate="0" branch-rate="1" complexity="1">
+        <class name="ZohoProject2.Controllers.UsersController/&lt;GetUsers&gt;d__3" filename="Controllers/UsersController.cs" line-rate="1" branch-rate="1" complexity="1">
           <methods>
-            <method name="MoveNext" signature="()" line-rate="0" branch-rate="1" complexity="1">
+            <method name="MoveNext" signature="()" line-rate="1" branch-rate="1" complexity="1">
               <lines>
-                <line number="26" hits="0" branch="False" />
-                <line number="28" hits="0" branch="False" />
-                <line number="29" hits="0" branch="False" />
-                <line number="30" hits="0" branch="False" />
-                <line number="32" hits="0" branch="False" />
-                <line number="33" hits="0" branch="False" />
-                <line number="34" hits="0" branch="False" />
-                <line number="35" hits="0" branch="False" />
-                <line number="37" hits="0" branch="False" />
+                <line number="26" hits="2" branch="False" />
+                <line number="28" hits="2" branch="False" />
+                <line number="29" hits="2" branch="False" />
+                <line number="30" hits="1" branch="False" />
+                <line number="32" hits="1" branch="False" />
+                <line number="33" hits="1" branch="False" />
+                <line number="34" hits="1" branch="False" />
+                <line number="35" hits="1" branch="False" />
+                <line number="37" hits="2" branch="False" />
               </lines>
             </method>
           </methods>
           <lines>
-            <line number="26" hits="0" branch="False" />
-            <line number="28" hits="0" branch="False" />
-            <line number="29" hits="0" branch="False" />
-            <line number="30" hits="0" branch="False" />
-            <line number="32" hits="0" branch="False" />
-            <line number="33" hits="0" branch="False" />
-            <line number="34" hits="0" branch="False" />
-            <line number="35" hits="0" branch="False" />
-            <line number="37" hits="0" branch="False" />
+            <line number="26" hits="2" branch="False" />
+            <line number="28" hits="2" branch="False" />
+            <line number="29" hits="2" branch="False" />
+            <line number="30" hits="1" branch="False" />
+            <line number="32" hits="1" branch="False" />
+            <line number="33" hits="1" branch="False" />
+            <line number="34" hits="1" branch="False" />
+            <line number="35" hits="1" branch="False" />
+            <line number="37" hits="2" branch="False" />
           </lines>
         </class>
         <class name="ZohoProject2.Controllers.UsersController/&lt;UpdateUser&gt;d__5" filename="Controllers/UsersController.cs" line-rate="0" branch-rate="1" complexity="1">

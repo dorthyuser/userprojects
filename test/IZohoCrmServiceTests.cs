@@ -2,6 +2,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Moq;
 using Xunit;
 using ZohoProject2.Models;
 using ZohoProject2.Services;
@@ -11,56 +12,59 @@ namespace ZohoProject2.Tests.Services
     public class IZohoCrmServiceTests
     {
         [Fact]
-        public void Interface_IsDefined()
+        public async Task GetUsersAsync_InterfaceSignature_IsAvailable()
         {
-            // Arrange
-            var type = typeof(IZohoCrmService);
+            var mock = new Mock<IZohoCrmService>();
+            var token = CancellationToken.None;
+            var expected = new { ok = true };
+            mock.Setup(m => m.GetUsersAsync(token)).ReturnsAsync(expected);
 
-            // Act
-            var isInterface = type.IsInterface;
-            var methodCount = type.GetMethods().Length;
+            var result = await mock.Object.GetUsersAsync(token);
 
-            // Assert
-            Assert.True(isInterface);
-            Assert.True(methodCount >= 3);
+            Assert.Same(expected, result);
+            mock.Verify(m => m.GetUsersAsync(token), Times.Once);
         }
 
         [Fact]
-        public async Task Interface_Methods_CanBeImplementedAndInvoked()
+        public async Task CreateUserAsync_InterfaceSignature_IsAvailable()
         {
-            // Arrange
-            var service = new StubService();
+            var mock = new Mock<IZohoCrmService>();
             var token = CancellationToken.None;
-            var createRequest = new CreateUserRequest();
-            var updateRequest = new UpdateUserRequest();
+            var request = new CreateUserRequest();
+            var expected = new { created = true };
+            mock.Setup(m => m.CreateUserAsync(request, token)).ReturnsAsync(expected);
 
-            // Act
-            var users = await service.GetUsersAsync(token);
-            var created = await service.CreateUserAsync(createRequest, token);
-            var updated = await service.UpdateUserAsync("123", updateRequest, token);
+            var result = await mock.Object.CreateUserAsync(request, token);
 
-            // Assert
-            Assert.NotNull(users);
-            Assert.NotNull(created);
-            Assert.NotNull(updated);
+            Assert.Same(expected, result);
+            mock.Verify(m => m.CreateUserAsync(request, token), Times.Once);
         }
 
-        private sealed class StubService : IZohoCrmService
+        [Fact]
+        public async Task UpdateUserAsync_InterfaceSignature_IsAvailable()
         {
-            public Task<object> GetUsersAsync(CancellationToken cancellationToken)
-            {
-                return Task.FromResult((object)new { ok = true });
-            }
+            var mock = new Mock<IZohoCrmService>();
+            var token = CancellationToken.None;
+            var request = new UpdateUserRequest();
+            var expected = new { updated = true };
+            mock.Setup(m => m.UpdateUserAsync("123", request, token)).ReturnsAsync(expected);
 
-            public Task<object> CreateUserAsync(CreateUserRequest request, CancellationToken cancellationToken)
-            {
-                return Task.FromResult((object)new { created = true });
-            }
+            var result = await mock.Object.UpdateUserAsync("123", request, token);
 
-            public Task<object> UpdateUserAsync(string id, UpdateUserRequest request, CancellationToken cancellationToken)
-            {
-                return Task.FromResult((object)new { updated = true });
-            }
+            Assert.Same(expected, result);
+            mock.Verify(m => m.UpdateUserAsync("123", request, token), Times.Once);
+        }
+
+        [Fact]
+        public async Task UpdateUserAsync_InterfaceSignature_ThrowsOnSetup()
+        {
+            var mock = new Mock<IZohoCrmService>();
+            var token = CancellationToken.None;
+            var request = new UpdateUserRequest();
+            mock.Setup(m => m.UpdateUserAsync("", request, token)).ThrowsAsync(new InvalidOperationException("bad"));
+
+            await Assert.ThrowsAsync<InvalidOperationException>(() => mock.Object.UpdateUserAsync("", request, token));
+            mock.Verify(m => m.UpdateUserAsync("", request, token), Times.Once);
         }
     }
 }

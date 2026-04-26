@@ -1,8 +1,12 @@
 // GENERATED_BY_AI_TEST_ENGINE
 using System;
 using System.Net.Http;
-using Microsoft.Extensions.Http;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
+using Moq;
 using Xunit;
+using ZohoProject2.Models;
 using ZohoProject2.Services;
 
 namespace ZohoProject2.Tests.Services
@@ -10,42 +14,39 @@ namespace ZohoProject2.Tests.Services
     public class ZohoCrmConnectionTests
     {
         [Fact]
-        public void Constructor_Throws_WhenOptionsAreNull()
+        public void Constructor_Throws_WhenOptionsNull()
         {
-            // Arrange
-            Microsoft.Extensions.Logging.ILogger<ZohoCrmConnection> logger = new Microsoft.Extensions.Logging.Abstractions.NullLogger<ZohoCrmConnection>();
-            IHttpClientFactory factory = new StubHttpClientFactory();
+            var factory = new Mock<IHttpClientFactory>();
+            var logger = new Mock<ILogger<ZohoCrmConnection>>();
 
-            // Act
-            var exception = Assert.Throws<InvalidOperationException>(() => new ZohoCrmConnection(factory, null!, logger));
-            string message = exception.Message;
+            var ex = Assert.Throws<InvalidOperationException>(() => new ZohoCrmConnection(factory.Object, null!, logger.Object));
 
-            // Assert
-            Assert.Equal("ZohoOptions not provided", message);
+            Assert.Equal("ZohoOptions not provided", ex.Message);
         }
 
         [Fact]
-        public void Constructor_CreatesInstance_WhenOptionsProvided()
+        public void Constructor_CreatesClients_WhenOptionsProvided()
         {
-            // Arrange
-            Microsoft.Extensions.Logging.ILogger<ZohoCrmConnection> logger = new Microsoft.Extensions.Logging.Abstractions.NullLogger<ZohoCrmConnection>();
-            IHttpClientFactory factory = new StubHttpClientFactory();
-            var options = new ZohoProject2.Models.ZohoOptions();
+            var apiClient = new HttpClient(new StubHandler(new HttpResponseMessage(System.Net.HttpStatusCode.OK))) { BaseAddress = new Uri("https://example.com") };
+            var tokenClient = new HttpClient(new StubHandler(new HttpResponseMessage(System.Net.HttpStatusCode.OK))) { BaseAddress = new Uri("https://example.com") };
+            var factory = new Mock<IHttpClientFactory>(MockBehavior.Strict);
+            factory.Setup(f => f.CreateClient("zoho_api")).Returns(apiClient);
+            factory.Setup(f => f.CreateClient("zoho_token")).Returns(tokenClient);
+            var logger = new Mock<ILogger<ZohoCrmConnection>>();
+            var options = new ZohoOptions();
 
-            // Act
-            var connection = new ZohoCrmConnection(factory, options, logger);
-            var typeName = connection.GetType().Name;
+            var connection = new ZohoCrmConnection(factory.Object, options, logger.Object);
 
-            // Assert
-            Assert.Equal("ZohoCrmConnection", typeName);
+            Assert.NotNull(connection);
+            factory.Verify(f => f.CreateClient("zoho_api"), Times.Once);
+            factory.Verify(f => f.CreateClient("zoho_token"), Times.Once);
         }
 
-        private sealed class StubHttpClientFactory : IHttpClientFactory
+        private sealed class StubHandler : HttpMessageHandler
         {
-            public HttpClient CreateClient(string name)
-            {
-                return new HttpClient(new HttpClientHandler(), disposeHandler: true);
-            }
+            private readonly HttpResponseMessage _response;
+            public StubHandler(HttpResponseMessage response) => _response = response;
+            protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) => Task.FromResult(_response);
         }
     }
 }
