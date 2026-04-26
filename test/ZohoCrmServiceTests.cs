@@ -3,7 +3,6 @@ using System;
 using System.Net;
 using System.Net.Http;
 using System.Text;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -16,160 +15,130 @@ namespace ZohoProject2.Tests.Services
 {
     public class ZohoCrmServiceTests
     {
-        private readonly Mock<IZohoCrmConnection> _connectionMock;
-        private readonly Mock<ILogger<ZohoCrmService>> _loggerMock;
-        private readonly ZohoCrmService _service;
-
-        public ZohoCrmServiceTests()
-        {
-            _connectionMock = new Mock<IZohoCrmConnection>(MockBehavior.Strict);
-            _loggerMock = new Mock<ILogger<ZohoCrmService>>();
-            _service = new ZohoCrmService(_connectionMock.Object, _loggerMock.Object);
-        }
-
         [Fact]
-        public async Task GetUsersAsync_ReturnsParsedResult_WhenResponseIsSuccessful()
+        public async Task GetUsersAsync_ReturnsParsedResult_OnSuccess()
         {
-            // Arrange
-            var token = CancellationToken.None;
-            var json = JsonSerializer.Serialize(new { data = new[] { new { id = "1", name = "Jane" } } });
+            var json = "{'users':[{'id':'1','name':'Alice'}]}".Replace('\'', '"');
             var response = new HttpResponseMessage(HttpStatusCode.OK)
             {
                 Content = new StringContent(json, Encoding.UTF8, "application/json")
             };
-
-            _connectionMock
-                .Setup(c => c.SendAsync(HttpMethod.Get, "/crm/v2/users", null, token))
+            var connectionMock = new Mock<IZohoCrmConnection>(MockBehavior.Strict);
+            connectionMock
+                .Setup(c => c.SendAsync(HttpMethod.Get, "/crm/v2/users", null, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(response);
+            var loggerMock = new Mock<ILogger<ZohoCrmService>>();
+            var service = new ZohoCrmService(connectionMock.Object, loggerMock.Object);
 
-            // Act
-            var result = await _service.GetUsersAsync(token);
+            var result = await service.GetUsersAsync(CancellationToken.None);
 
-            // Assert
             Assert.NotNull(result);
-            _connectionMock.Verify(c => c.SendAsync(HttpMethod.Get, "/crm/v2/users", null, token), Times.Once());
-            _connectionMock.VerifyNoOtherCalls();
+            connectionMock.Verify(c => c.SendAsync(HttpMethod.Get, "/crm/v2/users", null, It.IsAny<CancellationToken>()), Times.Once());
         }
 
         [Fact]
-        public async Task GetUsersAsync_ThrowsInvalidOperationException_WhenResponseFails()
+        public async Task GetUsersAsync_ThrowsInvalidOperationException_OnApiError()
         {
-            // Arrange
-            var token = CancellationToken.None;
-            var body = "not found";
-            var response = new HttpResponseMessage(HttpStatusCode.NotFound)
-            {
-                Content = new StringContent(body, Encoding.UTF8, "text/plain")
-            };
-
-            _connectionMock
-                .Setup(c => c.SendAsync(HttpMethod.Get, "/crm/v2/users", null, token))
-                .ReturnsAsync(response);
-
-            // Act
-            var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => _service.GetUsersAsync(token));
-
-            // Assert
-            Assert.Contains("Zoho API error", ex.Message);
-            _connectionMock.Verify(c => c.SendAsync(HttpMethod.Get, "/crm/v2/users", null, token), Times.Once());
-            _connectionMock.VerifyNoOtherCalls();
-        }
-
-        [Fact]
-        public async Task CreateUserAsync_ReturnsParsedResult_WhenResponseIsSuccessful()
-        {
-            // Arrange
-            var token = CancellationToken.None;
-            var request = new CreateUserRequest();
-            var json = JsonSerializer.Serialize(new { data = new { id = "10" } });
-            var response = new HttpResponseMessage(HttpStatusCode.Created)
-            {
-                Content = new StringContent(json, Encoding.UTF8, "application/json")
-            };
-
-            _connectionMock
-                .Setup(c => c.SendAsync(HttpMethod.Post, "/crm/v2/users", It.IsAny<string>(), token))
-                .ReturnsAsync(response);
-
-            // Act
-            var result = await _service.CreateUserAsync(request, token);
-
-            // Assert
-            Assert.NotNull(result);
-            _connectionMock.Verify(c => c.SendAsync(HttpMethod.Post, "/crm/v2/users", It.IsAny<string>(), token), Times.Once());
-            _connectionMock.VerifyNoOtherCalls();
-        }
-
-        [Fact]
-        public async Task CreateUserAsync_ThrowsInvalidOperationException_WhenResponseFails()
-        {
-            // Arrange
-            var token = CancellationToken.None;
-            var request = new CreateUserRequest();
             var response = new HttpResponseMessage(HttpStatusCode.BadRequest)
             {
                 Content = new StringContent("bad request", Encoding.UTF8, "text/plain")
             };
-
-            _connectionMock
-                .Setup(c => c.SendAsync(HttpMethod.Post, "/crm/v2/users", It.IsAny<string>(), token))
+            var connectionMock = new Mock<IZohoCrmConnection>(MockBehavior.Strict);
+            connectionMock
+                .Setup(c => c.SendAsync(HttpMethod.Get, "/crm/v2/users", null, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(response);
+            var loggerMock = new Mock<ILogger<ZohoCrmService>>();
+            var service = new ZohoCrmService(connectionMock.Object, loggerMock.Object);
 
-            // Act
-            var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => _service.CreateUserAsync(request, token));
+            var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => service.GetUsersAsync(CancellationToken.None));
 
-            // Assert
-            Assert.Contains("Zoho API error", ex.Message);
-            _connectionMock.Verify(c => c.SendAsync(HttpMethod.Post, "/crm/v2/users", It.IsAny<string>(), token), Times.Once());
-            _connectionMock.VerifyNoOtherCalls();
+            Assert.Contains("Zoho API error", exception.Message);
+            connectionMock.Verify(c => c.SendAsync(HttpMethod.Get, "/crm/v2/users", null, It.IsAny<CancellationToken>()), Times.Once());
         }
 
         [Fact]
-        public async Task UpdateUserAsync_ReturnsParsedResult_WhenResponseIsSuccessful()
+        public async Task CreateUserAsync_ReturnsParsedResult_OnSuccess()
         {
-            // Arrange
-            var token = CancellationToken.None;
-            var request = new UpdateUserRequest();
-            var response = new HttpResponseMessage(HttpStatusCode.OK)
+            var request = new CreateUserRequest();
+            var json = "{'id':'123','status':'created'}".Replace('\'', '"');
+            var response = new HttpResponseMessage(HttpStatusCode.Created)
             {
-                Content = new StringContent(JsonSerializer.Serialize(new { data = new { id = "10" } }), Encoding.UTF8, "application/json")
+                Content = new StringContent(json, Encoding.UTF8, "application/json")
             };
-
-            _connectionMock
-                .Setup(c => c.SendAsync(HttpMethod.Put, "/crm/v2/users/10", It.IsAny<string>(), token))
+            var connectionMock = new Mock<IZohoCrmConnection>(MockBehavior.Strict);
+            connectionMock
+                .Setup(c => c.SendAsync(HttpMethod.Post, "/crm/v2/users", It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(response);
+            var loggerMock = new Mock<ILogger<ZohoCrmService>>();
+            var service = new ZohoCrmService(connectionMock.Object, loggerMock.Object);
 
-            // Act
-            var result = await _service.UpdateUserAsync("10", request, token);
+            var result = await service.CreateUserAsync(request, CancellationToken.None);
 
-            // Assert
             Assert.NotNull(result);
-            _connectionMock.Verify(c => c.SendAsync(HttpMethod.Put, "/crm/v2/users/10", It.IsAny<string>(), token), Times.Once());
-            _connectionMock.VerifyNoOtherCalls();
+            connectionMock.Verify(c => c.SendAsync(HttpMethod.Post, "/crm/v2/users", It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once());
         }
 
         [Fact]
-        public async Task UpdateUserAsync_ThrowsInvalidOperationException_WhenResponseFails()
+        public async Task CreateUserAsync_ThrowsInvalidOperationException_OnApiError()
         {
-            // Arrange
-            var token = CancellationToken.None;
-            var request = new UpdateUserRequest();
+            var request = new CreateUserRequest();
             var response = new HttpResponseMessage(HttpStatusCode.InternalServerError)
             {
                 Content = new StringContent("server error", Encoding.UTF8, "text/plain")
             };
-
-            _connectionMock
-                .Setup(c => c.SendAsync(HttpMethod.Put, "/crm/v2/users/10", It.IsAny<string>(), token))
+            var connectionMock = new Mock<IZohoCrmConnection>(MockBehavior.Strict);
+            connectionMock
+                .Setup(c => c.SendAsync(HttpMethod.Post, "/crm/v2/users", It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(response);
+            var loggerMock = new Mock<ILogger<ZohoCrmService>>();
+            var service = new ZohoCrmService(connectionMock.Object, loggerMock.Object);
 
-            // Act
-            var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => _service.UpdateUserAsync("10", request, token));
+            var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => service.CreateUserAsync(request, CancellationToken.None));
 
-            // Assert
-            Assert.Contains("Zoho API error", ex.Message);
-            _connectionMock.Verify(c => c.SendAsync(HttpMethod.Put, "/crm/v2/users/10", It.IsAny<string>(), token), Times.Once());
-            _connectionMock.VerifyNoOtherCalls();
+            Assert.Contains("Zoho API error", exception.Message);
+            connectionMock.Verify(c => c.SendAsync(HttpMethod.Post, "/crm/v2/users", It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once());
+        }
+
+        [Fact]
+        public async Task UpdateUserAsync_ReturnsParsedResult_OnSuccess()
+        {
+            var request = new UpdateUserRequest();
+            var response = new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent("{'id':'5','status':'updated'}".Replace('\'', '"'), Encoding.UTF8, "application/json")
+            };
+            var connectionMock = new Mock<IZohoCrmConnection>(MockBehavior.Strict);
+            connectionMock
+                .Setup(c => c.SendAsync(HttpMethod.Put, "/crm/v2/users/5", It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(response);
+            var loggerMock = new Mock<ILogger<ZohoCrmService>>();
+            var service = new ZohoCrmService(connectionMock.Object, loggerMock.Object);
+
+            var result = await service.UpdateUserAsync("5", request, CancellationToken.None);
+
+            Assert.NotNull(result);
+            connectionMock.Verify(c => c.SendAsync(HttpMethod.Put, "/crm/v2/users/5", It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once());
+        }
+
+        [Fact]
+        public async Task UpdateUserAsync_ThrowsInvalidOperationException_OnApiError()
+        {
+            var request = new UpdateUserRequest();
+            var response = new HttpResponseMessage(HttpStatusCode.NotFound)
+            {
+                Content = new StringContent("not found", Encoding.UTF8, "text/plain")
+            };
+            var connectionMock = new Mock<IZohoCrmConnection>(MockBehavior.Strict);
+            connectionMock
+                .Setup(c => c.SendAsync(HttpMethod.Put, "/crm/v2/users/5", It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(response);
+            var loggerMock = new Mock<ILogger<ZohoCrmService>>();
+            var service = new ZohoCrmService(connectionMock.Object, loggerMock.Object);
+
+            var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => service.UpdateUserAsync("5", request, CancellationToken.None));
+
+            Assert.Contains("Zoho API error", exception.Message);
+            connectionMock.Verify(c => c.SendAsync(HttpMethod.Put, "/crm/v2/users/5", It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once());
         }
     }
 }

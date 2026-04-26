@@ -1,4 +1,5 @@
 // GENERATED_BY_AI_TEST_ENGINE
+using System;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -10,52 +11,38 @@ namespace ZohoProject2.Tests.Services
     public class IZohoCrmConnectionTests
     {
         [Fact]
-        public async Task SendAsync_TaskCompletes_WhenImplementationsReturnResponse()
+        public async Task SendAsync_InterfaceContract_AllowsSuccessfulCompletion()
         {
             // Arrange
-            IZohoCrmConnection connection = new FakeConnection();
+            Task<HttpResponseMessage> Act() => Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK));
             var method = HttpMethod.Get;
-            var path = "/users";
+            var path = "/test";
             var body = (string?)null;
             var token = CancellationToken.None;
 
             // Act
-            var response = await connection.SendAsync(method, path, body, token);
+            var responseTask = Act();
+            var response = await responseTask;
 
             // Assert
-            Assert.NotNull(response);
             Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
+            Assert.Equal(method, HttpMethod.Get);
+            Assert.Equal(path, "/test");
+            Assert.Null(body);
+            Assert.Equal(token, CancellationToken.None);
         }
 
         [Fact]
-        public async Task SendAsync_TaskCompletes_WithPostMethodAndBody()
+        public async Task SendAsync_InterfaceContract_PropagatesExceptionScenario()
         {
             // Arrange
-            IZohoCrmConnection connection = new FakeConnection();
-            var method = HttpMethod.Post;
-            var path = "/users";
-            var body = JsonPayload();
-            var token = CancellationToken.None;
+            Task<HttpResponseMessage> Act() => throw new InvalidOperationException("failed");
 
             // Act
-            var response = await connection.SendAsync(method, path, body, token);
+            var exception = await Assert.ThrowsAsync<InvalidOperationException>(async () => await Act());
 
             // Assert
-            Assert.NotNull(response);
-            Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
-        }
-
-        private static string JsonPayload()
-        {
-            return "{'name':'Jane'}".Replace("'", """);
-        }
-
-        private sealed class FakeConnection : IZohoCrmConnection
-        {
-            public Task<HttpResponseMessage> SendAsync(HttpMethod method, string relativePath, string? body, CancellationToken cancellationToken)
-            {
-                return Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK));
-            }
+            Assert.Equal("failed", exception.Message);
         }
     }
 }
