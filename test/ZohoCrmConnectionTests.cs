@@ -18,28 +18,52 @@ namespace ZohoProject2.Tests.Services
     public class ZohoCrmConnectionTests
     {
         [Fact]
-        public async Task SendAsync_ReturnsResponse_WhenHttpClientRespondsSuccessfully()
+        public void Constructor_ThrowsInvalidOperationException_WhenOptionsAreMissing()
         {
-            var tokenResponse = JsonSerializer.Serialize(new
+            var mockFactory = new Mock<IHttpClientFactory>();
+            var mockLogger = new Mock<ILogger<ZohoCrmConnection>>();
+
+            var ex = Assert.Throws<InvalidOperationException>(() =>
+                new ZohoCrmConnection(mockFactory.Object, null!, mockLogger.Object));
+
+            Assert.Equal("ZohoOptions not provided", ex.Message);
+        }
+
+        [Fact]
+        public async Task SendAsync_RefreshesTokenAndReturnsApiResponse_WhenTokenIsExpired()
+        {
+            var mockFactory = new Mock<IHttpClientFactory>();
+            var mockLogger = new Mock<ILogger<ZohoCrmConnection>>();
+            var options = new ZohoOptions
             {
-                access_token = "access-token",
-                expires_in = 3600
-            });
-            var apiResponse = JsonSerializer.Serialize(new { data = new[] { new { id = "1" } } });
+                ClientId = "client",
+                ClientSecret = "secret",
+                RefreshToken = "refresh",
+                TokenUrl = "https://example.com/token",
+                BaseUrl = "https://example.com"
+            };
 
             var tokenHandler = new Mock<HttpMessageHandler>();
+            var apiHandler = new Mock<HttpMessageHandler>();
+            var tokenResponse = JsonSerializer.Serialize(new
+            {
+                access_token = "token-123",
+                api_domain = "https://api.example.com/",
+                expires_in = 3600
+            });
+            var apiResponseBody = JsonSerializer.Serialize(new { data = "ok" });
+
             tokenHandler
                 .Protected()
                 .Setup<Task<HttpResponseMessage>>(
                     "SendAsync",
-                    ItExpr.Is<HttpRequestMessage>(r => r.RequestUri != null && r.RequestUri.AbsoluteUri == "https://accounts.example.com/oauth/v2/token"),
+                    ItExpr.IsAny<HttpRequestMessage>(),
                     ItExpr.IsAny<CancellationToken>())
                 .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK)
                 {
                     Content = new StringContent(tokenResponse, Encoding.UTF8, "application/json")
                 });
 
-            var apiHandler = new Mock<HttpMessageHandler>();
             apiHandler
                 .Protected()
                 .Setup<Task<HttpResponseMessage>>(
@@ -48,110 +72,173 @@ namespace ZohoProject2.Tests.Services
                     ItExpr.IsAny<CancellationToken>())
                 .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK)
                 {
-                    Content = new StringContent(apiResponse, Encoding.UTF8, "application/json")
+                    Content = new StringContent(apiResponseBody, Encoding.UTF8, "application/json")
                 });
 
+            var tokenClient = new HttpClient(tokenHandler.Object)
+            {
+                BaseAddress = new Uri("https://example.com")
+            };
+            var apiClient = new HttpClient(apiHandler.Object)
+            {
+                BaseAddress = new Uri("https://example.com")
+            };
+
+            mockFactory.Setup(f => f.CreateClient("zoho_api")).Returns(apiClient);
+            mockFactory.Setup(f => f.CreateClient("zoho_token")).Returns(tokenClient);
+
+            var sut = new ZohoCrmConnection(mockFactory.Object, options, mockLogger.Object);
+
+            var result = await sut.SendAsync(HttpMethod.Get, "/crm/v2/users", null, CancellationToken.None);
+            var body = await result.Content.ReadAsStringAsync();
+
+            Assert.Equal(HttpStatusCode.OK, result.StatusCode);
+            Assert.Contains("ok", body);
+            Assert.Equal("https://api.example.com", options.BaseUrl);
+            mockFactory.Verify(f => f.CreateClient("zoho_api"), Times.Once());
+            mockFactory.Verify(f => f.CreateClient("zoho_token"), Times.Once());
+        }
+
+        [Fact]
+        public async Task SendAsync_ThrowsInvalidOperationException_WhenTokenRefreshFailsWithNonSuccessStatus()
+        {
+            var mockFactory = new Mock<IHttpClientFactory>();
+            var mockLogger = new Mock<ILogger<ZohoCrmConnection>>();
             var options = new ZohoOptions
             {
                 ClientId = "client",
                 ClientSecret = "secret",
                 RefreshToken = "refresh",
-                TokenUrl = "https://accounts.example.com/oauth/v2/token",
-                BaseUrl = "https://api.example.com"
+                TokenUrl = "https://example.com/token",
+                BaseUrl = "https://example.com"
             };
-            var logger = new Mock<ILogger<ZohoCrmConnection>>();
 
-            var apiClient = new HttpClient(apiHandler.Object)
-            {
-                BaseAddress = new Uri(options.BaseUrl)
-            };
-            var tokenClient = new HttpClient(tokenHandler.Object)
-            {
-                BaseAddress = new Uri("https://accounts.example.com")
-            };
-            var factory = new Mock<IHttpClientFactory>();
-            factory.Setup(f => f.CreateClient("zoho_api")).Returns(apiClient);
-            factory.Setup(f => f.CreateClient("zoho_token")).Returns(tokenClient);
-
-            var sut = new ZohoCrmConnection(factory.Object, options, logger.Object);
-
-            var response = await sut.SendAsync(HttpMethod.Get, "/crm/v2/users", null, CancellationToken.None);
-
-            Assert.NotNull(response);
-            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-            factory.Verify(f => f.CreateClient("zoho_api"), Times.Once());
-            factory.Verify(f => f.CreateClient("zoho_token"), Times.Once());
-        }
-
-        [Fact]
-        public async Task SendAsync_ReturnsUnauthorized_WhenTokenRequestFails()
-        {
             var tokenHandler = new Mock<HttpMessageHandler>();
+            var apiHandler = new Mock<HttpMessageHandler>();
+
             tokenHandler
                 .Protected()
                 .Setup<Task<HttpResponseMessage>>(
                     "SendAsync",
-                    ItExpr.Is<HttpRequestMessage>(r => r.RequestUri != null && r.RequestUri.AbsoluteUri == "https://accounts.example.com/oauth/v2/token"),
+                    ItExpr.IsAny<HttpRequestMessage>(),
                     ItExpr.IsAny<CancellationToken>())
-                .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.Unauthorized)
+                .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.BadRequest)
                 {
-                    Content = new StringContent("unauthorized")
+                    Content = new StringContent("bad token", Encoding.UTF8, "application/json")
                 });
 
-            var apiHandler = new Mock<HttpMessageHandler>();
-            apiHandler
-                .Protected()
-                .Setup<Task<HttpResponseMessage>>(
-                    "SendAsync",
-                    ItExpr.Is<HttpRequestMessage>(r => r.Method == HttpMethod.Get),
-                    ItExpr.IsAny<CancellationToken>())
-                .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.Unauthorized)
-                {
-                    Content = new StringContent("unauthorized")
-                });
+            var tokenClient = new HttpClient(tokenHandler.Object)
+            {
+                BaseAddress = new Uri("https://example.com")
+            };
+            var apiClient = new HttpClient(apiHandler.Object)
+            {
+                BaseAddress = new Uri("https://example.com")
+            };
 
+            mockFactory.Setup(f => f.CreateClient("zoho_api")).Returns(apiClient);
+            mockFactory.Setup(f => f.CreateClient("zoho_token")).Returns(tokenClient);
+
+            var sut = new ZohoCrmConnection(mockFactory.Object, options, mockLogger.Object);
+
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                sut.SendAsync(HttpMethod.Get, "/crm/v2/users", null, CancellationToken.None));
+
+            Assert.Contains("Token refresh failed", ex.Message);
+        }
+
+        [Fact]
+        public async Task SendAsync_ThrowsInvalidOperationException_WhenTokenRefreshReturnsInvalidJson()
+        {
+            var mockFactory = new Mock<IHttpClientFactory>();
+            var mockLogger = new Mock<ILogger<ZohoCrmConnection>>();
             var options = new ZohoOptions
             {
                 ClientId = "client",
                 ClientSecret = "secret",
                 RefreshToken = "refresh",
-                TokenUrl = "https://accounts.example.com/oauth/v2/token",
-                BaseUrl = "https://api.example.com"
+                TokenUrl = "https://example.com/token",
+                BaseUrl = "https://example.com"
             };
-            var logger = new Mock<ILogger<ZohoCrmConnection>>();
 
-            var apiClient = new HttpClient(apiHandler.Object)
-            {
-                BaseAddress = new Uri(options.BaseUrl)
-            };
+            var tokenHandler = new Mock<HttpMessageHandler>();
+            var apiHandler = new Mock<HttpMessageHandler>();
+
+            tokenHandler
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.IsAny<HttpRequestMessage>(),
+                    ItExpr.IsAny<CancellationToken>())
+                .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent("not-json", Encoding.UTF8, "application/json")
+                });
+
             var tokenClient = new HttpClient(tokenHandler.Object)
             {
-                BaseAddress = new Uri("https://accounts.example.com")
+                BaseAddress = new Uri("https://example.com")
             };
-            var factory = new Mock<IHttpClientFactory>();
-            factory.Setup(f => f.CreateClient("zoho_api")).Returns(apiClient);
-            factory.Setup(f => f.CreateClient("zoho_token")).Returns(tokenClient);
+            var apiClient = new HttpClient(apiHandler.Object)
+            {
+                BaseAddress = new Uri("https://example.com")
+            };
 
-            var sut = new ZohoCrmConnection(factory.Object, options, logger.Object);
+            mockFactory.Setup(f => f.CreateClient("zoho_api")).Returns(apiClient);
+            mockFactory.Setup(f => f.CreateClient("zoho_token")).Returns(tokenClient);
 
-            var ex = await Assert.ThrowsAsync<InvalidOperationException>(
-                () => sut.SendAsync(HttpMethod.Get, "/crm/v2/users", null, CancellationToken.None));
+            var sut = new ZohoCrmConnection(mockFactory.Object, options, mockLogger.Object);
 
-            Assert.Contains("Token refresh failed", ex.Message);
-            factory.Verify(f => f.CreateClient("zoho_api"), Times.Once());
-            factory.Verify(f => f.CreateClient("zoho_token"), Times.Once());
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                sut.SendAsync(HttpMethod.Get, "/crm/v2/users", null, CancellationToken.None));
+
+            Assert.Contains("invalid json", ex.Message);
         }
 
         [Fact]
-        public void Constructor_Throws_WhenOptionsAreNull()
+        public async Task SendAsync_ThrowsInvalidOperationException_WhenTokenRefreshThrowsUnexpectedException()
         {
-            var factory = new Mock<IHttpClientFactory>();
-            var logger = new Mock<ILogger<ZohoCrmConnection>>();
+            var mockFactory = new Mock<IHttpClientFactory>();
+            var mockLogger = new Mock<ILogger<ZohoCrmConnection>>();
+            var options = new ZohoOptions
+            {
+                ClientId = "client",
+                ClientSecret = "secret",
+                RefreshToken = "refresh",
+                TokenUrl = "https://example.com/token",
+                BaseUrl = "https://example.com"
+            };
 
-            var ex = Assert.Throws<InvalidOperationException>(() =>
-                new ZohoCrmConnection(factory.Object, null!, logger.Object));
+            var tokenHandler = new Mock<HttpMessageHandler>();
+            var apiHandler = new Mock<HttpMessageHandler>();
 
-            Assert.Equal("ZohoOptions not provided", ex.Message);
+            tokenHandler
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.IsAny<HttpRequestMessage>(),
+                    ItExpr.IsAny<CancellationToken>())
+                .ThrowsAsync(new HttpRequestException("network down"));
+
+            var tokenClient = new HttpClient(tokenHandler.Object)
+            {
+                BaseAddress = new Uri("https://example.com")
+            };
+            var apiClient = new HttpClient(apiHandler.Object)
+            {
+                BaseAddress = new Uri("https://example.com")
+            };
+
+            mockFactory.Setup(f => f.CreateClient("zoho_api")).Returns(apiClient);
+            mockFactory.Setup(f => f.CreateClient("zoho_token")).Returns(tokenClient);
+
+            var sut = new ZohoCrmConnection(mockFactory.Object, options, mockLogger.Object);
+
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                sut.SendAsync(HttpMethod.Get, "/crm/v2/users", null, CancellationToken.None));
+
+            Assert.Contains("Token refresh failed", ex.Message);
+            Assert.NotNull(ex.InnerException);
         }
     }
 }
