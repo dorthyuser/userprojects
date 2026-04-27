@@ -15,4 +15,14 @@
     <PackageReference Include="xunit" Version="2.9.2" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="test/**" />
+    <Content Remove="test/**" />
+    <None Remove="test/**" />
+    <Compile Remove="*.Tests/**" />
+    <Content Remove="*.Tests/**" />
+    <None Remove="*.Tests/**" />
+  </ItemGroup>
+
 </Project>
