@@ -9,4 +9,4 @@ ASP.NET Core (.NET 8) API to integrate with Zoho CRM using OAuth2 and Azure Key 
 - ZOHO_TOKEN_URL -> Key name for token endpoint URL
 - ZOHO-REFRESH-TOKEN -> Key name for refresh token
 
-Build and run as an ASP.NET Core app. The project expects appsettings.json to contain Application.Port = 8080 and Provider = AZURE.
+Build and run as an ASP.NET Core app. The project expects appsettings.json to contain Application.Port = 8080 and Provider = A
