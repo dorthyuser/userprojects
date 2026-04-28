@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
 using ZohoProject2.Controllers;
+using ZohoProject2.Models;
 using ZohoProject2.Services;
 
 namespace ZohoProject2.Tests.Controllers
@@ -14,11 +15,11 @@ namespace ZohoProject2.Tests.Controllers
     public class UsersControllerTests
     {
         [Fact]
-        public async Task GetUsers_ReturnsOkObjectResult_WhenServiceSucceeds()
+        public async Task GetUsers_ReturnsOk_WhenServiceSucceeds()
         {
             var mockService = new Mock<IZohoCrmService>();
             var mockLogger = new Mock<ILogger<UsersController>>();
-            var expected = new { data = new[] { new { id = "1", name = "Test" } } };
+            var expected = new { users = new[] { new { id = "1", name = "Test User" } } };
 
             mockService
                 .Setup(s => s.GetUsersAsync(It.IsAny<CancellationToken>()))
@@ -34,14 +35,14 @@ namespace ZohoProject2.Tests.Controllers
         }
 
         [Fact]
-        public async Task GetUsers_ReturnsStatusCode500_WhenServiceThrows()
+        public async Task GetUsers_ReturnsInternalServerError_WhenServiceThrows()
         {
             var mockService = new Mock<IZohoCrmService>();
             var mockLogger = new Mock<ILogger<UsersController>>();
 
             mockService
                 .Setup(s => s.GetUsersAsync(It.IsAny<CancellationToken>()))
-                .ThrowsAsync(new InvalidOperationException("boom"));
+                .ThrowsAsync(new Exception("boom"));
 
             var controller = new UsersController(mockService.Object, mockLogger.Object);
 

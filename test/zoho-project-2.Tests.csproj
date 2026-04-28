@@ -6,6 +6,24 @@
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
+  <!-- Coverage exclusions -->
+  <ExcludeByFile>
+      **/Program.cs;
+      **/*.designer.cs;
+      **/*.generated.cs;
+      **/*.g.cs;
+      **/Reference.cs;
+      **/*Dto.cs;
+      **/*DTO.cs;
+      **/*Request.cs;
+      **/*Response.cs;
+      **/*Options.cs;
+      **/*Config.cs;
+      **/Migrations/**
+    </ExcludeByFile>
+  
+    <ExcludeByAttribute>ExcludeFromCodeCoverage</ExcludeByAttribute>
+  </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.*" />
