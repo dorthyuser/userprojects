@@ -1,0 +1,31 @@
+Summary
+  Generated on: 04/28/2026 - 07:32:35
+  Coverage date: 04/28/2026 - 07:32:30
+  Parser: Cobertura
+  Assemblies: 1
+  Classes: 9
+  Files: 9
+  Line coverage: 26%
+  Covered lines: 81
+  Uncovered lines: 230
+  Coverable lines: 311
+  Total lines: 551
+  Branch coverage: 14.5% (9 of 62)
+  Covered branches: 9
+  Total branches: 62
+  Method coverage: 30.3% (10 of 33)
+  Full method coverage: 21.2% (7 of 33)
+  Covered methods: 10
+  Fully covered methods: 7
+  Total methods: 33
+
+ZohoProject2                                   26%
+  Program                                       0%
+  ZohoProject2.Controllers.UsersController     40%
+  ZohoProject2.Models.CreateUserRequest       100%
+  ZohoProject2.Models.UpdateUserRequest       100%
+  ZohoProject2.Models.UserDto                   0%
+  ZohoProject2.Models.ZohoOptions               0%
+  ZohoProject2.Models.ZohoTokenResponse         0%
+  ZohoProject2.Services.ZohoCrmConnection       0%
+  ZohoProject2.Services.ZohoCrmService       80.7%

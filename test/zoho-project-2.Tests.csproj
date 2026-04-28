@@ -5,23 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
-  </PropertyGroup>
-  <!-- Coverage exclusions -->
-  <ExcludeByFile>
-      **/Program.cs;
-      **/*.designer.cs;
-      **/*.generated.cs;
-      **/*.g.cs;
-      **/Reference.cs;
-      **/*Dto.cs;
-      **/*DTO.cs;
-      **/*Request.cs;
-      **/*Response.cs;
-      **/*Options.cs;
-      **/*Config.cs;
-      **/Migrations/**
-    </ExcludeByFile>
-  
+    <ExcludeByFile>**/Program.cs;**/*Dto.cs;**/*DTO.cs;**/*Request.cs;**/*Response.cs;**/*Options.cs;**/*Config.cs;**/*Token.cs;**/*.designer.cs;**/*.generated.cs;**/*.g.cs;**/Reference.cs;**/Migrations/**</ExcludeByFile>
     <ExcludeByAttribute>ExcludeFromCodeCoverage</ExcludeByAttribute>
   </PropertyGroup>
 
