@@ -1,0 +1,14 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
+    "AZURE_KEY_VAULT_URI": "",
+    "POSTGRESQL_HOST": "localhost",
+    "POSTGRESQL_PORT": "5432",
+    "POSTGRESQL_DATABASE": "travelcarddb",
+    "POSTGRESQL_USERNAME": "postgres",
+    "POSTGRESQL_PASSWORD": "Password123!",
+    "PostgresConnectionString": "Host=localhost;Port=5432;Database=travelcarddb;Username=postgres;Password=Password123!;Pooling=true;Maximum Pool Size=50"
+  }
+}

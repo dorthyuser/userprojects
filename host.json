@@ -1,0 +1,13 @@
+{
+  "version": "2.0",
+  "logging": {
+    "logLevel": {
+      "default": "Information",
+      "Function": "Information",
+      "Host.Results": "Information"
+    }
+  },
+  "extensions": {},
+  "functionTimeout": "00:05:00",
+  "routePrefix": "api"
+}
