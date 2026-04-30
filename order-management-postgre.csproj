@@ -26,4 +26,14 @@
     </None>
   </ItemGroup>
 
+
+  <ItemGroup>
+    <Compile Remove="test/**" />
+    <Content Remove="test/**" />
+    <None Remove="test/**" />
+    <Compile Remove="*.Tests/**" />
+    <Content Remove="*.Tests/**" />
+    <None Remove="*.Tests/**" />
+  </ItemGroup>
+
 </Project>
