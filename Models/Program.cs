@@ -3,10 +3,6 @@ using azuresharpapi153.Services;
 using Microsoft.EntityFrameworkCore;
 using azuresharpapi153.Models.Entities;
 using Npgsql;
-using azuresharpapi153.Models.Entities;
-
-NpgsqlConnection.GlobalTypeMapper.MapEnum<TravelcardTypeEnum>("travelcard_type_enum");
-NpgsqlConnection.GlobalTypeMapper.MapEnum<CardholderTypeEnum>("cardholder_type_enum");
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,19 +26,20 @@ if (string.IsNullOrWhiteSpace(connectionString))
     connectionString = $"Host={host};Port={port};Database={database};Username={username};Password={password};Pooling=true;";
 }
 
+var dataSourceBuilder = new NpgsqlDataSourceBuilder(connectionString);
+
+dataSourceBuilder.MapEnum<TravelcardTypeEnum>("travelcard_type_enum");
+dataSourceBuilder.MapEnum<CardholderTypeEnum>("cardholder_type_enum");
+
+var dataSource = dataSourceBuilder.Build();
+
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(connectionString, npgsql =>
+    options.UseNpgsql(dataSource, npgsql =>
     {
         npgsql.EnableRetryOnFailure();
     }));
 
 var app = builder.Build();
-
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
 
 app.UseHttpsRedirection();
 app.MapControllers();
