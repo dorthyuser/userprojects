@@ -28,8 +28,8 @@ if (string.IsNullOrWhiteSpace(connectionString))
 
 var dataSourceBuilder = new NpgsqlDataSourceBuilder(connectionString);
 
-dataSourceBuilder.MapEnum<TravelcardTypeEnum>("travelcard_type_enum");
-dataSourceBuilder.MapEnum<CardholderTypeEnum>("cardholder_type_enum");
+dataSourceBuilder.MapEnum<TravelcardTypeEnum>("travelcard_type_enum", nameTranslator: new NpgsqlNullNameTranslator());
+dataSourceBuilder.MapEnum<CardholderTypeEnum>("cardholder_type_enum", nameTranslator: new NpgsqlNullNameTranslator());
 
 var dataSource = dataSourceBuilder.Build();
 
