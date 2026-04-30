@@ -48,20 +48,20 @@ jobs:
 
       # 5. Deploy to Azure Container Instance
       - name: Deploy to ACI
-      env:
-        DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-        DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-        POSTGRESQL_HOST: ${{ secrets.POSTGRESQL_HOST }}
-        POSTGRESQL_PORT: ${{ secrets.POSTGRESQL_PORT }}
-        POSTGRESQL_DATABASE: ${{ secrets.POSTGRESQL_DATABASE }}
-        POSTGRESQL_USERNAME: ${{ secrets.POSTGRESQL_USERNAME }}
-        POSTGRESQL_PASSWORD: ${{ secrets.POSTGRESQL_PASSWORD }}
-      run: |
-        BRANCH_NAME=$(echo "${{ github.ref_name }}" | tr '/' '-' | tr '[:upper:]' '[:lower:]')
-        echo "Deploying branch: $BRANCH_NAME"
-        .github/scripts/deployment.sh \
-          $BRANCH_NAME \
-          ${{ secrets.DOCKER_USERNAME }}/$BRANCH_NAME \
-          ${{ github.sha }} \
-          ${{ secrets.AZURE_RG_NAME }} \
-          8080
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+          POSTGRESQL_HOST: ${{ secrets.POSTGRESQL_HOST }}
+          POSTGRESQL_PORT: ${{ secrets.POSTGRESQL_PORT }}
+          POSTGRESQL_DATABASE: ${{ secrets.POSTGRESQL_DATABASE }}
+          POSTGRESQL_USERNAME: ${{ secrets.POSTGRESQL_USERNAME }}
+          POSTGRESQL_PASSWORD: ${{ secrets.POSTGRESQL_PASSWORD }}
+        run: |
+          BRANCH_NAME=$(echo "${{ github.ref_name }}" | tr '/' '-' | tr '[:upper:]' '[:lower:]')
+          echo "Deploying branch: $BRANCH_NAME"
+          .github/scripts/deployment.sh \
+            $BRANCH_NAME \
+            ${{ secrets.DOCKER_USERNAME }}/$BRANCH_NAME \
+            ${{ github.sha }} \
+            ${{ secrets.AZURE_RG_NAME }} \
+            8080
