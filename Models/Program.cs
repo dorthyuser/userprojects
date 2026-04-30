@@ -2,6 +2,11 @@ using azuresharpapi153.Data;
 using azuresharpapi153.Services;
 using Microsoft.EntityFrameworkCore;
 using azuresharpapi153.Models.Entities;
+using Npgsql;
+using azuresharpapi153.Models.Entities;
+
+NpgsqlConnection.GlobalTypeMapper.MapEnum<TravelcardTypeEnum>("travelcard_type_enum");
+NpgsqlConnection.GlobalTypeMapper.MapEnum<CardholderTypeEnum>("cardholder_type_enum");
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -29,8 +34,6 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString, npgsql =>
     {
         npgsql.EnableRetryOnFailure();
-        npgsql.MapEnum<TravelcardTypeEnum>("travelcard_type_enum");
-        npgsql.MapEnum<CardholderTypeEnum>("cardholder_type_enum");
     }));
 
 var app = builder.Build();
