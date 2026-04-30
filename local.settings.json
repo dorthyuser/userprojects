@@ -4,11 +4,11 @@
     "AzureWebJobsStorage": "UseDevelopmentStorage=true",
     "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
     "AZURE_KEY_VAULT_URI": "",
-    "POSTGRESQL_HOST": "localhost",
+    "POSTGRESQL_HOST": "161.97.137.17",
     "POSTGRESQL_PORT": "5432",
-    "POSTGRESQL_DATABASE": "ordersdb",
-    "POSTGRESQL_USERNAME": "postgres",
-    "POSTGRESQL_PASSWORD": "postgres",
-    "PostgresConnectionString": "Host=localhost;Port=5432;Database=ordersdb;Username=postgres;Password=postgres;Pooling=true;Maximum Pool Size=100;"
+    "POSTGRESQL_DATABASE": "admin_accounts",
+    "POSTGRESQL_USERNAME": "bhartikgr",
+    "POSTGRESQL_PASSWORD": "Hello@Dev24",
+    "PostgresConnectionString": "Host=161.97.137.17;Port=5432;Database=admin_accounts;Username=bhartikgr;Password=Hello@Dev24;Pooling=true;Maximum Pool Size=100;"
   }
 }
