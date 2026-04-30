@@ -1,6 +1,7 @@
 using azuresharpapi153.Data;
 using azuresharpapi153.Services;
 using Microsoft.EntityFrameworkCore;
+using azuresharpapi153.Models.Entities;
 
 var builder = WebApplication.CreateBuilder(args);
 
