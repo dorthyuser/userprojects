@@ -17,8 +17,12 @@ var database = Environment.GetEnvironmentVariable("POSTGRESQL_DATABASE");
 var username = Environment.GetEnvironmentVariable("POSTGRESQL_USERNAME");
 var password = Environment.GetEnvironmentVariable("POSTGRESQL_PASSWORD");
 
-var connectionString = builder.Configuration.GetConnectionString("PostgreSql")
-    ?? $"Host={host};Port={port};Database={database};Username={username};Password={password};Pooling=true;";
+var connectionString = builder.Configuration.GetConnectionString("PostgreSql");
+
+if (string.IsNullOrWhiteSpace(connectionString))
+{
+    connectionString = $"Host={host};Port={port};Database={database};Username={username};Password={password};Pooling=true;";
+}
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString, npgsql => npgsql.EnableRetryOnFailure()));
