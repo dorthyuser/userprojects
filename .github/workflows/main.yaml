@@ -28,15 +28,15 @@ jobs:
 
       # 4. Set execute permission
       - name: Make script executable
-        run: chmod +x deployment.sh
+        run: chmod +x .github/scripts/deployment.sh
 
       # 5. Run your deployment script
       - name: Build & Deploy Azure Function
         run: |
-          ./deployment.sh \
+          .github/scripts/deployment.sh \
             https://github.com/${{ github.repository }}.git \
             ${{ github.ref_name }} \
-            my-resource-group \
+            dev-luffy \
             eastus \
             mystorageaccount123 \
             8.0
