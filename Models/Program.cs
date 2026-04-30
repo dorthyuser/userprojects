@@ -25,7 +25,12 @@ if (string.IsNullOrWhiteSpace(connectionString))
 }
 
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(connectionString, npgsql => npgsql.EnableRetryOnFailure()));
+    options.UseNpgsql(connectionString, npgsql =>
+    {
+        npgsql.EnableRetryOnFailure();
+        npgsql.MapEnum<TravelcardTypeEnum>("public.travelcard_type_enum");
+        npgsql.MapEnum<CardholderTypeEnum>("public.cardholder_type_enum");
+    }));
 
 var app = builder.Build();
 
