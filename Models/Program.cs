@@ -29,8 +29,8 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString, npgsql =>
     {
         npgsql.EnableRetryOnFailure();
-        npgsql.MapEnum<TravelcardTypeEnum>("public.travelcard_type_enum");
-        npgsql.MapEnum<CardholderTypeEnum>("public.cardholder_type_enum");
+        npgsql.MapEnum<TravelcardTypeEnum>("travelcard_type_enum");
+        npgsql.MapEnum<CardholderTypeEnum>("cardholder_type_enum");
     }));
 
 var app = builder.Build();
