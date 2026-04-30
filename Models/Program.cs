@@ -3,6 +3,7 @@ using azuresharpapi153.Services;
 using Microsoft.EntityFrameworkCore;
 using azuresharpapi153.Models.Entities;
 using Npgsql;
+using Npgsql.NameTranslation;
 
 var builder = WebApplication.CreateBuilder(args);
 
