@@ -3,7 +3,7 @@ name: CSharp Docker + Azure Container Instance
 on:
   push:
     branches:
-      - UAT  # allow all branches (required for dynamic behavior)
+      - azuresharpapi153  # allow all branches (required for dynamic behavior)
 
 jobs:
   build-deploy:
