@@ -55,7 +55,7 @@ for i in $(seq 1 $MAX_RETRIES); do
     --restart-policy Always \
     --assign-identity \
     --environment-variables \
-	AZURE_KEY_VAULT="$AZURE_KEY_VAULT"
+	AZURE_KEY_VAULT_URI="$AZURE_KEY_VAULT_URI"
     POSTGRESQLHOST="$POSTGRESQHOST" \
     POSTGRESQLPORT="$POSTGRESQLPORT" \
     POSTGRESQLDATABASE="$POSTGRESQLDATABASE" \
