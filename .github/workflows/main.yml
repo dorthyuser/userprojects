@@ -52,11 +52,11 @@ jobs:
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
           AZURE_KEY_VAULT_URI: ${{ secrets.AZURE_KEY_VAULT_URI }}
-          POSTGRESQL_HOST: ${{ secrets.POSTGRESQL_HOST }}
-          POSTGRESQL_PORT: ${{ secrets.POSTGRESQL_PORT }}
-          POSTGRESQL_DATABASE: ${{ secrets.POSTGRESQL_DATABASE }}
-          POSTGRESQL_USERNAME: ${{ secrets.POSTGRESQL_USERNAME }}
-          POSTGRESQL_PASSWORD: ${{ secrets.POSTGRESQL_PASSWORD }}
+          POSTGRESQLHOST: ${{ secrets.POSTGRESQLHOST }}
+          POSTGRESQLPORT: ${{ secrets.POSTGRESQLPORT }}
+          POSTGRESQLDATABASE: ${{ secrets.POSTGRESQLDATABASE }}
+          POSTGRESQLUSERNAME: ${{ secrets.POSTGRESQLUSERNAME }}
+          POSTGRESQLPASSWORD: ${{ secrets.POSTGRESQLPASSWORD }}
         run: |
           BRANCH_NAME=$(echo "${{ github.ref_name }}" | tr '/' '-' | tr '[:upper:]' '[:lower:]')
           echo "Deploying branch: $BRANCH_NAME"
