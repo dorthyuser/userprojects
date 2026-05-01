@@ -1,0 +1,65 @@
+name: CSharp Docker + Azure Container Instance
+
+on:
+  push:
+    branches:
+      - UAT  # allow all branches (required for dynamic behavior)
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Azure Login
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      # 3. Set permissions
+      - name: Set execute permissions
+        run: |
+          chmod +x .github/scripts/docker-build.sh
+          chmod +x .github/scripts/deployment.sh
+
+      # 4. Build & Push Docker Image
+      - name: Build and Push Docker Image
+        run: |
+          BRANCH_NAME=$(echo "${{ github.ref_name }}" | tr '/' '-' | tr '[:upper:]' '[:lower:]')
+
+          echo "Branch: $BRANCH_NAME"
+
+          .github/scripts/docker-build.sh \
+            $BRANCH_NAME \
+            ${{ secrets.DOCKER_USERNAME }} \
+            ${{ secrets.DOCKER_PASSWORD }} \
+            ${{ github.sha }} \
+            8.0
+
+          echo "Verifying image availability..."
+          docker pull ${{ secrets.DOCKER_USERNAME }}/$BRANCH_NAME:${{ github.sha }}
+
+      - name: Wait for image availability
+        run: sleep 15
+
+      # 5. Deploy to Azure Container Instance
+      - name: Deploy to ACI
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+          AZURE_KEY_VAULT: ${{ secrets.AZURE_KEY_VAULT }}
+        run: |
+          BRANCH_NAME=$(echo "${{ github.ref_name }}" | tr '/' '-' | tr '[:upper:]' '[:lower:]')
+
+          echo "Deploying branch: $BRANCH_NAME"
+
+          .github/scripts/deployment.sh \
+            $BRANCH_NAME \
+            ${{ secrets.DOCKER_USERNAME }}/$BRANCH_NAME \
+            ${{ github.sha }} \
+            ${{ secrets.AZURE_RG_NAME }} \
+            8080
