@@ -3,7 +3,7 @@ name: CSharp Docker + Azure Container Instance
 on:
   push:
     branches:
-      - UAT  # allow all branches (required for dynamic behavior)
+      - "**"  # allow all branches (required for dynamic behavior)
 
 jobs:
   build-deploy:
@@ -51,12 +51,15 @@ jobs:
         env:
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-          AZURE_KEY_VAULT: ${{ secrets.AZURE_KEY_VAULT }}
+          AZURE_KEY_VAULT_URI: ${{ secrets.AZURE_KEY_VAULT_URI }}
+          POSTGRESQL_HOST: ${{ secrets.POSTGRESQL_HOST }}
+          POSTGRESQL_PORT: ${{ secrets.POSTGRESQL_PORT }}
+          POSTGRESQL_DATABASE: ${{ secrets.POSTGRESQL_DATABASE }}
+          POSTGRESQL_USERNAME: ${{ secrets.POSTGRESQL_USERNAME }}
+          POSTGRESQL_PASSWORD: ${{ secrets.POSTGRESQL_PASSWORD }}
         run: |
           BRANCH_NAME=$(echo "${{ github.ref_name }}" | tr '/' '-' | tr '[:upper:]' '[:lower:]')
-
           echo "Deploying branch: $BRANCH_NAME"
-
           .github/scripts/deployment.sh \
             $BRANCH_NAME \
             ${{ secrets.DOCKER_USERNAME }}/$BRANCH_NAME \
