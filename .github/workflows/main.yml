@@ -51,7 +51,7 @@ jobs:
         env:
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-		  AZURE_KEY_VAULT_URI: ${{ secrets.AZURE_KEY_VAULT_URI }}
+          AZURE_KEY_VAULT_URI: ${{ secrets.AZURE_KEY_VAULT_URI }}
           POSTGRESQLHOST: ${{ secrets.POSTGRESQLHOST }}
           POSTGRESQLPORT: ${{ secrets.POSTGRESQLPORT }}
           POSTGRESQLDATABASE: ${{ secrets.POSTGRESQLDATABASE }}
