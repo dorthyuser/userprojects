@@ -1,0 +1,29 @@
+Summary
+  Generated on: 05/01/2026 - 06:49:36
+  Coverage date: 05/01/2026 - 06:49:32
+  Parser: Cobertura
+  Assemblies: 1
+  Classes: 7
+  Files: 5
+  Line coverage: 51.5%
+  Covered lines: 84
+  Uncovered lines: 79
+  Coverable lines: 163
+  Total lines: 336
+  Branch coverage: 45% (36 of 80)
+  Covered branches: 36
+  Total branches: 80
+  Method coverage: 83.3% (25 of 30)
+  Full method coverage: 70% (21 of 30)
+  Covered methods: 25
+  Fully covered methods: 21
+  Total methods: 30
+
+new-test-for-demo                                       51.5%
+  new_test_for_demo.Controllers.TravelcardsController   81.4%
+  new_test_for_demo.Models.CardholderRequest            61.5%
+  new_test_for_demo.Models.CreateTravelcardRequest      53.3%
+  new_test_for_demo.Models.CreateTravelcardResponse      100%
+  new_test_for_demo.Services.SecretHelper                 50%
+  new_test_for_demo.Services.TravelcardService          44.5%
+  Program                                                  0%
