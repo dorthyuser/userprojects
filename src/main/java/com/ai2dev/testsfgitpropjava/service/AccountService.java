@@ -20,7 +20,7 @@ public class AccountService
     {
         logger.info("Entering createAccount service");
         String id = UUID.randomUUID().toString();
-        AccountDto response = new AccountDto(id, request.name(), request.email(), request.phone(), request.industry(), request.description());
+        AccountDto response = new AccountDto(id, request.userId(), request.name(), request.email(), request.phone(), request.industry(), request.description());
         accounts.put(id, response);
         logger.info("Exiting createAccount service with id={}", id);
         return response;
@@ -47,7 +47,7 @@ public class AccountService
             logger.error("Account not found with id={}", id);
             throw new AccountNotFoundException(id);
         }
-        AccountDto response = new AccountDto(id, request.name(), request.email(), request.phone(), request.industry(), request.description());
+        AccountDto response = new AccountDto(id, request.userId(), request.name(), request.email(), request.phone(), request.industry(), request.description());
         accounts.put(id, response);
         logger.info("Exiting updateAccount service with id={}", id);
         return response;

@@ -11,7 +11,7 @@ dependencies {
   implementation("org.springframework.boot:spring-boot-starter-web")
   implementation("org.springframework.boot:spring-boot-starter-validation")
   runtimeOnly("ch.qos.logback:logback-classic")
-   compileOnly("io.r2dbc:r2dbc-spi")          // ← ADD THIS
+   compileOnly("io.r2dbc:r2dbc-spi")
     compileOnly("io.r2dbc:r2dbc-pool")
 
   testImplementation("org.springframework.boot:spring-boot-starter-test")
