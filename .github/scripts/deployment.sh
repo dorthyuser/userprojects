@@ -116,7 +116,8 @@ BEGIN {
   match($0, /Route *= *"([^"]+)"/, r)
 
   if (fn != "" && m[1] && r[1]) {
-    printf "%s,%s,%s\n", fn, m[1], r[1]
+    printf "%s,%s,%s
+", fn, m[1], r[1]
   }
 }
 ' $(find . -name "*.cs")
