@@ -1,0 +1,10 @@
+{
+  "function-name": "travelcardcharplambda225",
+  "function-handler": "Travelcardcharplambda225Lambda::Travelcardcharplambda225Lambda.Function::travelcardcharplambda225",
+  "framework": "net8.0",
+  "profile": "default",
+  "region": "eu-west-2",
+  "function-memory-size": 256,
+  "function-timeout": 30,
+  "configuration": "Release"
+}
