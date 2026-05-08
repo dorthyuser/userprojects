@@ -1,0 +1,10 @@
+{
+  "profile": "default",
+  "region": "us-east-1",
+  "configuration": "Release",
+  "framework": "net8.0",
+  "function-runtime": "dotnet8",
+  "function-memory-size": 256,
+  "function-timeout": 30,
+  "function-handler": "Travelcardlambdacsharp847Lambda::Travelcardlambdacsharp847Lambda.Function::travelcardlambdacsharp847"
+}
