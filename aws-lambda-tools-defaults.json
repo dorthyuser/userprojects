@@ -1,0 +1,9 @@
+{
+  "function-runtime": "dotnet8",
+  "function-memory-size": 256,
+  "function-timeout": 30,
+  "function-handler": "Travelcardlambdacsharp1105Lambda::Travelcardlambdacsharp1105Lambda.Function::travelcardlambdacsharp1105",
+  "function-name": "travelcardlambdacsharp1105",
+  "region": "us-east-1",
+  "profile": "default"
+}
