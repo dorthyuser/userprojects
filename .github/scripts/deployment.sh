@@ -9,6 +9,7 @@ BRANCH=$3
 DOTNET_FRAMEWORK=$4
 REGION=$5
 ROLE_ARN=$6
+SECRET_NAME=$7
 
 echo "$(date) - Build started"
 
@@ -156,6 +157,19 @@ if aws lambda get-function \
     --zip-file fileb://"$ZIP_PATH" \
     --region "$REGION"
 
+  echo "Waiting for code update to complete..."
+
+  aws lambda wait function-updated-v2 \
+    --function-name "$FUNCTION_NAME" \
+    --region "$REGION"
+
+  echo "Updating Lambda configuration..."
+
+  aws lambda update-function-configuration \
+    --function-name "$FUNCTION_NAME" \
+    --region "$REGION" \
+    --environment "Variables={AWS_SECRET_NAME=$SECRET_NAME}"
+
 else
 
   echo "Creating new Lambda..."
@@ -167,7 +181,9 @@ else
     --handler "$HANDLER" \
     --zip-file fileb://"$ZIP_PATH" \
     --timeout 120 \
-    --region "$REGION"
+    --region "$REGION" \
+    --environment "Variables={AWS_SECRET_NAME=$SECRET_NAME}"
+
 fi
 
 echo "Waiting for Lambda to become active..."
