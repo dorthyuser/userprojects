@@ -1,14 +1,11 @@
 name: AWS Lambda CI/CD
-
 on:
   push:
     branches:
       - '*'
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
       # Checkout repository
       - name: Checkout Repository
@@ -47,4 +44,5 @@ jobs:
             ${{ github.ref_name }} \
             dotnet8 \
             ${{ secrets.AWS_REGION }} \
-            ${{ secrets.LAMBDA_ROLE_ARN }}
+            ${{ secrets.LAMBDA_ROLE_ARN }} \
+            ${{ secrets.AWS_SECRET_NAME }}
