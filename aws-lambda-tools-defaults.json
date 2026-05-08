@@ -1,0 +1,8 @@
+{
+  "profile": "default",
+  "region": "us-east-1",
+  "configuration": "Release",
+  "function-architecture": "x86_64",
+  "function-runtime": "dotnet8",
+  "function-handler": "Travelcardlambdacsharp1133Lambda::Travelcardlambdacsharp1133Lambda.Function::travelcardlambdacsharp1133"
+}
