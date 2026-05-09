@@ -1,0 +1,1 @@
+Order management ASP.NET Core Web API project using clean architecture principles, PostgreSQL via NpgsqlDataSourceBuilder, Azure Key Vault secret resolution with environment fallback, and HTTP port 8080.
