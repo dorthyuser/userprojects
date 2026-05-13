@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text;
 using System.Text.Json;
+using Amazon.Lambda.Core;
 using Amazon.SecretsManager;
 using Amazon.SecretsManager.Model;
 using Httptravelcardch104Lambda.Models;
@@ -26,16 +27,38 @@ public class Service
 
     static Service()
     {
-        // Read directly from env — no Secrets Manager lookup
-        _baseUrl    = (Environment.GetEnvironmentVariable("TRAVELCARD_API_URL")     ?? throw new InvalidOperationException("Missing env var: TRAVELCARD_API_URL")).TrimEnd('/');
-        _functionKey = Environment.GetEnvironmentVariable("TRAVELCARD_FUNCTION_KEY") ?? throw new InvalidOperationException("Missing env var: TRAVELCARD_FUNCTION_KEY");
+        try
+        {
+            LambdaLogger.Log("[INIT] Service static constructor started.");
 
-        // Read from Secrets Manager via xName pattern
-        var result  = Task.Run(LoadSecretsAsync).GetAwaiter().GetResult();
-        _tokenUrl    = result.TokenUrl;
-        _clientId    = result.ClientId;
-        _clientSecret = result.ClientSecret;
-        _scopes      = result.Scopes;
+            // --- Direct env reads ---
+            var baseUrlRaw = Environment.GetEnvironmentVariable("TRAVELCARD_API_URL");
+            LambdaLogger.Log($"[INIT] TRAVELCARD_API_URL = {(string.IsNullOrWhiteSpace(baseUrlRaw) ? "❌ NOT SET" : "✅ set")}");
+            _baseUrl = (baseUrlRaw ?? throw new InvalidOperationException("Missing env var: TRAVELCARD_API_URL")).TrimEnd('/');
+
+            var functionKeyRaw = Environment.GetEnvironmentVariable("TRAVELCARD_FUNCTION_KEY");
+            LambdaLogger.Log($"[INIT] TRAVELCARD_FUNCTION_KEY = {(string.IsNullOrWhiteSpace(functionKeyRaw) ? "❌ NOT SET" : "✅ set")}");
+            _functionKey = functionKeyRaw ?? throw new InvalidOperationException("Missing env var: TRAVELCARD_FUNCTION_KEY");
+
+            // --- Secrets Manager reads ---
+            LambdaLogger.Log("[INIT] Starting LoadSecretsAsync via Task.Run...");
+            var result = Task.Run(LoadSecretsAsync).GetAwaiter().GetResult();
+            LambdaLogger.Log("[INIT] LoadSecretsAsync completed successfully.");
+
+            _tokenUrl     = result.TokenUrl;
+            _clientId     = result.ClientId;
+            _clientSecret = result.ClientSecret;
+            _scopes       = result.Scopes;
+
+            LambdaLogger.Log("[INIT] Service static constructor completed successfully.");
+        }
+        catch (Exception ex)
+        {
+            LambdaLogger.Log($"[INIT] ❌ FATAL — static constructor failed: {ex.GetType().Name}: {ex.Message}");
+            if (ex.InnerException != null)
+                LambdaLogger.Log($"[INIT] ❌ Inner exception: {ex.InnerException.GetType().Name}: {ex.InnerException.Message}");
+            throw;
+        }
     }
 
     public async Task<ServiceResponse> ForwardAsync(string body, IDictionary<string, string>? headers, CancellationToken cancellationToken)
@@ -60,28 +83,56 @@ public class Service
 
     private static async Task<SecretsData> LoadSecretsAsync()
     {
-        var secretName   = Environment.GetEnvironmentVariable("AWS_SECRET_NAME") ?? throw new InvalidOperationException("Missing env var: AWS_SECRET_NAME");
+        // --- AWS_SECRET_NAME ---
+        var secretName = Environment.GetEnvironmentVariable("AWS_SECRET_NAME");
+        LambdaLogger.Log($"[SM] AWS_SECRET_NAME = {(string.IsNullOrWhiteSpace(secretName) ? "❌ NOT SET" : $"✅ set → value: '{secretName}'")}");
+        if (string.IsNullOrWhiteSpace(secretName))
+            throw new InvalidOperationException("Missing env var: AWS_SECRET_NAME");
+
+        // --- Fetch from Secrets Manager ---
+        LambdaLogger.Log($"[SM] Calling GetSecretValueAsync for secret: '{secretName}'...");
         var secretClient = new AmazonSecretsManagerClient();
         var response     = await secretClient.GetSecretValueAsync(new GetSecretValueRequest { SecretId = secretName });
+        LambdaLogger.Log("[SM] GetSecretValueAsync returned successfully.");
 
         if (string.IsNullOrWhiteSpace(response.SecretString))
-        {
             throw new InvalidOperationException("Secret payload is empty.");
-        }
 
         var secrets = JsonSerializer.Deserialize<Dictionary<string, string>>(response.SecretString, _jsonOptions)
                       ?? throw new InvalidOperationException("Secret payload parsing failed.");
 
-        var tokenUrlKey     = Environment.GetEnvironmentVariable("AZURE-TOKEN-URL")      ?? throw new InvalidOperationException("Missing env var: AZURE-TOKEN-URL");
-        var clientIdKey     = Environment.GetEnvironmentVariable("AZURE-CLIENT-ID")      ?? throw new InvalidOperationException("Missing env var: AZURE-CLIENT-ID");
-        var clientSecretKey = Environment.GetEnvironmentVariable("AZURE-CLIENT-SECRET")  ?? throw new InvalidOperationException("Missing env var: AZURE-CLIENT-SECRET");
-        var scopesKey       = Environment.GetEnvironmentVariable("AZURE-SCOPE")          ?? throw new InvalidOperationException("Missing env var: AZURE-SCOPE");
+        LambdaLogger.Log($"[SM] Secret JSON parsed. Total keys in secret: {secrets.Count}");
 
-        return new SecretsData(
-            secrets[tokenUrlKey],
-            secrets[clientIdKey],
-            secrets[clientSecretKey],
-            secrets[scopesKey]);
+        // --- xName lookups: log env var name → key name → exists in secret ---
+        var tokenUrlKey = Environment.GetEnvironmentVariable("AZURE-TOKEN-URL");
+        LambdaLogger.Log($"[SM] AZURE-TOKEN-URL env = {(string.IsNullOrWhiteSpace(tokenUrlKey) ? "❌ NOT SET" : $"✅ set → key name: '{tokenUrlKey}', exists in secret: {secrets.ContainsKey(tokenUrlKey!)}")}");
+        if (string.IsNullOrWhiteSpace(tokenUrlKey)) throw new InvalidOperationException("Missing env var: AZURE-TOKEN-URL");
+
+        var clientIdKey = Environment.GetEnvironmentVariable("AZURE-CLIENT-ID");
+        LambdaLogger.Log($"[SM] AZURE-CLIENT-ID env = {(string.IsNullOrWhiteSpace(clientIdKey) ? "❌ NOT SET" : $"✅ set → key name: '{clientIdKey}', exists in secret: {secrets.ContainsKey(clientIdKey!)}")}");
+        if (string.IsNullOrWhiteSpace(clientIdKey)) throw new InvalidOperationException("Missing env var: AZURE-CLIENT-ID");
+
+        var clientSecretKey = Environment.GetEnvironmentVariable("AZURE-CLIENT-SECRET");
+        LambdaLogger.Log($"[SM] AZURE-CLIENT-SECRET env = {(string.IsNullOrWhiteSpace(clientSecretKey) ? "❌ NOT SET" : $"✅ set → key name: '{clientSecretKey}', exists in secret: {secrets.ContainsKey(clientSecretKey!)}")}");
+        if (string.IsNullOrWhiteSpace(clientSecretKey)) throw new InvalidOperationException("Missing env var: AZURE-CLIENT-SECRET");
+
+        var scopesKey = Environment.GetEnvironmentVariable("AZURE-SCOPE");
+        LambdaLogger.Log($"[SM] AZURE-SCOPE env = {(string.IsNullOrWhiteSpace(scopesKey) ? "❌ NOT SET" : $"✅ set → key name: '{scopesKey}', exists in secret: {secrets.ContainsKey(scopesKey!)}")}");
+        if (string.IsNullOrWhiteSpace(scopesKey)) throw new InvalidOperationException("Missing env var: AZURE-SCOPE");
+
+        // --- Resolve values ---
+        if (!secrets.TryGetValue(tokenUrlKey, out var tokenUrl))
+            throw new InvalidOperationException($"Key '{tokenUrlKey}' (from AZURE-TOKEN-URL) not found in secret.");
+        if (!secrets.TryGetValue(clientIdKey, out var clientId))
+            throw new InvalidOperationException($"Key '{clientIdKey}' (from AZURE-CLIENT-ID) not found in secret.");
+        if (!secrets.TryGetValue(clientSecretKey, out var clientSecret))
+            throw new InvalidOperationException($"Key '{clientSecretKey}' (from AZURE-CLIENT-SECRET) not found in secret.");
+        if (!secrets.TryGetValue(scopesKey, out var scopes))
+            throw new InvalidOperationException($"Key '{scopesKey}' (from AZURE-SCOPE) not found in secret.");
+
+        LambdaLogger.Log("[SM] All 4 secret values resolved successfully ✅");
+
+        return new SecretsData(tokenUrl, clientId, clientSecret, scopes);
     }
 
     private async Task<string> GetValidTokenAsync(CancellationToken cancellationToken)
@@ -200,7 +251,6 @@ public class Service
         }
     }
 
-    // Only SM-resolved fields — BaseUrl and FunctionKey come directly from env
     private sealed record SecretsData(string TokenUrl, string ClientId, string ClientSecret, string Scopes);
 
     private sealed class TokenResponse
