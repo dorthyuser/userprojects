@@ -104,31 +104,31 @@ public class Service
         LambdaLogger.Log($"[SM] Secret JSON parsed. Total keys in secret: {secrets.Count}");
 
         // --- xName lookups: log env var name → key name → exists in secret ---
-        var tokenUrlKey = Environment.GetEnvironmentVariable("AZURE-TOKEN-URL");
-        LambdaLogger.Log($"[SM] AZURE-TOKEN-URL env = {(string.IsNullOrWhiteSpace(tokenUrlKey) ? "❌ NOT SET" : $"✅ set → key name: '{tokenUrlKey}', exists in secret: {secrets.ContainsKey(tokenUrlKey!)}")}");
-        if (string.IsNullOrWhiteSpace(tokenUrlKey)) throw new InvalidOperationException("Missing env var: AZURE-TOKEN-URL");
+        var tokenUrlKey = Environment.GetEnvironmentVariable("AZURE_TOKEN_URL");
+        LambdaLogger.Log($"[SM] AZURE_TOKEN_URL env = {(string.IsNullOrWhiteSpace(tokenUrlKey) ? "❌ NOT SET" : $"✅ set → key name: '{tokenUrlKey}', exists in secret: {secrets.ContainsKey(tokenUrlKey!)}")}");
+        if (string.IsNullOrWhiteSpace(tokenUrlKey)) throw new InvalidOperationException("Missing env var: AZURE_TOKEN_URL");
 
-        var clientIdKey = Environment.GetEnvironmentVariable("AZURE-CLIENT-ID");
-        LambdaLogger.Log($"[SM] AZURE-CLIENT-ID env = {(string.IsNullOrWhiteSpace(clientIdKey) ? "❌ NOT SET" : $"✅ set → key name: '{clientIdKey}', exists in secret: {secrets.ContainsKey(clientIdKey!)}")}");
-        if (string.IsNullOrWhiteSpace(clientIdKey)) throw new InvalidOperationException("Missing env var: AZURE-CLIENT-ID");
+        var clientIdKey = Environment.GetEnvironmentVariable("AZURE_CLIENT_ID");
+        LambdaLogger.Log($"[SM] AZURE_CLIENT_ID env = {(string.IsNullOrWhiteSpace(clientIdKey) ? "❌ NOT SET" : $"✅ set → key name: '{clientIdKey}', exists in secret: {secrets.ContainsKey(clientIdKey!)}")}");
+        if (string.IsNullOrWhiteSpace(clientIdKey)) throw new InvalidOperationException("Missing env var: AZURE_CLIENT_ID");
 
-        var clientSecretKey = Environment.GetEnvironmentVariable("AZURE-CLIENT-SECRET");
-        LambdaLogger.Log($"[SM] AZURE-CLIENT-SECRET env = {(string.IsNullOrWhiteSpace(clientSecretKey) ? "❌ NOT SET" : $"✅ set → key name: '{clientSecretKey}', exists in secret: {secrets.ContainsKey(clientSecretKey!)}")}");
-        if (string.IsNullOrWhiteSpace(clientSecretKey)) throw new InvalidOperationException("Missing env var: AZURE-CLIENT-SECRET");
+        var clientSecretKey = Environment.GetEnvironmentVariable("AZURE_CLIENT_SECRET");
+        LambdaLogger.Log($"[SM] AZURE_CLIENT_SECRET env = {(string.IsNullOrWhiteSpace(clientSecretKey) ? "❌ NOT SET" : $"✅ set → key name: '{clientSecretKey}', exists in secret: {secrets.ContainsKey(clientSecretKey!)}")}");
+        if (string.IsNullOrWhiteSpace(clientSecretKey)) throw new InvalidOperationException("Missing env var: AZURE_CLIENT_SECRET");
 
-        var scopesKey = Environment.GetEnvironmentVariable("AZURE-SCOPE");
-        LambdaLogger.Log($"[SM] AZURE-SCOPE env = {(string.IsNullOrWhiteSpace(scopesKey) ? "❌ NOT SET" : $"✅ set → key name: '{scopesKey}', exists in secret: {secrets.ContainsKey(scopesKey!)}")}");
-        if (string.IsNullOrWhiteSpace(scopesKey)) throw new InvalidOperationException("Missing env var: AZURE-SCOPE");
+        var scopesKey = Environment.GetEnvironmentVariable("AZURE_SCOPE");
+        LambdaLogger.Log($"[SM] AZURE_SCOPE env = {(string.IsNullOrWhiteSpace(scopesKey) ? "❌ NOT SET" : $"✅ set → key name: '{scopesKey}', exists in secret: {secrets.ContainsKey(scopesKey!)}")}");
+        if (string.IsNullOrWhiteSpace(scopesKey)) throw new InvalidOperationException("Missing env var: AZURE_SCOPE");
 
         // --- Resolve values ---
         if (!secrets.TryGetValue(tokenUrlKey, out var tokenUrl))
-            throw new InvalidOperationException($"Key '{tokenUrlKey}' (from AZURE-TOKEN-URL) not found in secret.");
+            throw new InvalidOperationException($"Key '{tokenUrlKey}' (from AZURE_TOKEN_URL) not found in secret.");
         if (!secrets.TryGetValue(clientIdKey, out var clientId))
-            throw new InvalidOperationException($"Key '{clientIdKey}' (from AZURE-CLIENT-ID) not found in secret.");
+            throw new InvalidOperationException($"Key '{clientIdKey}' (from AZURE_CLIENT_ID) not found in secret.");
         if (!secrets.TryGetValue(clientSecretKey, out var clientSecret))
-            throw new InvalidOperationException($"Key '{clientSecretKey}' (from AZURE-CLIENT-SECRET) not found in secret.");
+            throw new InvalidOperationException($"Key '{clientSecretKey}' (from AZURE_CLIENT_SECRET) not found in secret.");
         if (!secrets.TryGetValue(scopesKey, out var scopes))
-            throw new InvalidOperationException($"Key '{scopesKey}' (from AZURE-SCOPE) not found in secret.");
+            throw new InvalidOperationException($"Key '{scopesKey}' (from AZURE_SCOPE) not found in secret.");
 
         LambdaLogger.Log("[SM] All 4 secret values resolved successfully ✅");
 
