@@ -1,0 +1,1 @@
+Orders management Web API using ASP.NET Core .NET 8, clean architecture, PostgreSQL, Azure Key Vault fallback to environment variables, and HTTP port 8080.
