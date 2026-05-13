@@ -1,6 +1,7 @@
 using System.Net;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.Core;
+using Amazon.Lambda.Serialization.SystemTextJson;
 using Httptravelcardch104Lambda.Models;
 using Httptravelcardch104Lambda.Services;
 
