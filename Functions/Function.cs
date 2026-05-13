@@ -4,6 +4,8 @@ using Amazon.Lambda.Core;
 using Httptravelcardch104Lambda.Models;
 using Httptravelcardch104Lambda.Services;
 
+[assembly: LambdaSerializer(typeof(DefaultLambdaJsonSerializer))]
+
 namespace Httptravelcardch104Lambda;
 
 public class Function
