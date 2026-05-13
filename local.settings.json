@@ -1,0 +1,13 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
+    "POSTGRESQL_HOST": "localhost",
+    "POSTGRESQL_PORT": "5432",
+    "POSTGRESQL_DATABASE": "travelcards",
+    "POSTGRESQL_USERNAME": "postgres",
+    "POSTGRESQL_PASSWORD": "postgres",
+    "AZURE_KEY_VAULT_URI": ""
+  }
+}
