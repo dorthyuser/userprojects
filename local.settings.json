@@ -1,0 +1,14 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
+    "TRAVELCARD_API_URL": "https://example.com",
+    "TRAVELCARD_FUNCTION_KEY": "",
+    "AZURE_KEY_VAULT_URL": "",
+    "AZURECLIENTID": "",
+    "AZURECLIENTSECRET": "",
+    "AZURETOKENURL": "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+    "AZURESCOPES": ""
+  }
+}
