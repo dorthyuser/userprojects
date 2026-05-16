@@ -1,0 +1,8 @@
+{
+  "profile": "default",
+  "region": "eu-west-1",
+  "configuration": "Release",
+  "framework": "net8.0",
+  "function-runtime": "dotnet8",
+  "function-handler": "DemoTravelcardsLambda::DemoTravelcardsLambda.Function::HandleAsync"
+}
