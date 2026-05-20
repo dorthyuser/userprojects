@@ -30,9 +30,17 @@ public class Function
     internal static NpgsqlDataSource BuildDataSource()
     {
         var cs = BuildConnectionString();
+
         var builder = new NpgsqlDataSourceBuilder(cs);
-        builder.MapEnum<TravelcardType>("travelcard_type_enum", new NpgsqlNullNameTranslator());
-        builder.MapEnum<CardholderType>("cardholder_type_enum", new NpgsqlNullNameTranslator());
+
+        builder.MapEnum<TravelcardType>(
+            "travelcard_type_enum",
+            new NpgsqlNullNameTranslator());
+
+        builder.MapEnum<CardholderType>(
+            "cardholder_type_enum",
+            new NpgsqlNullNameTranslator());
+
         return builder.Build();
     }
 
@@ -55,53 +63,107 @@ public class Function
             Timeout = 15,
             CommandTimeout = 30
         };
+
         return csb.ConnectionString;
     }
 
-    public async Task<APIGatewayProxyResponse> demoshauntc(APIGatewayProxyRequest request, ILambdaContext context)
+    public async Task<APIGatewayProxyResponse> demoshauntc(
+        APIGatewayProxyRequest request,
+        ILambdaContext context)
     {
         try
         {
-            if (!request.Headers.TryGetValue("client_id", out var clientId) || string.IsNullOrWhiteSpace(clientId) || clientId.Length < 1 || clientId.Length > 128 || !System.Text.RegularExpressions.Regex.IsMatch(clientId, @"^[\w+]+$"))
+            var headers = request.Headers?
+                .ToDictionary(
+                    h => h.Key.ToLowerInvariant(),
+                    h => h.Value)
+                ?? new Dictionary<string, string>();
+
+            // client_id validation
+            if (!headers.TryGetValue("client_id", out var clientId) ||
+                string.IsNullOrWhiteSpace(clientId) ||
+                clientId.Length < 1 ||
+                clientId.Length > 128 ||
+                !System.Text.RegularExpressions.Regex.IsMatch(clientId, @"^[\w+]+$"))
+            {
                 return Error(400, "Invalid or missing header 'client_id'.");
+            }
 
-            if (string.IsNullOrWhiteSpace(request.Body))
-                return Error(400, "Request body is required.");
-
-            if (request.Headers.TryGetValue("Content-Type", out var ct) && !ct.Contains("application/json", StringComparison.OrdinalIgnoreCase))
-                return Error(400, "Invalid Content-Type header.");
-            if (!request.Headers.TryGetValue("Content-Type", out _))
+            // content-type validation
+            if (!headers.TryGetValue("content-type", out var contentType))
+            {
                 return Error(400, "Missing Content-Type header.");
+            }
 
-            var model = JsonSerializer.Deserialize<Request>(request.Body, JsonOptions);
-            if (model is null) return Error(400, "Invalid request body.");
+            if (!contentType.Contains(
+                    "application/json",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return Error(400, "Invalid Content-Type header.");
+            }
+
+            // body validation
+            if (string.IsNullOrWhiteSpace(request.Body))
+            {
+                return Error(400, "Request body is required.");
+            }
+
+            var model = JsonSerializer.Deserialize<Request>(
+                request.Body,
+                JsonOptions);
+
+            if (model is null)
+            {
+                return Error(400, "Invalid request body.");
+            }
+
             var validation = model.Validate();
-            if (validation is not null) return Error(400, validation);
+
+            if (validation is not null)
+            {
+                return Error(400, validation);
+            }
 
             var result = await _service.CreateAsync(model);
+
             return new APIGatewayProxyResponse
             {
                 StatusCode = 201,
-                Headers = new Dictionary<string, string> { ["Content-Type"] = "application/json" },
+                Headers = new Dictionary<string, string>
+                {
+                    ["Content-Type"] = "application/json"
+                },
                 Body = JsonSerializer.Serialize(result, JsonOptions)
             };
         }
         catch (JsonException ex)
         {
             Console.WriteLine(ex);
+
             return Error(400, "Invalid JSON payload.");
         }
         catch (Exception ex)
         {
             Console.WriteLine(ex);
+
             return Error(500, "An unexpected error occurred.");
         }
     }
 
-    private static APIGatewayProxyResponse Error(int statusCode, string message) => new()
+    private static APIGatewayProxyResponse Error(
+        int statusCode,
+        string message)
     {
-        StatusCode = statusCode,
-        Headers = new Dictionary<string, string> { ["Content-Type"] = "application/json" },
-        Body = JsonSerializer.Serialize(new { error = message }, JsonOptions)
-    };
+        return new APIGatewayProxyResponse
+        {
+            StatusCode = statusCode,
+            Headers = new Dictionary<string, string>
+            {
+                ["Content-Type"] = "application/json"
+            },
+            Body = JsonSerializer.Serialize(
+                new { error = message },
+                JsonOptions)
+        };
+    }
 }
