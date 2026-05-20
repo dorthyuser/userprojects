@@ -39,6 +39,7 @@ SUCCESS=false
 
 for i in $(seq 1 $MAX_RETRIES); do
   echo "Attempt $i..."
+
   if az container create \
     --resource-group "$RESOURCE_GROUP" \
     --name "$APP_NAME" \
@@ -55,14 +56,10 @@ for i in $(seq 1 $MAX_RETRIES); do
     --restart-policy Always \
     --assign-identity \
     --environment-variables \
-	AZURE_KEY_VAULT_URI="$AZURE_KEY_VAULT_URI" \
-    POSTGRESQLHOST="$POSTGRESQHOST" \
-    POSTGRESQLPORT="$POSTGRESQLPORT" \
-    POSTGRESQLDATABASE="$POSTGRESQLDATABASE" \
-    POSTGRESQLUSERNAME="$POSTGRESQLUSERNAME" \
-    POSTGRESQLPASSWORD="$POSTGRESQLPASSWORD" \
-    ASPNETCORE_URLS="http://+:$PORT"
-    
+      AZURE_KEY_VAULT_URI="$AZURE_KEY_VAULT_URI" \
+      ZOHO_KEY_URL=https://www.zohoapis.in \
+      ZOHOTOKENURL=https://accounts.zoho.in/oauth/v2/token \
+      ASPNETCORE_URLS="http://+:$PORT"
   then
     echo "Deployment succeeded"
     SUCCESS=true
