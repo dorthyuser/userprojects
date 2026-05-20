@@ -1,0 +1,1 @@
+Create new travelcard and dependent cardholder Lambda for PostgreSQL. The project targets .NET 8 and uses NpgsqlDataSource with PostgreSQL enum mapping, AWS Secrets Manager for database credentials, and structured JSON responses.

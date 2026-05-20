@@ -1,0 +1,9 @@
+{
+  "profile": "default",
+  "region": "eu-west-1",
+  "configuration": "Release",
+  "function-runtime": "dotnet8",
+  "function-memory-size": 256,
+  "function-timeout": 30,
+  "function-handler": "DemoshauntcLambda::DemoshauntcLambda.Function::demoshauntc"
+}
