@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <AssemblyName>DemotravelcardLambda</AssemblyName>
+    <RootNamespace>DemotravelcardLambda</RootNamespace>
+    <LangVersion>latest</LangVersion>
+    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AWSProjectType>Lambda</AWSProjectType>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Amazon.Lambda.Core" Version="2.7.0" />
+    <PackageReference Include="Amazon.Lambda.APIGatewayEvents" Version="2.7.2" />
+    <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="2.4.4" />
+    <PackageReference Include="AWSSDK.SecretsManager" Version="3.7.400.49" />
+    <PackageReference Include="Npgsql" Version="8.0.3" />
+    <PackageReference Include="System.Text.Json" Version="8.0.5" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="appsettings.json" CopyToOutputDirectory="Always" CopyToPublishDirectory="Always" />
+  </ItemGroup>
+</Project>
