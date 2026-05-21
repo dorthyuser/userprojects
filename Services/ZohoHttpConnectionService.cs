@@ -107,20 +107,20 @@ public sealed class ZohoHttpConnectionService : IZohoHttpConnectionService
     public async Task<ApiResult> SyncUsersAsync(ZohoSyncUsersRequest model, string? authorization, string? correlationId, CancellationToken cancellationToken = default)
     {
         ValidateAuth(authorization);
-        if (model.PerPage is < 1 or > 200) throw new ArgumentException("INVALID_PER_PAGE");
+        if (model.PerPage.HasValue && model.PerPage is < 1 or > 200) throw new ArgumentException("INVALID_PER_PAGE");
         if (!string.IsNullOrWhiteSpace(model.Type) &&
             !new[] { "AllUsers", "ActiveUsers", "DeactiveUsers" }.Contains(model.Type))
             throw new ArgumentException("INVALID_TYPE");
 
         var syncType  = string.IsNullOrWhiteSpace(model.Type) ? "AllUsers" : model.Type;
-        var perPage   = model.PerPage > 0 ? model.PerPage : 200;
+        var perPage = model.PerPage ?? 200;
         var syncStart = DateTimeOffset.UtcNow;
 
         await using var conn = await _dataSource.OpenConnectionAsync(cancellationToken);
 
         // Read watermark from sync_state
         var watermark = DateTimeOffset.UnixEpoch;
-        if (!model.FullSync)
+        if (model.FullSync != true)
         {
             await using var wCmd = conn.CreateCommand();
             wCmd.CommandText = "SELECT last_synced_at FROM sync_state WHERE sync_key = 'zoho_users'";
