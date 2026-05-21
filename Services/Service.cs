@@ -15,12 +15,12 @@ public class Service
     private static readonly SemaphoreSlim _tokenSemaphore = new(1, 1);
     private static readonly JsonSerializerOptions _jsonOptions = new() { PropertyNameCaseInsensitive = true };
 
-    private static readonly string _baseUrl;
-    private static readonly string _tokenUrl;
-    private static readonly string _clientId;
-    private static readonly string _clientSecret;
-    private static readonly string _scopes;
-    private static readonly string _functionKey;
+    private static string _baseUrl = string.Empty;
+    private static string _tokenUrl = string.Empty;
+    private static string _clientId = string.Empty;
+    private static string _clientSecret = string.Empty;
+    private static string _scopes = string.Empty;
+    private static string _functionKey = string.Empty;
 
     private string? _accessToken;
     private DateTime _tokenExpiry = DateTime.MinValue;
@@ -31,26 +31,17 @@ public class Service
         {
             LambdaLogger.Log("[INIT] Service static constructor started.");
 
-            // --- Direct env reads ---
+            // --- Direct env reads (lightweight) ---
             var baseUrlRaw = Environment.GetEnvironmentVariable("TRAVELCARD_API_URL");
             LambdaLogger.Log($"[INIT] TRAVELCARD_API_URL = {(string.IsNullOrWhiteSpace(baseUrlRaw) ? "❌ NOT SET" : "✅ set")}");
-            _baseUrl = (baseUrlRaw ?? throw new InvalidOperationException("Missing env var: TRAVELCARD_API_URL")).TrimEnd('/');
+            _baseUrl = (baseUrlRaw ?? string.Empty).TrimEnd('/');
 
             var functionKeyRaw = Environment.GetEnvironmentVariable("TRAVELCARD_FUNCTION_KEY");
             LambdaLogger.Log($"[INIT] TRAVELCARD_FUNCTION_KEY = {(string.IsNullOrWhiteSpace(functionKeyRaw) ? "❌ NOT SET" : "✅ set")}");
-            _functionKey = functionKeyRaw ?? throw new InvalidOperationException("Missing env var: TRAVELCARD_FUNCTION_KEY");
+            _functionKey = functionKeyRaw ?? string.Empty;
 
-            // --- Secrets Manager reads ---
-            LambdaLogger.Log("[INIT] Starting LoadSecretsAsync via Task.Run...");
-            var result = Task.Run(LoadSecretsAsync).GetAwaiter().GetResult();
-            LambdaLogger.Log("[INIT] LoadSecretsAsync completed successfully.");
-
-            _tokenUrl     = result.TokenUrl;
-            _clientId     = result.ClientId;
-            _clientSecret = result.ClientSecret;
-            _scopes       = result.Scopes;
-
-            LambdaLogger.Log("[INIT] Service static constructor completed successfully.");
+            // NOTE: Do NOT call network operations from static constructor. Secrets will be loaded lazily when needed.
+            LambdaLogger.Log("[INIT] Service static constructor completed successfully (secrets will be loaded lazily).");
         }
         catch (Exception ex)
         {
@@ -175,6 +166,16 @@ public class Service
 
     private async Task RefreshTokenAsync(CancellationToken cancellationToken)
     {
+        // Ensure secrets are loaded before attempting to refresh the token.
+        if (string.IsNullOrWhiteSpace(_clientId) || string.IsNullOrWhiteSpace(_clientSecret) || string.IsNullOrWhiteSpace(_tokenUrl) || string.IsNullOrWhiteSpace(_scopes))
+        {
+            var secrets = await LoadSecretsAsync();
+            _tokenUrl = secrets.TokenUrl;
+            _clientId = secrets.ClientId;
+            _clientSecret = secrets.ClientSecret;
+            _scopes = secrets.Scopes;
+        }
+
         var content = new FormUrlEncodedContent(new Dictionary<string, string>
         {
             ["grant_type"]    = "client_credentials",
