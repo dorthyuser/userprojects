@@ -5,4 +5,5 @@ public sealed class ApiResult
     public int StatusCode { get; set; }
     public object? Body { get; set; }
     public string? ContentType { get; set; }
+    public string? CorrelationId { get; set; }
 }
