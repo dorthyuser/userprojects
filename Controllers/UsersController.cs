@@ -19,11 +19,10 @@ public sealed class UsersController : ControllerBase
     [HttpPost("api/v1/users")]
     public async Task<IActionResult> CreateUser([FromBody] ZohoCreateUserRequest request, CancellationToken cancellationToken)
     {
-        var auth = Request.Headers["Authorization"].ToString();
         var correlationId = Request.Headers["X-Correlation-Id"].ToString();
         try
         {
-            var result = await _service.CreateUserAsync(request, auth, correlationId, cancellationToken);
+            var result = await _service.CreateUserAsync(request, correlationId, cancellationToken);
             if (!string.IsNullOrWhiteSpace(result.CorrelationId))
                 Response.Headers["X-Correlation-Id"] = result.CorrelationId;
             return StatusCode(result.StatusCode, result.Body);
@@ -38,11 +37,10 @@ public sealed class UsersController : ControllerBase
     [HttpGet("api/v1/users")]
     public async Task<IActionResult> GetUsers([FromQuery] ZohoGetUsersQuery query, CancellationToken cancellationToken)
     {
-        var auth = Request.Headers["Authorization"].ToString();
         var correlationId = Request.Headers["X-Correlation-Id"].ToString();
         try
         {
-            var result = await _service.GetZohoUsersAsync(query, auth, correlationId, cancellationToken);
+            var result = await _service.GetZohoUsersAsync(query, correlationId, cancellationToken);
             if (!string.IsNullOrWhiteSpace(result.CorrelationId))
                 Response.Headers["X-Correlation-Id"] = result.CorrelationId;
             return StatusCode(result.StatusCode, result.Body);
@@ -57,11 +55,10 @@ public sealed class UsersController : ControllerBase
     [HttpGet("api/v1/users/{zoho_id}")]
     public async Task<IActionResult> GetUserByZohoId([FromRoute(Name = "zoho_id")] string zohoId, [FromQuery] ZohoGetUsersQuery query, CancellationToken cancellationToken)
     {
-        var auth = Request.Headers["Authorization"].ToString();
         var correlationId = Request.Headers["X-Correlation-Id"].ToString();
         try
         {
-            var result = await _service.GetZohoUserByIdAsync(zohoId, query, auth, correlationId, cancellationToken);
+            var result = await _service.GetZohoUserByIdAsync(zohoId, query, correlationId, cancellationToken);
             if (!string.IsNullOrWhiteSpace(result.CorrelationId))
                 Response.Headers["X-Correlation-Id"] = result.CorrelationId;
             return StatusCode(result.StatusCode, result.Body);
@@ -76,11 +73,10 @@ public sealed class UsersController : ControllerBase
     [HttpPost("api/v1/users/sync")]
     public async Task<IActionResult> SyncUsers([FromBody] ZohoSyncUsersRequest request, CancellationToken cancellationToken)
     {
-        var auth = Request.Headers["Authorization"].ToString();
         var correlationId = Request.Headers["X-Correlation-Id"].ToString();
         try
         {
-            var result = await _service.SyncUsersAsync(request, auth, correlationId, cancellationToken);
+            var result = await _service.SyncUsersAsync(request, correlationId, cancellationToken);
             if (!string.IsNullOrWhiteSpace(result.CorrelationId))
                 Response.Headers["X-Correlation-Id"] = result.CorrelationId;
             return StatusCode(result.StatusCode, result.Body);
@@ -95,11 +91,10 @@ public sealed class UsersController : ControllerBase
     [HttpGet("api/v1/users/local")]
     public async Task<IActionResult> GetLocalUsers([FromQuery] LocalUsersQuery query, CancellationToken cancellationToken)
     {
-        var auth = Request.Headers["Authorization"].ToString();
         var correlationId = Request.Headers["X-Correlation-Id"].ToString();
         try
         {
-            var result = await _service.GetLocalUsersAsync(query, auth, correlationId, cancellationToken);
+            var result = await _service.GetLocalUsersAsync(query, correlationId, cancellationToken);
             if (!string.IsNullOrWhiteSpace(result.CorrelationId))
                 Response.Headers["X-Correlation-Id"] = result.CorrelationId;
             return StatusCode(result.StatusCode, result.Body);
@@ -114,11 +109,10 @@ public sealed class UsersController : ControllerBase
     [HttpGet("api/v1/users/local/{user_pk}")]
     public async Task<IActionResult> GetLocalUserByPk([FromRoute(Name = "user_pk")] long userPk, CancellationToken cancellationToken)
     {
-        var auth = Request.Headers["Authorization"].ToString();
         var correlationId = Request.Headers["X-Correlation-Id"].ToString();
         try
         {
-            var result = await _service.GetLocalUserByPkAsync(userPk, auth, correlationId, cancellationToken);
+            var result = await _service.GetLocalUserByPkAsync(userPk, correlationId, cancellationToken);
             if (!string.IsNullOrWhiteSpace(result.CorrelationId))
                 Response.Headers["X-Correlation-Id"] = result.CorrelationId;
             return StatusCode(result.StatusCode, result.Body);
@@ -133,11 +127,10 @@ public sealed class UsersController : ControllerBase
     [HttpGet("api/v1/users/local/zoho/{zoho_uid}")]
     public async Task<IActionResult> GetLocalUserByZohoUid([FromRoute(Name = "zoho_uid")] string zohoUid, CancellationToken cancellationToken)
     {
-        var auth = Request.Headers["Authorization"].ToString();
         var correlationId = Request.Headers["X-Correlation-Id"].ToString();
         try
         {
-            var result = await _service.GetLocalUserByZohoUidAsync(zohoUid, auth, correlationId, cancellationToken);
+            var result = await _service.GetLocalUserByZohoUidAsync(zohoUid, correlationId, cancellationToken);
             if (!string.IsNullOrWhiteSpace(result.CorrelationId))
                 Response.Headers["X-Correlation-Id"] = result.CorrelationId;
             return StatusCode(result.StatusCode, result.Body);
