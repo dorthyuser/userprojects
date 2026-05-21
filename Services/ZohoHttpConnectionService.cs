@@ -112,13 +112,12 @@ public sealed class ZohoHttpConnectionService : IZohoHttpConnectionService
         var perPage   = model.PerPage ?? 200;
         var syncStart = DateTimeOffset.UtcNow;
 
-        await using var conn = await _dataSource.OpenConnectionAsync(cancellationToken);
-
         // Read watermark from sync_state
         var watermark = DateTimeOffset.UnixEpoch;
         if (model.FullSync != true)
         {
-            await using var wCmd = conn.CreateCommand();
+            await using var wConn = await _dataSource.OpenConnectionAsync(cancellationToken);
+            await using var wCmd = wConn.CreateCommand();
             wCmd.CommandText = "SELECT last_synced_at FROM sync_state WHERE sync_key = 'zoho_users'";
             var scalar = await wCmd.ExecuteScalarAsync(cancellationToken);
             if (scalar is DateTimeOffset dto) watermark = dto;
@@ -157,10 +156,11 @@ public sealed class ZohoHttpConnectionService : IZohoHttpConnectionService
                 var zohoUid = "";
                 try
                 {
+                    await using var conn = await _dataSource.OpenConnectionAsync(cancellationToken);
                     zohoUid = user.TryGetProperty("id", out var idEl) ? idEl.GetString() ?? "" : "";
                     var modifiedTime = user.TryGetProperty("modified_time", out var mt) &&
                                        DateTimeOffset.TryParse(mt.GetString(), out var parsedMt)
-                        ? parsedMt : DateTimeOffset.UtcNow;
+                        ? parsedMt.ToUniversalTime() : DateTimeOffset.UtcNow;
 
                     if (modifiedTime > newWatermark)
                         newWatermark = modifiedTime;
@@ -244,13 +244,14 @@ public sealed class ZohoHttpConnectionService : IZohoHttpConnectionService
         // Update watermark only on full or partial success
         if (pagesFetched > 0 && errors < totalRead)
         {
-            await using var wUpd = conn.CreateCommand();
+            await using var wConn = await _dataSource.OpenConnectionAsync(cancellationToken);
+            await using var wUpd  = wConn.CreateCommand(); 
             wUpd.CommandText = @"
                 INSERT INTO sync_state (sync_key, last_synced_at, last_run_at, records_synced)
                 VALUES ('zoho_users', @w, NOW(), @count)
                 ON CONFLICT (sync_key) DO UPDATE SET
                     last_synced_at = @w, last_run_at = NOW(), records_synced = @count";
-            wUpd.Parameters.AddWithValue("w",     newWatermark);
+            wUpd.Parameters.AddWithValue("w",    newWatermark.ToUniversalTime()); 
             wUpd.Parameters.AddWithValue("count", upserted);
             await wUpd.ExecuteNonQueryAsync(cancellationToken);
         }
@@ -445,5 +446,5 @@ public sealed class ZohoHttpConnectionService : IZohoHttpConnectionService
 
     private static DateTimeOffset ParseDate(JsonElement el, string key) =>
         el.TryGetProperty(key, out var v) &&
-        DateTimeOffset.TryParse(v.GetString(), out var d) ? d : DateTimeOffset.UtcNow;
+        DateTimeOffset.TryParse(v.GetString(), out var d) ? d.ToUniversalTime() : DateTimeOffset.UtcNow;
 }
