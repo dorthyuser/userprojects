@@ -1,4 +1,5 @@
 using System.Net;
+using System.Threading;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.Core;
 using Amazon.Lambda.Serialization.SystemTextJson;
@@ -18,6 +19,10 @@ public class Function
         var clientId = GetHeaderValue(request.Headers, "client_id");
         context.Logger.LogLine($"Controller entry: method={request.HttpMethod}, route={request.Path}, client_id={clientId ?? string.Empty}");
 
+        // Create a cancellation token that cancels slightly before the Lambda remaining time expires,
+        // so we can return a controlled timeout response rather than letting AWS forcibly kill the function.
+        using var cts = CreateCancellationTokenSourceFromContext(context);
+
         try
         {
             if (!string.Equals(request.HttpMethod, "POST", StringComparison.OrdinalIgnoreCase))
@@ -26,7 +31,7 @@ public class Function
             }
 
             var body = request.Body ?? string.Empty;
-            var apiResponse = await _service.ForwardAsync(body, request.Headers, CancellationToken.None);
+            var apiResponse = await _service.ForwardAsync(body, request.Headers, cts.Token);
 
             return new APIGatewayProxyResponse
             {
@@ -57,6 +62,22 @@ public class Function
         {
             context.Logger.LogLine($"Unhandled exception: {ex.Message}");
             return BuildErrorResponse(HttpStatusCode.InternalServerError, "internal", "An unexpected error occurred.");
+        }
+    }
+
+    private static CancellationTokenSource CreateCancellationTokenSourceFromContext(ILambdaContext? context)
+    {
+        try
+        {
+            var remaining = context?.RemainingTime ?? TimeSpan.FromSeconds(120);
+            // Leave a small buffer (1s) to allow handler to prepare response
+            var ms = (int)Math.Max(100, remaining.TotalMilliseconds - 1000);
+            return new CancellationTokenSource(ms);
+        }
+        catch
+        {
+            // In case of any issue, fall back to a conservative 110s timeout
+            return new CancellationTokenSource(TimeSpan.FromSeconds(110));
         }
     }
 
