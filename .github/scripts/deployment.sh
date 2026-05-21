@@ -1,6 +1,5 @@
 #!/bin/bash
 set -e
-
 APP_NAME=$1
 IMAGE_NAME=$2
 IMAGE_TAG=$3
@@ -14,6 +13,11 @@ fi
 
 if [ -z "$DOCKER_USERNAME" ] || [ -z "$DOCKER_PASSWORD" ]; then
   echo "Error: DOCKER_USERNAME and DOCKER_PASSWORD must be set"
+  exit 1
+fi
+
+if [ -z "$AZURE_KEY_VAULT_URI" ]; then
+  echo "Error: AZURE_KEY_VAULT_URI must be set"
   exit 1
 fi
 
@@ -55,14 +59,18 @@ for i in $(seq 1 $MAX_RETRIES); do
     --restart-policy Always \
     --assign-identity \
     --environment-variables \
-	AZURE_KEY_VAULT_URI="$AZURE_KEY_VAULT_URI" \
-    POSTGRESQLHOST="$POSTGRESQHOST" \
-    POSTGRESQLPORT="$POSTGRESQLPORT" \
-    POSTGRESQLDATABASE="$POSTGRESQLDATABASE" \
-    POSTGRESQLUSERNAME="$POSTGRESQLUSERNAME" \
-    POSTGRESQLPASSWORD="$POSTGRESQLPASSWORD" \
-    ASPNETCORE_URLS="http://+:$PORT"
-    
+      ASPNETCORE_URLS="http://+:$PORT" \
+      AZURE_KEY_VAULT_URI="$AZURE_KEY_VAULT_URI" \
+      ZOHO_KEY_URL="https://www.zohoapis.in" \
+      ZOHOTOKENURL="https://accounts.zoho.in/oauth/v2/token" \
+      ZOHOCLIENTID="ZOHOCLIENTID" \
+      ZOHOCLIENTSECRET="ZOHOCLIENTSECRET" \
+      ZOHOREFRESHTOKEN="ZOHOREFRESHTOKEN" \
+      POSTGRESQLHOST="POSTGRESQLHOST" \
+      POSTGRESQLPORT="POSTGRESQLPORT" \
+      POSTGRESQLDATABASE="POSTGRESQLDATABASE" \
+      POSTGRESQLUSERNAME="POSTGRESQLUSERNAME" \
+      POSTGRESQLPASSWORD="POSTGRESQLPASSWORD"
   then
     echo "Deployment succeeded"
     SUCCESS=true
@@ -85,5 +93,7 @@ FQDN=$(az container show \
   --query ipAddress.fqdn \
   -o tsv)
 
+echo "-------------------------------------------------------"
 echo "Deployment successful"
 echo "URL: http://$FQDN:$PORT"
+echo "-------------------------------------------------------"
