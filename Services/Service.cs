@@ -54,6 +54,13 @@ public class Service
 
     public async Task<ServiceResponse> ForwardAsync(string body, IDictionary<string, string>? headers, CancellationToken cancellationToken)
     {
+        // Short-circuit when no target base URL is configured to avoid network calls during local runs or tests.
+        if (string.IsNullOrWhiteSpace(_baseUrl))
+        {
+            LambdaLogger.Log("[SERVICE] TRAVELCARD_API_URL not configured — returning local echo response.");
+            return new ServiceResponse(HttpStatusCode.OK, body ?? string.Empty, null);
+        }
+
         var uri   = BuildTargetUri();
         var token = await GetValidTokenAsync(cancellationToken);
 
