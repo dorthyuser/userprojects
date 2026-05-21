@@ -7,8 +7,8 @@ namespace synctesting1109.Services;
 
 public sealed class ZohoHttpConnectionService : IZohoHttpConnectionService
 {
-    private static readonly Regex ZohoIdRegex    = new(@"^[0-9]+$", RegexOptions.Compiled);
-    private static readonly string[] ValidTypes  = ["AllUsers", "ActiveUsers", "DeactiveUsers", "ConfirmedUsers", "AdminUsers"];
+    private static readonly Regex ZohoIdRegex        = new(@"^[0-9]+$", RegexOptions.Compiled);
+    private static readonly string[] ValidTypes      = ["AllUsers", "ActiveUsers", "DeactiveUsers", "ConfirmedUsers", "AdminUsers"];
     private static readonly string[] ValidLocalSorts = ["family_name", "email_address", "zoho_modified_at", "local_synced_at"];
 
     private readonly IZohoHttpConnectionConnection _connection;
@@ -30,9 +30,8 @@ public sealed class ZohoHttpConnectionService : IZohoHttpConnectionService
 
     // ── Endpoint 1 — Create user in Zoho CRM ────────────────────────────────
 
-    public async Task<ApiResult> CreateUserAsync(ZohoCreateUserRequest model, string? authorization, string? correlationId, CancellationToken cancellationToken = default)
+    public async Task<ApiResult> CreateUserAsync(ZohoCreateUserRequest model, string? correlationId, CancellationToken cancellationToken = default)
     {
-        ValidateAuth(authorization);
         ValidateCreateRequest(model);
 
         // Check for duplicate email before creating
@@ -75,9 +74,8 @@ public sealed class ZohoHttpConnectionService : IZohoHttpConnectionService
 
     // ── Endpoint 2 — Get users from Zoho CRM ────────────────────────────────
 
-    public async Task<ApiResult> GetZohoUsersAsync(ZohoGetUsersQuery query, string? authorization, string? correlationId, CancellationToken cancellationToken = default)
+    public async Task<ApiResult> GetZohoUsersAsync(ZohoGetUsersQuery query, string? correlationId, CancellationToken cancellationToken = default)
     {
-        ValidateAuth(authorization);
         var type    = string.IsNullOrWhiteSpace(query.Type) ? "AllUsers" : query.Type;
         var page    = query.Page ?? 1;
         var perPage = query.PerPage ?? 50;
@@ -93,9 +91,8 @@ public sealed class ZohoHttpConnectionService : IZohoHttpConnectionService
         return new ApiResult { StatusCode = (int)response.StatusCode, Body = responseBody, CorrelationId = correlationId };
     }
 
-    public async Task<ApiResult> GetZohoUserByIdAsync(string zohoId, ZohoGetUsersQuery query, string? authorization, string? correlationId, CancellationToken cancellationToken = default)
+    public async Task<ApiResult> GetZohoUserByIdAsync(string zohoId, ZohoGetUsersQuery query, string? correlationId, CancellationToken cancellationToken = default)
     {
-        ValidateAuth(authorization);
         if (!ZohoIdRegex.IsMatch(zohoId)) throw new ArgumentException("INVALID_ZOHO_ID");
         using var response = await _connection.SendAsync(HttpMethod.Get, $"/crm/v8/users/{zohoId}", null, correlationId, cancellationToken);
         var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
@@ -104,16 +101,15 @@ public sealed class ZohoHttpConnectionService : IZohoHttpConnectionService
 
     // ── Endpoint 3 — Delta sync Zoho → PostgreSQL ───────────────────────────
 
-    public async Task<ApiResult> SyncUsersAsync(ZohoSyncUsersRequest model, string? authorization, string? correlationId, CancellationToken cancellationToken = default)
+    public async Task<ApiResult> SyncUsersAsync(ZohoSyncUsersRequest model, string? correlationId, CancellationToken cancellationToken = default)
     {
-        ValidateAuth(authorization);
         if (model.PerPage.HasValue && model.PerPage is < 1 or > 200) throw new ArgumentException("INVALID_PER_PAGE");
         if (!string.IsNullOrWhiteSpace(model.Type) &&
             !new[] { "AllUsers", "ActiveUsers", "DeactiveUsers" }.Contains(model.Type))
             throw new ArgumentException("INVALID_TYPE");
 
         var syncType  = string.IsNullOrWhiteSpace(model.Type) ? "AllUsers" : model.Type;
-        var perPage = model.PerPage ?? 200;
+        var perPage   = model.PerPage ?? 200;
         var syncStart = DateTimeOffset.UtcNow;
 
         await using var conn = await _dataSource.OpenConnectionAsync(cancellationToken);
@@ -274,15 +270,15 @@ public sealed class ZohoHttpConnectionService : IZohoHttpConnectionService
             StatusCode    = 200,
             Body          = new
             {
-                status             = "success",
-                watermark_used     = watermark.ToString("O"),
-                new_watermark      = newWatermark.ToString("O"),
-                pages_fetched      = pagesFetched,
-                zoho_records_read  = totalRead,
+                status            = "success",
+                watermark_used    = watermark.ToString("O"),
+                new_watermark     = newWatermark.ToString("O"),
+                pages_fetched     = pagesFetched,
+                zoho_records_read = totalRead,
                 upserted,
                 unchanged,
                 errors,
-                sync_duration_ms   = durationMs
+                sync_duration_ms  = durationMs
             },
             CorrelationId = correlationId
         };
@@ -290,9 +286,8 @@ public sealed class ZohoHttpConnectionService : IZohoHttpConnectionService
 
     // ── Endpoint 4 — Get users from PostgreSQL ───────────────────────────────
 
-    public async Task<ApiResult> GetLocalUsersAsync(LocalUsersQuery query, string? authorization, string? correlationId, CancellationToken cancellationToken = default)
+    public async Task<ApiResult> GetLocalUsersAsync(LocalUsersQuery query, string? correlationId, CancellationToken cancellationToken = default)
     {
-        ValidateAuth(authorization);
         if (!string.IsNullOrWhiteSpace(query.AccountStatus) && query.AccountStatus is not ("active" or "inactive"))
             throw new ArgumentException("INVALID_STATUS");
         if (!string.IsNullOrWhiteSpace(query.ZohoRoleId)    && !ZohoIdRegex.IsMatch(query.ZohoRoleId))
@@ -302,27 +297,26 @@ public sealed class ZohoHttpConnectionService : IZohoHttpConnectionService
         if (!string.IsNullOrWhiteSpace(query.SyncedAfter)   && !DateTimeOffset.TryParse(query.SyncedAfter, out _))
             throw new ArgumentException("INVALID_DATE");
 
-        var page      = query.Page ?? 1;
-        var pageSize  = query.PageSize ?? 50;
-        if (page < 1)               throw new ArgumentException("INVALID_PAGE");
+        var page     = query.Page ?? 1;
+        var pageSize = query.PageSize ?? 50;
+        if (page < 1)                throw new ArgumentException("INVALID_PAGE");
         if (pageSize is < 1 or > 500) throw new ArgumentException("INVALID_PAGE_SIZE");
 
         var sortBy    = ValidLocalSorts.Contains(query.SortBy ?? "") ? query.SortBy : "family_name";
         var sortOrder = query.SortOrder == "desc" ? "DESC" : "ASC";
         var offset    = (page - 1) * pageSize;
 
-        // Build WHERE clause
         var conditions = new List<string>();
         var parameters = new Dictionary<string, object>();
 
         if (!string.IsNullOrWhiteSpace(query.AccountStatus))
-            { conditions.Add("account_status = @status");     parameters["status"]      = query.AccountStatus; }
+            { conditions.Add("account_status = @status");        parameters["status"]       = query.AccountStatus; }
         if (!string.IsNullOrWhiteSpace(query.ZohoRoleId))
-            { conditions.Add("zoho_role_id = @role_id");      parameters["role_id"]     = query.ZohoRoleId; }
+            { conditions.Add("zoho_role_id = @role_id");         parameters["role_id"]      = query.ZohoRoleId; }
         if (!string.IsNullOrWhiteSpace(query.ZohoProfileId))
-            { conditions.Add("zoho_profile_id = @profile_id"); parameters["profile_id"] = query.ZohoProfileId; }
+            { conditions.Add("zoho_profile_id = @profile_id");   parameters["profile_id"]   = query.ZohoProfileId; }
         if (query.IsConfirmed.HasValue)
-            { conditions.Add("is_confirmed = @confirmed");    parameters["confirmed"]   = query.IsConfirmed.Value; }
+            { conditions.Add("is_confirmed = @confirmed");       parameters["confirmed"]    = query.IsConfirmed.Value; }
         if (!string.IsNullOrWhiteSpace(query.SyncedAfter) && DateTimeOffset.TryParse(query.SyncedAfter, out var sa))
             { conditions.Add("local_synced_at >= @synced_after"); parameters["synced_after"] = sa; }
 
@@ -359,9 +353,8 @@ public sealed class ZohoHttpConnectionService : IZohoHttpConnectionService
         };
     }
 
-    public async Task<ApiResult> GetLocalUserByPkAsync(long userPk, string? authorization, string? correlationId, CancellationToken cancellationToken = default)
+    public async Task<ApiResult> GetLocalUserByPkAsync(long userPk, string? correlationId, CancellationToken cancellationToken = default)
     {
-        ValidateAuth(authorization);
         await using var conn = await _dataSource.OpenConnectionAsync(cancellationToken);
         await using var cmd  = conn.CreateCommand();
         cmd.CommandText = "SELECT * FROM crm_users WHERE user_pk = @pk LIMIT 1";
@@ -372,9 +365,8 @@ public sealed class ZohoHttpConnectionService : IZohoHttpConnectionService
         return new ApiResult { StatusCode = 200, Body = new { status = "success", user = MapLocalUser(reader) }, CorrelationId = correlationId };
     }
 
-    public async Task<ApiResult> GetLocalUserByZohoUidAsync(string zohoUid, string? authorization, string? correlationId, CancellationToken cancellationToken = default)
+    public async Task<ApiResult> GetLocalUserByZohoUidAsync(string zohoUid, string? correlationId, CancellationToken cancellationToken = default)
     {
-        ValidateAuth(authorization);
         if (!ZohoIdRegex.IsMatch(zohoUid)) throw new ArgumentException("INVALID_ZOHO_UID");
         await using var conn = await _dataSource.OpenConnectionAsync(cancellationToken);
         await using var cmd  = conn.CreateCommand();
@@ -388,19 +380,12 @@ public sealed class ZohoHttpConnectionService : IZohoHttpConnectionService
 
     // ── Private helpers ──────────────────────────────────────────────────────
 
-    private static void ValidateAuth(string? authorization)
-    {
-        if (string.IsNullOrWhiteSpace(authorization) ||
-            !authorization.StartsWith("Zoho-oauthtoken ", StringComparison.OrdinalIgnoreCase))
-            throw new InvalidOperationException("UNAUTHORIZED");
-    }
-
     private static void ValidateCreateRequest(ZohoCreateUserRequest request)
     {
-        if (request.Users.Count != 1)                          throw new ArgumentException("VALIDATION_ERROR");
+        if (request.Users.Count != 1)                           throw new ArgumentException("VALIDATION_ERROR");
         var item = request.Users[0];
-        if (string.IsNullOrWhiteSpace(item.LastName))          throw new ArgumentException("last_name is required.");
-        if (string.IsNullOrWhiteSpace(item.Email))             throw new ArgumentException("email is required.");
+        if (string.IsNullOrWhiteSpace(item.LastName))           throw new ArgumentException("last_name is required.");
+        if (string.IsNullOrWhiteSpace(item.Email))              throw new ArgumentException("email is required.");
         if (!ZohoIdRegex.IsMatch(item.Role    ?? string.Empty)) throw new ArgumentException("INVALID_ROLE_ID");
         if (!ZohoIdRegex.IsMatch(item.Profile ?? string.Empty)) throw new ArgumentException("INVALID_PROFILE_ID");
     }
