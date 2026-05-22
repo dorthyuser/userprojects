@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 using Amazon.Lambda.Core;
@@ -73,13 +74,13 @@ public class Service
             await ForceRefreshTokenAsync(cancellationToken);
             using var retryRequest = CreateRequest(uri, body, headers, _accessToken ?? throw new InvalidOperationException("Token refresh failed: empty access token"));
             var retryResponse = await _apiClient.SendAsync(retryRequest, cancellationToken);
-            return await BuildServiceResponseAsync(retryResponse);
+            return await BuildServiceResponseAsync(retryResponse, cancellationToken);
         }
 
-        return await BuildServiceResponseAsync(response);
+        return await BuildServiceResponseAsync(response, cancellationToken);
     }
 
-    private static async Task<SecretsData> LoadSecretsAsync()
+    private static async Task<SecretsData> LoadSecretsAsync(CancellationToken cancellationToken)
     {
         // --- AWS_SECRET_NAME ---
         var secretName = Environment.GetEnvironmentVariable("AWS_SECRET_NAME");
@@ -90,7 +91,7 @@ public class Service
         // --- Fetch from Secrets Manager ---
         LambdaLogger.Log($"[SM] Calling GetSecretValueAsync for secret: '{secretName}'...");
         var secretClient = new AmazonSecretsManagerClient();
-        var response     = await secretClient.GetSecretValueAsync(new GetSecretValueRequest { SecretId = secretName });
+        var response     = await secretClient.GetSecretValueAsync(new GetSecretValueRequest { SecretId = secretName }, cancellationToken);
         LambdaLogger.Log("[SM] GetSecretValueAsync returned successfully.");
 
         if (string.IsNullOrWhiteSpace(response.SecretString))
@@ -176,7 +177,7 @@ public class Service
         // Ensure secrets are loaded before attempting to refresh the token.
         if (string.IsNullOrWhiteSpace(_clientId) || string.IsNullOrWhiteSpace(_clientSecret) || string.IsNullOrWhiteSpace(_tokenUrl) || string.IsNullOrWhiteSpace(_scopes))
         {
-            var secrets = await LoadSecretsAsync();
+            var secrets = await LoadSecretsAsync(cancellationToken);
             _tokenUrl = secrets.TokenUrl;
             _clientId = secrets.ClientId;
             _clientSecret = secrets.ClientSecret;
@@ -250,11 +251,11 @@ public class Service
         return null;
     }
 
-    private static async Task<ServiceResponse> BuildServiceResponseAsync(HttpResponseMessage response)
+    private static async Task<ServiceResponse> BuildServiceResponseAsync(HttpResponseMessage response, CancellationToken cancellationToken)
     {
         using (response)
         {
-            var body = await response.Content.ReadAsStringAsync();
+            var body = await response.Content.ReadAsStringAsync(cancellationToken);
             return new ServiceResponse(response.StatusCode, body, null);
         }
     }
