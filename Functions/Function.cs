@@ -1,5 +1,6 @@
 using System.Net;
 using System.Threading;
+using System.Threading.Tasks;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.Core;
 using Amazon.Lambda.Serialization.SystemTextJson;
@@ -31,95 +32,34 @@ public class Function
             }
 
             var body = request.Body ?? string.Empty;
-            var apiResponse = await _service.ForwardAsync(body, request.Headers, cts.Token);
 
-            return new APIGatewayProxyResponse
-            {
-                StatusCode = (int)apiResponse.StatusCode,
-                Headers = new Dictionary<string, string>
-                {
-                    ["Content-Type"] = "application/json"
-                },
-                Body = apiResponse.Body
-            };
-        }
-        catch (InvalidOperationException ex)
-        {
-            context.Logger.LogLine($"Token generation or configuration failure: {ex.Message}");
-            return BuildErrorResponse(HttpStatusCode.BadGateway, "processing", ex.Message);
-        }
-        catch (HttpRequestException ex)
-        {
-            context.Logger.LogLine($"External API failure: {ex.Message}");
-            return BuildErrorResponse(HttpStatusCode.BadGateway, "external_api", "External API call failed.");
-        }
-        catch (OperationCanceledException ex)
-        {
-            // Catch OperationCanceledException (includes TaskCanceledException) so we reliably return a 504
-            // before AWS forcibly times out the Lambda.
-            context.Logger.LogLine($"Timeout while calling external API: {ex.Message}");
-            return BuildErrorResponse(HttpStatusCode.GatewayTimeout, "timeout", "The request timed out.");
-        }
-        catch (Exception ex)
-        {
-            context.Logger.LogLine($"Unhandled exception: {ex.Message}");
-            return BuildErrorResponse(HttpStatusCode.InternalServerError, "internal", "An unexpected error occurred.");
-        }
-    }
+            // Run the service call with an internal watchdog that ensures we return before the Lambda runtime kills the function.
+            var serviceTask = _service.ForwardAsync(body, request.Headers, cts.Token);
+            
+            // Compute an internal timeout slightly smaller than remaining time so we can return gracefully.
+            var remainingMs = (int)Math.Max(100, (context?.RemainingTime.TotalMilliseconds ?? 120000) - 5000);
+            var timeoutTask = Task.Delay(remainingMs);
+            var finished = await Task.WhenAny(serviceTask, timeoutTask);
+            if (finished != serviceTask)
+            {                // Cancel ongoing operations and return a gateway timeout before Lambda kills the process.                                try { cts.Cancel(); } catch { }                context.Logger.LogLine("Request timed out by internal watchdog.");                return BuildErrorResponse(HttpStatusCode.GatewayTimeout, "timeout", "The request timed out.");            }            // Await the completed service task to observe exceptions and get the result.            var apiResponse = await serviceTask;            return new APIGatewayProxyResponse
+            {                StatusCode = (int)apiResponse.StatusCode,                Headers = new Dictionary<string, string>
+                {                    ["Content-Type"] = "application/json"                },                Body = apiResponse.Body
+            };        }        catch (InvalidOperationException ex)        {            context.Logger.LogLine($"Token generation or configuration failure: {ex.Message}");            return BuildErrorResponse(HttpStatusCode.BadGateway, "processing", ex.Message);        }        catch (HttpRequestException ex)        {            context.Logger.LogLine($"External API failure: {ex.Message}");            return BuildErrorResponse(HttpStatusCode.BadGateway, "external_api", "External API call failed.");        }        catch (OperationCanceledException ex)        {            // Catch OperationCanceledException (includes TaskCanceledException) so we reliably return a 504
+            // before AWS forcibly times out the Lambda.            context.Logger.LogLine($"Timeout while calling external API: {ex.Message}");            return BuildErrorResponse(HttpStatusCode.GatewayTimeout, "timeout", "The request timed out.");        }        catch (Exception ex)        {            context.Logger.LogLine($"Unhandled exception: {ex.Message}");            return BuildErrorResponse(HttpStatusCode.InternalServerError, "internal", "An unexpected error occurred.");        }    }
 
     private static CancellationTokenSource CreateCancellationTokenSourceFromContext(ILambdaContext? context)
-    {
-        try
-        {
-            var remaining = context?.RemainingTime ?? TimeSpan.FromSeconds(120);
-            // Leave a slightly larger buffer (5s) to allow handler to prepare response before AWS kills the function
-            var ms = (int)Math.Max(100, remaining.TotalMilliseconds - 5000);
-            return new CancellationTokenSource(ms);
-        }
-        catch
-        {
-            // In case of any issue, fall back to a conservative 115s timeout
-            return new CancellationTokenSource(TimeSpan.FromSeconds(115));
-        }
-    }
+    {        try        {            var remaining = context?.RemainingTime ?? TimeSpan.FromSeconds(120);            // Leave a slightly larger buffer (5s) to allow handler to prepare response before AWS kills the function            var ms = (int)Math.Max(100, remaining.TotalMilliseconds - 5000);            return new CancellationTokenSource(ms);        }        catch        {            // In case of any issue, fall back to a conservative 115s timeout            return new CancellationTokenSource(TimeSpan.FromSeconds(115));        }    }
 
     private static string? GetHeaderValue(IDictionary<string, string>? headers, string name)
-    {
-        if (headers is null)
-        {
-            return null;
-        }
-
-        foreach (var header in headers)
-        {
-            if (string.Equals(header.Key, name, StringComparison.OrdinalIgnoreCase))
-            {
-                return header.Value;
-            }
-        }
-
-        return null;
-    }
+    {        if (headers is null)        {            return null;        }
+        foreach (var header in headers)        {            if (string.Equals(header.Key, name, StringComparison.OrdinalIgnoreCase))            {                return header.Value;            }        }
+        return null;    }
 
     private static APIGatewayProxyResponse BuildErrorResponse(HttpStatusCode statusCode, string field, string message)
-    {
-        var response = new Response
-        {
-            Error = new ErrorResponse
-            {
-                Field = field,
-                Message = message
-            }
-        };
-
-        return new APIGatewayProxyResponse
-        {
-            StatusCode = (int)statusCode,
-            Headers = new Dictionary<string, string>
-            {
-                ["Content-Type"] = "application/json"
-            },
-            Body = System.Text.Json.JsonSerializer.Serialize(response)
-        };
-    }
+    {        var response = new Response
+        {            Error = new ErrorResponse
+            {                Field = field,                Message = message
+            }        };
+        return new APIGatewayProxyResponse
+        {            StatusCode = (int)statusCode,            Headers = new Dictionary<string, string>            {                ["Content-Type"] = "application/json"            },            Body = System.Text.Json.JsonSerializer.Serialize(response)        };    }
 }

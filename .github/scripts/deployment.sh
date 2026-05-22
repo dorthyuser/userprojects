@@ -14,9 +14,13 @@ SECRET_NAME=$7
 echo "$(date) - Build started"
 
 echo "FUNCTION_NAME = $FUNCTION_NAME"
+
 echo "GIT_REPO = $GIT_REPO"
+
 echo "BRANCH = $BRANCH"
+
 echo "DOTNET_FRAMEWORK = $DOTNET_FRAMEWORK"
+
 echo "REGION = $REGION"
 
 # === Config ===
