@@ -53,8 +53,10 @@ public class Function
             context.Logger.LogLine($"External API failure: {ex.Message}");
             return BuildErrorResponse(HttpStatusCode.BadGateway, "external_api", "External API call failed.");
         }
-        catch (TaskCanceledException ex)
+        catch (OperationCanceledException ex)
         {
+            // Catch OperationCanceledException (includes TaskCanceledException) so we reliably return a 504
+            // before AWS forcibly times out the Lambda.
             context.Logger.LogLine($"Timeout while calling external API: {ex.Message}");
             return BuildErrorResponse(HttpStatusCode.GatewayTimeout, "timeout", "The request timed out.");
         }
@@ -70,14 +72,14 @@ public class Function
         try
         {
             var remaining = context?.RemainingTime ?? TimeSpan.FromSeconds(120);
-            // Leave a small buffer (1s) to allow handler to prepare response
-            var ms = (int)Math.Max(100, remaining.TotalMilliseconds - 1000);
+            // Leave a slightly larger buffer (5s) to allow handler to prepare response before AWS kills the function
+            var ms = (int)Math.Max(100, remaining.TotalMilliseconds - 5000);
             return new CancellationTokenSource(ms);
         }
         catch
         {
-            // In case of any issue, fall back to a conservative 110s timeout
-            return new CancellationTokenSource(TimeSpan.FromSeconds(110));
+            // In case of any issue, fall back to a conservative 115s timeout
+            return new CancellationTokenSource(TimeSpan.FromSeconds(115));
         }
     }
 
