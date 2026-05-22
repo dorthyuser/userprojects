@@ -11,8 +11,9 @@ namespace Httptravelcardch104Lambda.Services;
 
 public class Service
 {
-    private static readonly HttpClient _apiClient = new() { Timeout = TimeSpan.FromSeconds(30) };
-    private static readonly HttpClient _tokenClient = new() { Timeout = TimeSpan.FromSeconds(30) };
+    // Reduced default timeouts to avoid long blocking during network calls
+    private static readonly HttpClient _apiClient = new() { Timeout = TimeSpan.FromSeconds(15) };
+    private static readonly HttpClient _tokenClient = new() { Timeout = TimeSpan.FromSeconds(15) };
     private static readonly SemaphoreSlim _tokenSemaphore = new(1, 1);
     private static readonly JsonSerializerOptions _jsonOptions = new() { PropertyNameCaseInsensitive = true };
 
@@ -90,48 +91,67 @@ public class Service
 
         // --- Fetch from Secrets Manager ---
         LambdaLogger.Log($"[SM] Calling GetSecretValueAsync for secret: '{secretName}'...");
+
+        // Guard the Secrets Manager call with a short timeout so we fail fast instead of letting the Lambda hang.
         var secretClient = new AmazonSecretsManagerClient();
-        var response     = await secretClient.GetSecretValueAsync(new GetSecretValueRequest { SecretId = secretName }, cancellationToken);
-        LambdaLogger.Log("[SM] GetSecretValueAsync returned successfully.");
+        var getTask = secretClient.GetSecretValueAsync(new GetSecretValueRequest { SecretId = secretName }, cancellationToken);
 
-        if (string.IsNullOrWhiteSpace(response.SecretString))
-            throw new InvalidOperationException("Secret payload is empty.");
+        var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeoutCts.CancelAfter(TimeSpan.FromSeconds(8));
 
-        var secrets = JsonSerializer.Deserialize<Dictionary<string, string>>(response.SecretString, _jsonOptions)
-                      ?? throw new InvalidOperationException("Secret payload parsing failed.");
+        try
+        {
+            var completed = await Task.WhenAny(getTask, Task.Delay(Timeout.Infinite, timeoutCts.Token));
+            if (completed != getTask)
+            {
+                throw new OperationCanceledException("Timed out while fetching secrets from Secrets Manager.");
+            }
 
-        LambdaLogger.Log($"[SM] Secret JSON parsed. Total keys in secret: {secrets.Count}");
+            var response = await getTask; // will propagate exceptions if any
+            LambdaLogger.Log("[SM] GetSecretValueAsync returned successfully.");
 
-        // --- xName lookups: log env var name → key name → exists in secret ---
-        var tokenUrlKey = Environment.GetEnvironmentVariable("AZURE_TOKEN_URL");
-        LambdaLogger.Log($"[SM] AZURE_TOKEN_URL env = {(string.IsNullOrWhiteSpace(tokenUrlKey) ? "❌ NOT SET" : $"✅ set → key name: '{tokenUrlKey}', exists in secret: {secrets.ContainsKey(tokenUrlKey!)}")}");
-        if (string.IsNullOrWhiteSpace(tokenUrlKey)) throw new InvalidOperationException("Missing env var: AZURE_TOKEN_URL");
+            if (string.IsNullOrWhiteSpace(response.SecretString))
+                throw new InvalidOperationException("Secret payload is empty.");
 
-        var clientIdKey = Environment.GetEnvironmentVariable("AZURE_CLIENT_ID");
-        LambdaLogger.Log($"[SM] AZURE_CLIENT_ID env = {(string.IsNullOrWhiteSpace(clientIdKey) ? "❌ NOT SET" : $"✅ set → key name: '{clientIdKey}', exists in secret: {secrets.ContainsKey(clientIdKey!)}")}");
-        if (string.IsNullOrWhiteSpace(clientIdKey)) throw new InvalidOperationException("Missing env var: AZURE_CLIENT_ID");
+            var secrets = JsonSerializer.Deserialize<Dictionary<string, string>>(response.SecretString, _jsonOptions)
+                          ?? throw new InvalidOperationException("Secret payload parsing failed.");
 
-        var clientSecretKey = Environment.GetEnvironmentVariable("AZURE_CLIENT_SECRET");
-        LambdaLogger.Log($"[SM] AZURE_CLIENT_SECRET env = {(string.IsNullOrWhiteSpace(clientSecretKey) ? "❌ NOT SET" : $"✅ set → key name: '{clientSecretKey}', exists in secret: {secrets.ContainsKey(clientSecretKey!)}")}");
-        if (string.IsNullOrWhiteSpace(clientSecretKey)) throw new InvalidOperationException("Missing env var: AZURE_CLIENT_SECRET");
+            LambdaLogger.Log($"[SM] Secret JSON parsed. Total keys in secret: {secrets.Count}");
 
-        var scopesKey = Environment.GetEnvironmentVariable("AZURE_SCOPE");
-        LambdaLogger.Log($"[SM] AZURE_SCOPE env = {(string.IsNullOrWhiteSpace(scopesKey) ? "❌ NOT SET" : $"✅ set → key name: '{scopesKey}', exists in secret: {secrets.ContainsKey(scopesKey!)}")}");
-        if (string.IsNullOrWhiteSpace(scopesKey)) throw new InvalidOperationException("Missing env var: AZURE_SCOPE");
+            // --- xName lookups: log env var name → key name → exists in secret ---
+            var tokenUrlKey = Environment.GetEnvironmentVariable("AZURE_TOKEN_URL");
+            LambdaLogger.Log($"[SM] AZURE_TOKEN_URL env = {(string.IsNullOrWhiteSpace(tokenUrlKey) ? "❌ NOT SET" : $"✅ set → key name: '{tokenUrlKey}', exists in secret: {secrets.ContainsKey(tokenUrlKey!)}")}");
+            if (string.IsNullOrWhiteSpace(tokenUrlKey)) throw new InvalidOperationException("Missing env var: AZURE_TOKEN_URL");
 
-        // --- Resolve values ---
-        if (!secrets.TryGetValue(tokenUrlKey, out var tokenUrl))
-            throw new InvalidOperationException($"Key '{tokenUrlKey}' (from AZURE_TOKEN_URL) not found in secret.");
-        if (!secrets.TryGetValue(clientIdKey, out var clientId))
-            throw new InvalidOperationException($"Key '{clientIdKey}' (from AZURE_CLIENT_ID) not found in secret.");
-        if (!secrets.TryGetValue(clientSecretKey, out var clientSecret))
-            throw new InvalidOperationException($"Key '{clientSecretKey}' (from AZURE_CLIENT_SECRET) not found in secret.");
-        if (!secrets.TryGetValue(scopesKey, out var scopes))
-            throw new InvalidOperationException($"Key '{scopesKey}' (from AZURE_SCOPE) not found in secret.");
+            var clientIdKey = Environment.GetEnvironmentVariable("AZURE_CLIENT_ID");
+            LambdaLogger.Log($"[SM] AZURE_CLIENT_ID env = {(string.IsNullOrWhiteSpace(clientIdKey) ? "❌ NOT SET" : $"✅ set → key name: '{clientIdKey}', exists in secret: {secrets.ContainsKey(clientIdKey!)}")}");
+            if (string.IsNullOrWhiteSpace(clientIdKey)) throw new InvalidOperationException("Missing env var: AZURE_CLIENT_ID");
 
-        LambdaLogger.Log("[SM] All 4 secret values resolved successfully ✅");
+            var clientSecretKey = Environment.GetEnvironmentVariable("AZURE_CLIENT_SECRET");
+            LambdaLogger.Log($"[SM] AZURE_CLIENT_SECRET env = {(string.IsNullOrWhiteSpace(clientSecretKey) ? "❌ NOT SET" : $"✅ set → key name: '{clientSecretKey}', exists in secret: {secrets.ContainsKey(clientSecretKey!)}")}");
+            if (string.IsNullOrWhiteSpace(clientSecretKey)) throw new InvalidOperationException("Missing env var: AZURE_CLIENT_SECRET");
 
-        return new SecretsData(tokenUrl, clientId, clientSecret, scopes);
+            var scopesKey = Environment.GetEnvironmentVariable("AZURE_SCOPE");
+            LambdaLogger.Log($"[SM] AZURE_SCOPE env = {(string.IsNullOrWhiteSpace(scopesKey) ? "❌ NOT SET" : $"✅ set → key name: '{scopesKey}', exists in secret: {secrets.ContainsKey(scopesKey!)}")}");
+            if (string.IsNullOrWhiteSpace(scopesKey)) throw new InvalidOperationException("Missing env var: AZURE_SCOPE");
+
+            // --- Resolve values ---
+            if (!secrets.TryGetValue(tokenUrlKey, out var tokenUrl))
+                throw new InvalidOperationException($"Key '{tokenUrlKey}' (from AZURE_TOKEN_URL) not found in secret.");
+            if (!secrets.TryGetValue(clientIdKey, out var clientId))
+                throw new InvalidOperationException($"Key '{clientIdKey}' (from AZURE_CLIENT_ID) not found in secret.");
+            if (!secrets.TryGetValue(clientSecretKey, out var clientSecret))
+                throw new InvalidOperationException($"Key '{clientSecretKey}' (from AZURE_CLIENT_SECRET) not found in secret.");
+            if (!secrets.TryGetValue(scopesKey, out var scopes))
+                throw new InvalidOperationException($"Key '{scopesKey}' (from AZURE_SCOPE) not found in secret.");
+
+            LambdaLogger.Log("[SM] All 4 secret values resolved successfully ✅");
+            return new SecretsData(tokenUrl, clientId, clientSecret, scopes);
+        }
+        finally
+        {
+            timeoutCts.Dispose();
+        }
     }
 
     private async Task<string> GetValidTokenAsync(CancellationToken cancellationToken)
