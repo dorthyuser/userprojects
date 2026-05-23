@@ -14,7 +14,7 @@ public class Function
 {
     private static readonly Service _service = new();
 
-    public async Task<APIGatewayProxyResponse> httptravelcardch104(APIGatewayProxyRequest request, ILambdaContext context)
+    public async Task<APIGatewayProxyResponse> FunctionHandler(APIGatewayProxyRequest request, ILambdaContext context)
     {
         var clientId = GetHeaderValue(request.Headers, "client_id");
         context.Logger.LogLine($"Controller entry: method={request.HttpMethod}, route={request.Path}, client_id={clientId ?? string.Empty}");
@@ -73,7 +73,8 @@ public class Function
         {
             var remaining = context?.RemainingTime ?? TimeSpan.FromSeconds(120);
             // Leave a slightly larger buffer (5s) to allow handler to prepare response before AWS kills the function
-            var ms = (int)Math.Max(100, remaining.TotalMilliseconds - 5000);
+            var msDouble = Math.Max(100, remaining.TotalMilliseconds - 5000);
+            var ms = (int)Math.Min(msDouble, int.MaxValue);
             return new CancellationTokenSource(ms);
         }
         catch

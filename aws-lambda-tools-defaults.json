@@ -5,5 +5,5 @@
   "function-runtime": "dotnet8",
   "function-memory-size": 512,
   "function-timeout": 30,
-  "function-handler": "Httptravelcardch104Lambda::Httptravelcardch104Lambda.Function::httptravelcardch104"
+  "function-handler": "Httptravelcardch104Lambda::Httptravelcardch104Lambda.Function::FunctionHandler"
 }
