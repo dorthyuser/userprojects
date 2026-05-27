@@ -1,49 +1,52 @@
-name: CSharp Docker + Azure Container Instance
+name: AWS Lambda Python CI/CD
+
 on:
   push:
     branches:
-      - "**"
+      - '*'
+
 jobs:
-  build-deploy:
+  deploy:
     runs-on: ubuntu-latest
+
     steps:
-      # 1. Checkout
-      - name: Checkout repository
+      # Checkout repository
+      - name: Checkout Repository
         uses: actions/checkout@v4
-      # 2. Azure Login
-      - name: Azure Login
-        uses: azure/login@v2
+
+      # Setup Python
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-      # 3. Set permissions
-      - name: Set execute permissions
+          python-version: '3.13'
+
+      # Configure AWS Credentials
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      # Install required system tools
+      - name: Install Dependencies
         run: |
-          chmod +x docker-build.sh
-          chmod +x deployment.sh
-      # 4. Build & Push Docker Image <projectname-branchname>
-      - name: Build and Push Docker Image
+          sudo apt-get update
+          sudo apt-get install -y zip docker.io
+          sudo systemctl start docker
+
+      # Give execute permission
+      - name: Make deployment script executable
+        run: chmod +x .github/scripts/python-deployment.sh
+
+      # Build & Deploy Lambda
+      - name: Deploy Lambda
         run: |
-          ./csharp-docker-build.sh \
-            travelcard \
-            ${{ secrets.DOCKER_USERNAME }} \
-            ${{ secrets.DOCKER_PASSWORD }} \
-            ${{ github.sha }} \
-            8.0
-          echo "Verifying image availability..."
-          docker pull ${{ secrets.DOCKER_USERNAME }}/travelcard:${{ github.sha }}
-      - name: Wait for image availability
-        run: sleep 15
-      # 5. Deploy to Azure Container Instance
-      - name: Deploy to ACI
-        env:
-          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-          #  REQUIRED for Key Vault
-          AZURE_KEY_VAULT: ${{ secrets.AZURE_KEY_VAULT }}
-        run: |
-          ./azure-container-instance.sh \
-          travelcard-api \
-          ${{ secrets.DOCKER_USERNAME }}/travelcard \
-          ${{ github.sha }} \
-          dev-luffy \
-          8080
+          ./.github/scripts/python-deployment.sh \
+            ${{ github.ref_name }} \
+            https://github.com/${{ github.repository }}.git \
+            ${{ github.ref_name }} \
+            python3.13 \
+            ${{ secrets.AWS_REGION }} \
+            ${{ secrets.LAMBDA_ROLE_ARN }} \
+            ${{ secrets.AWS_SECRET_NAME }}
