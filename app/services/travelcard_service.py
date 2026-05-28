@@ -106,7 +106,7 @@ def create_travelcard(payload: TravelCardCreateRequest, client_id: str, correlat
                     cardholder_photo_key=cardholder.cardholderPhotoKey
                 )
                 cursor.execute(
-                    "INSERT INTO cardholders (travelcard_id, cardholder_title, cardholder_forename, cardholder_surname, cardholder_type, cardholder_photo_name, cardholder_photo_rrs_key, cardholder_photo_url, cardholder_photo_key) VALUES (%s, %s, %s, %s::cardholder_type_enum, %s, %s, %s, %s, %s)",
+                    "INSERT INTO cardholders (travelcard_id, cardholder_title, cardholder_forename, cardholder_surname, cardholder_type, cardholder_photo_name, cardholder_photo_rrs_key, cardholder_photo_url, cardholder_photo_key) VALUES (%s, %s, %s, %s, %s::cardholder_type_enum, %s, %s, %s, %s)",
                     (
                         data.travelcard_id,
                         data.cardholder_title,
