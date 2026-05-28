@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import Any
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl, AwareDatetime, field_validator, model_validator
+import re
 
 
 class CardholderSchema(BaseModel):
@@ -77,7 +78,7 @@ class TravelCardCreateRequest(BaseModel):
     @field_validator("travelcardTransactionReference")
     @classmethod
     def validate_reference(cls, value: str) -> str:
-        if not __import__("re").fullmatch(r"^[0-9]{15}$", value):
+        if not re.fullmatch(r"^[0-9]{2}[A-Z0-9]{4}[0-9]{4}[0-9]{5}$", value):
             raise ValueError("invalid travelcardTransactionReference")
         return value
 
