@@ -117,7 +117,7 @@ def create_travelcard(payload: TravelcardCreateRequest, client_id: str, content_
                 mapped = _map_cardholder(cardholder)
                 logger.info(json.dumps({"event": "db_operation", "operation": "INSERT", "table": "cardholders"}))
                 cursor.execute(
-                    "INSERT INTO cardholders (travelcard_id, cardholder_title, cardholder_forename, cardholder_surname, cardholder_type, cardholder_photo_name, cardholder_photo_rrs_key, cardholder_photo_url, cardholder_photo_key) VALUES (%s, %s, %s, %s::cardholder_type_enum, %s, %s, %s, %s, %s)",
+                    "INSERT INTO cardholders (travelcard_id, cardholder_title, cardholder_forename, cardholder_surname, cardholder_type, cardholder_photo_name, cardholder_photo_rrs_key, cardholder_photo_url, cardholder_photo_key) VALUES (%s, %s, %s, %s, %s::cardholder_type_enum, %s, %s, %s, %s)",
                     (
                         travelcard_id,
                         mapped.cardholderTitle,
