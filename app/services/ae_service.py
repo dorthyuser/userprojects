@@ -2,7 +2,6 @@ import json
 import logging
 import os
 from dataclasses import asdict
-from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import boto3
@@ -43,9 +42,11 @@ def create_adverse_event(payload: AECreateRequest) -> AECreateResponse:
         payload.serious = True
     if payload.ctcaeGrade == 5:
         payload.outcome = "FATAL"
+    window_s = int(_validate_env("IDEMPOTENCY_WINDOW_S"))
     conn = None
     try:
         conn = get_conn()
+        conn.autocommit = False
     except Exception as exc:
         logger.error(json.dumps({"event": "db_connection_failed", "error": str(exc)}))
         raise RuntimeError("DB connection failed") from exc
@@ -59,7 +60,6 @@ def create_adverse_event(payload: AECreateRequest) -> AECreateResponse:
             cur.execute("SELECT id FROM trial_enrolments WHERE trial_id = %s AND patient_id = %s AND status = 'ENROLLED'", (payload.trialId, payload.patientId))
             if cur.fetchone() is None:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail={"code": "PATIENT_NOT_FOUND", "message": "patient not found"})
-            window_s = int(_validate_env("IDEMPOTENCY_WINDOW_S"))
             logger.info(json.dumps({"table": "adverse_events", "operation": "SELECT"}))
             cur.execute("SELECT ae_id FROM adverse_events WHERE trial_id = %s AND patient_id = %s AND ae_term_code = %s AND ctcae_grade = %s AND submitted_at >= NOW() - (%s || ' seconds')::interval ORDER BY submitted_at DESC LIMIT 1", (payload.trialId, payload.patientId, payload.aeTermCode, payload.ctcaeGrade, str(window_s)))
             existing = cur.fetchone()
@@ -80,7 +80,6 @@ def create_adverse_event(payload: AECreateRequest) -> AECreateResponse:
                 raise HTTPException(status_code=500, detail={"code": "DB_ERROR", "message": "database error"})
             notification_id = notif_row[0]
             now = datetime.now(UTC)
-            conn.autocommit = False
             logger.info(json.dumps({"table": "adverse_events", "operation": "INSERT"}))
             cur.execute(
                 "INSERT INTO adverse_events (ae_id, trial_id, site_id, patient_id, clinician_id, event_date, ae_term_code, ae_term_name, ctcae_grade, serious, outcome, action_taken, narrative, related_drug_id, reported_by, submitted_at, created_at, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
@@ -115,6 +114,7 @@ def create_adverse_event(payload: AECreateRequest) -> AECreateResponse:
         conn = None
         try:
             conn = get_conn()
+            conn.autocommit = False
             with conn.cursor() as cur:
                 logger.info(json.dumps({"table": "ae_notifications", "operation": "UPDATE"}))
                 cur.execute("UPDATE ae_notifications SET sns_published = %s, sns_message_id = %s WHERE notification_id = %s", (True, sns_message_id, notification_id))
@@ -170,6 +170,7 @@ def list_notifications(params: NotificationQueryParams) -> AENotificationsRespon
     conn = None
     try:
         conn = get_conn()
+        conn.autocommit = False
         with conn.cursor() as cur:
             logger.info(json.dumps({"table": "ae_notifications", "operation": "SELECT"}))
             cur.execute(f"SELECT COUNT(*) FROM ae_notifications{where_sql}", tuple(values))
@@ -177,11 +178,11 @@ def list_notifications(params: NotificationQueryParams) -> AENotificationsRespon
             total = int(total_row[0]) if total_row is not None else 0
             logger.info(json.dumps({"table": "ae_notifications", "operation": "SELECT"}))
             cur.execute(
-                f"SELECT notification_id, ae_id, trial_id, site_id, patient_id, ae_term_name, ctcae_grade, serious, outcome, acknowledged, sns_published, created_at FROM ae_notifications{where_sql} ORDER BY created_at DESC LIMIT %s OFFSET %s",
+                f"SELECT notification_id, ae_id, trial_id, site_id, patient_id, ae_term_name, ctcae_grade, serious, outcome, priority, acknowledged, sns_published, created_at FROM ae_notifications{where_sql} ORDER BY created_at DESC LIMIT %s OFFSET %s",
                 tuple(values + [limit, offset])
             )
             rows = cur.fetchall()
-            notifications = [NotificationItem(notificationId=r[0], aeId=r[1], trialId=r[2], siteId=r[3], patientId=r[4], aeTermName=r[5], ctcaeGrade=r[6], serious=r[7], priority="HIGH" if r[6] >= 3 else "NORMAL", outcome=r[8], acknowledged=r[9], snsPublished=r[10], createdAt=r[11]) for r in rows]
+            notifications = [NotificationItem(notificationId=r[0], aeId=r[1], trialId=r[2], siteId=r[3], patientId=r[4], aeTermName=r[5], ctcaeGrade=r[6], serious=r[7], outcome=r[8], priority=r[9], acknowledged=r[10], snsPublished=r[11], createdAt=r[12]) for r in rows]
             return AENotificationsResponse(status="success", total=total, page=params.page, pageSize=limit, notifications=notifications)
     except HTTPException:
         raise
