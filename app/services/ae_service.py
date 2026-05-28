@@ -1,7 +1,7 @@
 import json
 import logging
 import os
-from dataclasses import asdict
+from datetime import UTC, datetime
 from typing import Any
 
 import boto3
@@ -9,7 +9,6 @@ from dateutil.parser import isoparse
 from fastapi import HTTPException, status
 
 from app.db.connection import get_conn, release_conn
-from app.models.ae_model import NotificationRow
 from app.schemas.ae_schema import AECreateRequest, AECreateResponse, AENotificationsResponse, NotificationItem, NotificationQueryParams
 
 logger = logging.getLogger(__name__)
