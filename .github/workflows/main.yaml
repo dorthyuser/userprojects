@@ -1,4 +1,4 @@
-name: AWS Lambda CI/CD - Java
+name: AWS Lambda Python CI/CD
 
 on:
   push:
@@ -14,19 +14,11 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # Setup Java
-      - name: Setup Java
-        uses: actions/setup-java@v4
+      # Setup Python
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
-          distribution: 'temurin'
-          java-version: '21'
-
-      # Setup Gradle — provides the `gradle` binary used by deployment.sh
-      # to generate gradlew when the repo doesn't include it
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
-        with:
-          gradle-version: '8.10.2'
+          python-version: '3.13'
 
       # Configure AWS Credentials
       - name: Configure AWS Credentials
@@ -36,24 +28,25 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      # Install required packages
+      # Install required system tools
       - name: Install Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y unzip jq
+          sudo apt-get install -y zip docker.io
+          sudo systemctl start docker
 
       # Give execute permission
       - name: Make deployment script executable
-        run: chmod +x .github/scripts/deployment.sh
+        run: chmod +x .github/scripts/python-deployment.sh
 
       # Build & Deploy Lambda
       - name: Deploy Lambda
         run: |
-          ./.github/scripts/deployment.sh \
+          ./.github/scripts/python-deployment.sh \
             ${{ github.ref_name }} \
             https://github.com/${{ github.repository }}.git \
             ${{ github.ref_name }} \
-            java21 \
+            python3.13 \
             ${{ secrets.AWS_REGION }} \
             ${{ secrets.LAMBDA_ROLE_ARN }} \
             ${{ secrets.AWS_SECRET_NAME }}
