@@ -174,7 +174,7 @@ RUN mkdir -p /build/artifact && \
     find /build/artifact -name "*.pyc" -delete 2>/dev/null || true
 
 WORKDIR /build/artifact
-RUN if [ -d /build/python ]; then cp -r /build/python ./; fi && \
+RUN if [ -d /build/python ]; then cp -r /build/python/. ./; fi && \
     zip -r /build/function.zip . \
       -x "*.git*" -x "*__pycache__*" -x "*.pyc" \
       -x "requirements.txt" -x "pyproject.toml" -x "setup.py" > /dev/null && \
