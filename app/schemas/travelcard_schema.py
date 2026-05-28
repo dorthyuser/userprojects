@@ -16,8 +16,17 @@ class CardholderSchema(BaseModel):
     cardholderType: CardholderType
     cardholderPhotoName: Annotated[str, Field(min_length=1, max_length=100)]
     cardholderPhotoRRSKey: Annotated[str | None, Field(default=None, min_length=39, max_length=42)] = None
-    cardholderPhotoURL: Annotated[HttpUrl | None, Field(default=None, min_length=20, max_length=2048)] = None
+    cardholderPhotoURL: HttpUrl | None = None
     cardholderPhotoKey: Annotated[str | None, Field(default=None, min_length=39, max_length=42)] = None
+
+    @field_validator('cardholderPhotoURL')
+    @classmethod
+    def validate_photo_url(cls, v: HttpUrl | None) -> HttpUrl | None:
+        if v is not None:
+            url_str = str(v)
+            if len(url_str) < 20 or len(url_str) > 2048:
+                raise ValueError('cardholderPhotoURL must be between 20 and 2048 characters')
+        return v
 
     @model_validator(mode="after")
     def validate_one_of(self) -> "CardholderSchema":
