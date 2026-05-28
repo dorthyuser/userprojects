@@ -32,7 +32,6 @@ jobs:
       - name: Install Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y zip docker.io
           sudo systemctl start docker
 
       # Give execute permission
