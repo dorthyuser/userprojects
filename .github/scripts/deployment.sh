@@ -106,6 +106,15 @@ if [[ -z "$HANDLER" ]]; then
 fi
 
 if [[ -z "$HANDLER" ]]; then
+  HANDLER_FILE=$(grep -rl "lambda_handler\s*=" . --include="*.py" 2>/dev/null | head -1)
+  if [[ -n "$HANDLER_FILE" ]]; then
+    MODULE=$(basename "$HANDLER_FILE" .py)
+    HANDLER="${MODULE}.lambda_handler"
+    echo "Handler detected (Mangum assignment scan): $HANDLER"
+  fi
+fi
+
+if [[ -z "$HANDLER" ]]; then
   HANDLER="lambda_function.lambda_handler"
   echo "Handler not detected — using default: $HANDLER"
 fi
