@@ -36,12 +36,12 @@ jobs:
 
       # Give execute permission
       - name: Make deployment script executable
-        run: chmod +x .github/scripts/python-deployment.sh
+        run: chmod +x .github/scripts/deployment.sh
 
       # Build & Deploy Lambda
       - name: Deploy Lambda
         run: |
-          ./.github/scripts/python-deployment.sh \
+          ./.github/scripts/deployment.sh \
             ${{ github.ref_name }} \
             https://github.com/${{ github.repository }}.git \
             ${{ github.ref_name }} \
