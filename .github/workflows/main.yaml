@@ -1,0 +1,51 @@
+name: AWS Lambda Python CI/CD
+
+on:
+  push:
+    branches:
+      - '*'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout repository
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # Setup Python
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      # Configure AWS Credentials
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      # Install required system tools
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo systemctl start docker
+
+      # Give execute permission
+      - name: Make deployment script executable
+        run: chmod +x .github/scripts/deployment.sh
+
+      # Build & Deploy Lambda
+      - name: Deploy Lambda
+        run: |
+          ./.github/scripts/deployment.sh \
+            ${{ github.ref_name }} \
+            https://github.com/${{ github.repository }}.git \
+            ${{ github.ref_name }} \
+            python3.13 \
+            ${{ secrets.AWS_REGION }} \
+            ${{ secrets.LAMBDA_ROLE_ARN }} \
+            ${{ secrets.AWS_SECRET_KEY_NAME }}
