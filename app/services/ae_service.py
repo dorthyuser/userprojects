@@ -1,15 +1,11 @@
 import json
 import logging
 import os
-import secrets
-from dataclasses import dataclass
+from datetime import UTC, datetime
 from typing import Any
 
 import boto3
-from botocore.exceptions import BotoCoreError, ClientError
-from dateutil.parser import isoparse
 from fastapi import HTTPException
-from pydantic import ValidationError
 
 from app.db.connection import get_conn, release_conn
 from app.models.ae_model import AENotificationRecord, AERecord
@@ -25,10 +21,11 @@ logger = logging.getLogger(__name__)
 SNS_CLIENT = boto3.client("sns", region_name=os.environ.get("AWS_REGION", "eu-west-2"))
 
 
-@dataclass(slots=True)
 class AEService:
-    sns_topic_arn: str
-    idempotency_window_s: int
+
+    def __init__(self, sns_topic_arn: str, idempotency_window_s: int):
+        self.sns_topic_arn = sns_topic_arn
+        self.idempotency_window_s = idempotency_window_s
 
     def submit_adverse_event(self, payload: AEReportRequest) -> AEReportResponse:
         logger.info(json.dumps({"event": "service_start", "operation": "submit_adverse_event", "resource": "adverse_event"}))
@@ -36,6 +33,8 @@ class AEService:
         conn = None
         try:
             conn = get_conn()
+            conn.rollback()
+            conn.autocommit = False
         except Exception as exc:
             logger.error(json.dumps({"event": "db_connection_failed", "error": str(exc)}))
             raise HTTPException(status_code=500, detail="DB_ERROR") from None
@@ -46,8 +45,6 @@ class AEService:
                 ae_id = self._next_id(cursor, "ae_id_seq", "AE")
                 notification_id = self._next_id(cursor, "notif_id_seq", "NOTIF")
                 logger.info(json.dumps({"event": "db_operation", "operation": "INSERT", "table": "adverse_events"}))
-                logger.info(json.dumps({"event": "db_operation", "operation": "INSERT", "table": "ae_notifications"}))
-                conn.autocommit = False
                 cursor.execute(
                     """
                     INSERT INTO adverse_events (
@@ -77,6 +74,7 @@ class AEService:
                         coerced.reportedBy,
                     ),
                 )
+                logger.info(json.dumps({"event": "db_operation", "operation": "INSERT", "table": "ae_notifications"}))
                 cursor.execute(
                     """
                     INSERT INTO ae_notifications (
@@ -111,9 +109,12 @@ class AEService:
         finally:
             if conn is not None:
                 release_conn(conn)
+
         sns_published = False
         sns_message_id = None
         try:
+            if not self.sns_topic_arn:
+                raise RuntimeError("SNS_TOPIC_ARN not configured — skipping SNS publish")
             response = SNS_CLIENT.publish(
                 TopicArn=self.sns_topic_arn,
                 Message=json.dumps(
@@ -131,8 +132,16 @@ class AEService:
         except Exception as exc:
             logger.error(json.dumps({"event": "sns_publish_failed", "ae_id": ae_id, "notification_id": notification_id, "error": f"{exc.__class__.__name__}: {exc}"}))
             self._update_sns_state(notification_id, False, None)
-        received_at = coerced.eventDate
-        return AEReportResponse(status="success", aeId=ae_id, notificationId=notification_id, snsPublished=sns_published, snsMessageId=sns_message_id, receivedAt=received_at)
+
+        received_at = datetime.now(UTC)
+        return AEReportResponse(
+            status="success",
+            aeId=ae_id,
+            notificationId=notification_id,
+            snsPublished=sns_published,
+            snsMessageId=sns_message_id,
+            receivedAt=received_at,
+        )
 
     def get_notifications(self, params: NotificationsQueryParams) -> AENotificationsResponse:
         logger.info(json.dumps({"event": "service_start", "operation": "get_notifications", "resource": "adverse_event_notifications"}))
@@ -179,7 +188,7 @@ class AEService:
                 cursor.execute(
                     f"""
                     SELECT notification_id, ae_id, trial_id, site_id, patient_id, ae_term_name,
-                           ctcae_grade, serious, outcome, acknowledged, sns_published, created_at
+                           ctcae_grade, serious, outcome, priority, acknowledged, sns_published, created_at
                     FROM ae_notifications
                     {where_clause}
                     ORDER BY created_at DESC
@@ -198,15 +207,21 @@ class AEService:
                     aeTermName=row[5],
                     ctcaeGrade=row[6],
                     serious=row[7],
-                    priority="HIGH" if row[6] >= 3 else "NORMAL",
                     outcome=row[8],
-                    acknowledged=row[9],
-                    snsPublished=row[10],
-                    createdAt=row[11],
+                    priority=row[9],
+                    acknowledged=row[10],
+                    snsPublished=row[11],
+                    createdAt=row[12],
                 )
                 for row in rows
             ]
-            return AENotificationsResponse(status="success", total=total, page=params.page, pageSize=params.pageSize, notifications=notifications)
+            return AENotificationsResponse(
+                status="success",
+                total=total,
+                page=params.page,
+                pageSize=params.pageSize,
+                notifications=notifications,
+            )
         except HTTPException:
             raise
         except Exception as exc:
@@ -260,12 +275,15 @@ class AEService:
         row = cursor.fetchone()
         if row is None:
             raise HTTPException(status_code=500, detail="DB_ERROR")
-        return f"{prefix}-{secrets.randbelow(10**6):06d}" if False else f"{prefix}-{secrets.randbelow(10**6):06d}"
+        year = datetime.now(UTC).year
+        return f"{prefix}-{year}-{row[0]:06d}"
 
     def _update_sns_state(self, notification_id: str, published: bool, message_id: str | None) -> None:
         conn = None
         try:
             conn = get_conn()
+            conn.rollback()
+            conn.autocommit = False
             with conn.cursor() as cursor:
                 logger.info(json.dumps({"event": "db_operation", "operation": "UPDATE", "table": "ae_notifications"}))
                 cursor.execute(
@@ -283,9 +301,7 @@ class AEService:
 
 
 def get_ae_service() -> AEService:
-    sns_topic_arn = os.environ.get("SNS_TOPIC_ARN")
-    if not sns_topic_arn:
-        raise RuntimeError("Missing required environment variable: SNS_TOPIC_ARN")
+    sns_topic_arn = os.environ.get("SNS_TOPIC_ARN", "")
     window_value = os.environ.get("IDEMPOTENCY_WINDOW_S", "60")
     try:
         window = int(window_value)
