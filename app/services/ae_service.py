@@ -16,7 +16,7 @@ from app.models.ae_model import AENotificationRecord, AERecord
 from app.schemas.ae_schema import AECreateRequest, AECreateResponse, AENotificationItem, AENotificationListResponse
 
 logger = logging.getLogger(__name__)
-SNS_CLIENT = boto3.client("sns", region_name=os.environ.get("AWS_REGION"))
+SNS_CLIENT = None
 SNS_TOPIC_ARN = os.environ.get("SNS_TOPIC_ARN", "")
 IDEMPOTENCY_WINDOW_S = int(os.environ.get("IDEMPOTENCY_WINDOW_S", "60"))
 
