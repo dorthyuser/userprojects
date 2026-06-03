@@ -16,7 +16,7 @@ from app.models.ae_model import NotificationRecord
 from app.schemas.ae_schema import AdverseEventCreateRequest, AdverseEventCreateResponse, NotificationListResponse, NotificationResponse
 
 logger = logging.getLogger(__name__)
-_sns_client = boto3.client("sns")
+_sns_client = None
 
 
 def _required_env(name: str) -> str:
