@@ -30,7 +30,7 @@ def _required_env(name: str) -> str:
 class AEService:
     def __init__(self, sns_client: Any | None = None) -> None:
         self.sns_client = sns_client or _sns_client
-        self.topic_arn = _required_env("SNS_TOPIC_ARN")
+        self.topic_arn = os.environ.get("SNS_TOPIC_ARN")
         self.idempotency_window_s = int(os.environ.get("IDEMPOTENCY_WINDOW_S", "60"))
 
     def submit_adverse_event(self, payload: AdverseEventCreateRequest) -> AdverseEventCreateResponse:
