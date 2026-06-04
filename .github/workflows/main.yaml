@@ -3,7 +3,7 @@ name: Java Spring Boot Docker + Azure Container Instance
 on:
   push:
     branches:
-      - zoho-project-2
+      - "**"
 
 jobs:
   build-deploy:
