@@ -72,7 +72,7 @@ public static class LifeTimeCalculatorHelper
             LifetimeStats = new LifetimeStats
             {
                 TotalYearsLived = Math.Round(totalYears, 6),
-                TotalMonthsLived = Math.Round(totalMonths, 6),
+                TotalMonthsLived = Math.tt(totalMonths, 6),
                 TotalWeeksLived = Math.Round(totalWeeks, 6),
                 TotalDaysLived = Math.Round(totalDays, 6),
                 TotalHoursLived = Math.Round(totalHours, 6),
