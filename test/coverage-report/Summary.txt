@@ -1,0 +1,36 @@
+Summary
+  Generated on: 06/08/2026 - 08:43:53
+  Coverage date: 06/08/2026 - 08:43:48
+  Parser: Cobertura
+  Assemblies: 1
+  Classes: 14
+  Files: 10
+  Line coverage: 8.4%
+  Covered lines: 20
+  Uncovered lines: 217
+  Coverable lines: 237
+  Total lines: 443
+  Branch coverage: 13.1% (5 of 38)
+  Covered branches: 5
+  Total branches: 38
+  Method coverage: 25.7% (9 of 35)
+  Full method coverage: 20% (7 of 35)
+  Covered methods: 9
+  Fully covered methods: 7
+  Total methods: 35
+
+life-time-calculator                                                         8.4%
+  life_time_calculator.DirectFunctionExecutor                                  0%
+  life_time_calculator.FunctionExecutorAutoStartup                             0%
+  life_time_calculator.FunctionExecutorHostBuilderExtensions                   0%
+  life_time_calculator.FunctionMetadataProviderAutoStartup                     0%
+  life_time_calculator.GeneratedFunctionMetadataProvider                       0%
+  life_time_calculator.WorkerHostBuilderFunctionMetadataProviderExtension      0%
+  LifeTimeCalculator.Functions.LifeTimeCalculatorFunction                      0%
+  LifeTimeCalculator.Helpers.LifeTimeCalculatorHelper                          0%
+  LifeTimeCalculator.Models.AgeBreakdown                                     100%
+  LifeTimeCalculator.Models.ErrorResponse                                      0%
+  LifeTimeCalculator.Models.LifeTimeCalculationResponse                        0%
+  LifeTimeCalculator.Models.LifetimeStats                                      0%
+  LifeTimeCalculator.Services.SecretHelper                                  39.3%
+  Program                                                                      0%
