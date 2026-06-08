@@ -1,0 +1,28 @@
+Summary
+  Generated on: 06/08/2026 - 07:50:21
+  Coverage date: 06/08/2026 - 07:50:16
+  Parser: Cobertura
+  Assemblies: 1
+  Classes: 6
+  Files: 4
+  Line coverage: 84.6%
+  Covered lines: 66
+  Uncovered lines: 12
+  Coverable lines: 78
+  Total lines: 135
+  Branch coverage: 85.7% (12 of 14)
+  Covered branches: 12
+  Total branches: 14
+  Method coverage: 90.9% (20 of 22)
+  Full method coverage: 90.9% (20 of 22)
+  Covered methods: 20
+  Fully covered methods: 20
+  Total methods: 22
+
+LifeTimeCalculatorLambda                          84.6%
+  LifeTimeCalculatorLambda.Function                  0%
+  LifeTimeCalculatorLambda.Models.Age              100%
+  LifeTimeCalculatorLambda.Models.LifetimeStats    100%
+  LifeTimeCalculatorLambda.Models.Request          100%
+  LifeTimeCalculatorLambda.Models.Response         100%
+  LifeTimeCalculatorLambda.Services.Service        100%
