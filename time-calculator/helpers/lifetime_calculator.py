@@ -10,7 +10,7 @@ def parse_date_of_birth(date_of_birth: str) -> datetime:
     try:
         parsed = datetime.fromisoformat(date_of_birth.replace("Z", "+00:00"))
     except ValueError as exc:
-        raise ValueError("dateOfBirth must be a valid ISO 8601 datetime string.") from exc
+        raise ValueError("Invalid dateOfBirth value.") from exc
 
     if parsed.tzinfo is None:
         parsed = parsed.replace(tzinfo=timezone.utc)
@@ -19,7 +19,7 @@ def parse_date_of_birth(date_of_birth: str) -> datetime:
 
 def calculate_lifetime_stats(date_of_birth: datetime, current_date: datetime) -> Dict[str, object]:
     if current_date < date_of_birth:
-        raise ValueError("dateOfBirth cannot be in the future.")
+        raise ValueError("Invalid dateOfBirth value.")
 
     delta = current_date - date_of_birth
     total_seconds = int(delta.total_seconds())
@@ -47,7 +47,10 @@ def calculate_lifetime_stats(date_of_birth: datetime, current_date: datetime) ->
     if days < 0:
         previous_month = current_date.month - 1 or 12
         previous_year = current_date.year if current_date.month > 1 else current_date.year - 1
-        days_in_previous_month = (datetime(previous_year, previous_month % 12 + 1, 1, tzinfo=timezone.utc) - datetime(previous_year, previous_month, 1, tzinfo=timezone.utc)).days
+        days_in_previous_month = (
+            datetime(previous_year, previous_month % 12 + 1, 1, tzinfo=timezone.utc)
+            - datetime(previous_year, previous_month, 1, tzinfo=timezone.utc)
+        ).days
         days += days_in_previous_month
         months -= 1
     if months < 0:
