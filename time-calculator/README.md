@@ -1,7 +1,7 @@
 # Time Calculator Azure Functions
 
 ## Prerequisites
-- Python 3.11
+- Python 3.12
 - Azure Functions Core Tools v4
 - Azure Storage Emulator or Azure Storage account for local development
 - pip
@@ -14,18 +14,18 @@ Create a `local.settings.json` file with:
 No database or external backend environment variables are required.
 
 ## Local Run Steps
-1. Create and activate a Python 3.11 virtual environment.
+1. Create and activate a Python 3.12 virtual environment.
 2. Install dependencies:
-   ```bash
+bash
    pip install -r requirements.txt
-   ```
+
 3. Start the Functions host:
-   ```bash
+bash
    func start
-   ```
+
 
 ## Deployment Steps (Azure Functions)
-1. Create an Azure Function App using Python 3.11.
+1. Create an Azure Function App using Python 3.12.
 2. Configure application settings:
    - `AzureWebJobsStorage`
    - `FUNCTIONS_WORKER_RUNTIME=python`
@@ -50,7 +50,7 @@ No database or external backend environment variables are required.
 - None
 
 **Example Successful Response:**
-```json
+json
 {
   "dateOfBirth": "1990-01-01T00:00:00+00:00",
   "currentDate": "2026-06-10T12:00:00+00:00",
@@ -73,19 +73,18 @@ No database or external backend environment variables are required.
     "totalSecondsLived": 822528000.0
   }
 }
-```
+
 
 **Example Error Response:**
-```json
+json
 {
   "error": {
     "code": "VALIDATION_ERROR",
     "message": "dateOfBirth query parameter is required."
   }
 }
-```
+
 
 **Sample CURL Command:**
-```bash
+bash
 curl -X GET "http://localhost:7071/api/lifetime?dateOfBirth=1990-01-01T00:00:00Z"
-```

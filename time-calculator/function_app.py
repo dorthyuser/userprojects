@@ -1,7 +1,6 @@
 import json
 import logging
 from datetime import datetime, timezone
-from typing import Any
 
 import azure.functions as func
 
