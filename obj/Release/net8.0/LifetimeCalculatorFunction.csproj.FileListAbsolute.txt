@@ -1,0 +1,5 @@
+/var/www/vhosts/devninja.ai2dev.com/backend-devninja.ai2dev.com/ai2dev-folders/projects/super.ninja@ai2dev.com/life-time-calculator/generatedRepos/obj/Release/net8.0/LifetimeCalculatorFunction.csproj.AssemblyReference.cache
+/var/www/vhosts/devninja.ai2dev.com/backend-devninja.ai2dev.com/ai2dev-folders/projects/super.ninja@ai2dev.com/life-time-calculator/generatedRepos/obj/Release/net8.0/LifetimeCalculatorFunction.GeneratedMSBuildEditorConfig.editorconfig
+/var/www/vhosts/devninja.ai2dev.com/backend-devninja.ai2dev.com/ai2dev-folders/projects/super.ninja@ai2dev.com/life-time-calculator/generatedRepos/obj/Release/net8.0/LifetimeCalculatorFunction.AssemblyInfoInputs.cache
+/var/www/vhosts/devninja.ai2dev.com/backend-devninja.ai2dev.com/ai2dev-folders/projects/super.ninja@ai2dev.com/life-time-calculator/generatedRepos/obj/Release/net8.0/LifetimeCalculatorFunction.AssemblyInfo.cs
+/var/www/vhosts/devninja.ai2dev.com/backend-devninja.ai2dev.com/ai2dev-folders/projects/super.ninja@ai2dev.com/life-time-calculator/generatedRepos/obj/Release/net8.0/LifetimeCalculatorFunction.csproj.CoreCompileInputs.cache
