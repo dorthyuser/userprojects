@@ -1,0 +1,13 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "python",
+    "EXCHANGE_RATE_API_BASE_URL": "https://api.exchangerate.host",
+    "EXCHANGE_RATE_API_KEY": "",
+    "DEFAULT_TRANSFER_FEE": "0.50",
+    "DEFAULT_PLATFORM_FEE": "0.20",
+    "DEFAULT_GST_RATE": "0.18",
+    "CACHE_TTL_SECONDS": "300"
+  }
+}
