@@ -17,9 +17,6 @@ public sealed class DbHelper
         }
 
         var builder = new NpgsqlDataSourceBuilder(connectionString);
-        builder.MapEnum<azurefunctionaeproject.Models.OutcomeEnum>("outcome_enum");
-        builder.MapEnum<azurefunctionaeproject.Models.ActionTakenEnum>("action_taken_enum");
-        builder.MapEnum<azurefunctionaeproject.Models.PriorityEnum>("priority_enum");
         _dataSource = builder.Build();
     }
 
