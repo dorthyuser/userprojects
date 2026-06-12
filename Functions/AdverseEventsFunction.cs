@@ -71,7 +71,7 @@ public class AdverseEventsFunction
         }
         catch (ValidationException ex)
         {
-            _logger.LogWarning(ex, "Validation error in GetNotifications");
+            _logger.LogError(ex, "Validation error in GetNotifications");
             return await ErrorResponseHelper.CreateAsync(req, HttpStatusCode.BadRequest, ex.Code, ex.Message);
         }
         catch (Exception ex)
