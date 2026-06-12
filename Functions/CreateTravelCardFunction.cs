@@ -79,7 +79,7 @@ public class CreateTravelCardFunction
             _logger.LogInformation("Exiting CreateTravelCard function successfully.");
             return response;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             _logger.LogError("Unhandled error in CreateTravelCard function.");
             return await ErrorResponse.CreateAsync(req, HttpStatusCode.InternalServerError, "An unexpected error occurred.");
