@@ -38,5 +38,5 @@ jobs:
             ${{ github.ref_name }} \
             ${{ secrets.AZURE_RG_NAME }} \
             ${{ secrets.AZURE_REGION }} \
-            mystorageaccount123 \
+            mystorageaccountxyz \
             8.0
