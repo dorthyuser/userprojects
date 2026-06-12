@@ -3,7 +3,7 @@ name: .NET Function CI/CD
 on:
   push:
     branches:
-      - zoho-project-2
+      - "**"
 
 jobs:
   build-deploy:
