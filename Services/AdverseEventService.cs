@@ -170,7 +170,7 @@ public sealed class AdverseEventService
 
     private static async Task InsertAdverseEventAsync(NpgsqlConnection connection, NpgsqlTransaction tx, string aeId, AdverseEventCreateRequest request, bool serious, OutcomeEnum outcome)
     {
-        await using var cmd = new NpgsqlCommand(@"INSERT INTO adverse_events (ae_id, trial_id, site_id, patient_id, clinician_id, event_date, ae_term_code, ae_term_name, ctcae_grade, serious, outcome, action_taken, narrative, related_drug_id, reported_by, submitted_at, created_at, updated_at) VALUES (@aeId, @trialId, @siteId, @patientId, @clinicianId, @eventDate, @aeTermCode, @aeTermName, @ctcaeGrade, @serious, @outcome::outcome_enum, @actionTaken::action_taken_enum, @narrative, @relatedDrugId, @reportedBy, NOW(), NOW(), NOW())", connection, tx);
+        await using var cmd = new NpgsqlCommand(@"INSERT INTO adverse_events (ae_id, trial_id, site_id, patient_id, clinician_id, event_date, ae_term_code, ae_term_name, ctcae_grade, serious, outcome, action_taken, narrative, related_drug_id, reported_by, submitted_at, created_at, updated_at) VALUES (@aeId, @trialId, @siteId, @patientId, @clinicianId, @eventDate, @aeTermCode, @aeTermName, @ctcaeGrade, @serious, @outcome, @actionTaken, @narrative, @relatedDrugId, @reportedBy, NOW(), NOW(), NOW())", connection, tx);
         cmd.Parameters.AddWithValue("aeId", aeId);
         cmd.Parameters.AddWithValue("trialId", request.TrialId);
         cmd.Parameters.AddWithValue("siteId", request.SiteId);
@@ -191,7 +191,7 @@ public sealed class AdverseEventService
 
     private static async Task InsertNotificationAsync(NpgsqlConnection connection, NpgsqlTransaction tx, string aeId, string notificationId, AdverseEventCreateRequest request, bool serious, OutcomeEnum outcome)
     {
-        await using var cmd = new NpgsqlCommand(@"INSERT INTO ae_notifications (notification_id, ae_id, trial_id, site_id, patient_id, ae_term_name, ctcae_grade, serious, outcome, priority, acknowledged, sns_published, sns_message_id, created_at, updated_at) VALUES (@notificationId, @aeId, @trialId, @siteId, @patientId, @aeTermName, @ctcaeGrade, @serious, @outcome::outcome_enum, @priority::priority_enum, FALSE, FALSE, NULL, NOW(), NOW())", connection, tx);
+        await using var cmd = new NpgsqlCommand(@"INSERT INTO ae_notifications (notification_id, ae_id, trial_id, site_id, patient_id, ae_term_name, ctcae_grade, serious, outcome, priority, acknowledged, sns_published, sns_message_id, created_at, updated_at) VALUES (@notificationId, @aeId, @trialId, @siteId, @patientId, @aeTermName, @ctcaeGrade, @serious, @outcome, @priority, FALSE, FALSE, NULL, NOW(), NOW())", connection, tx);
         cmd.Parameters.AddWithValue("notificationId", notificationId);
         cmd.Parameters.AddWithValue("aeId", aeId);
         cmd.Parameters.AddWithValue("trialId", request.TrialId);
