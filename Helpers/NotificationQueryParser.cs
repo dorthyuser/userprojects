@@ -33,7 +33,7 @@ public static class NotificationQueryParser
                 case "dateTo": query.DateTo = DateTime.Parse(value, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal); break;
                 case "page": query.Page = int.Parse(value, CultureInfo.InvariantCulture); break;
                 case "pageSize": query.PageSize = int.Parse(value, CultureInfo.InvariantCulture); break;
-                default: throw new ValidationException("INVALID_QUERY_PARAM", $"Unsupported query parameter '{key}'.");
+                default: break;
             }
         }
 
