@@ -1,4 +1,4 @@
-name: Java Spring Boot Docker + Azure Container Instance
+name: Java Spring Boot Docker + Azure Container Instances
 
 on:
   push:
