@@ -23,6 +23,16 @@ if [ -z "${AZURE_KEY_VAULT_URI:-}" ]; then
   exit 1
 fi
 
+if [ -z "${ZOHO_KEY_URL:-}" ]; then
+  echo "Error: ZOHO_KEY_URL must be set"
+  exit 1
+fi
+
+if [ -z "${ZOHOTOKENURL:-}" ]; then
+  echo "Error: ZOHOTOKENURL must be set"
+  exit 1
+fi
+
 echo "Fetching location for resource group..."
 LOCATION=$(az group show --name "$RESOURCE_GROUP" --query location -o tsv)
 
@@ -62,7 +72,9 @@ for i in $(seq 1 $MAX_RETRIES); do
     --assign-identity \
     --environment-variables \
       SERVER_PORT="$PORT" \
-      AZURE_KEY_VAULT_URI="$AZURE_KEY_VAULT_URI"; \
+      AZURE_KEY_VAULT_URI="$AZURE_KEY_VAULT_URI" \
+      ZOHO_KEY_URL="$ZOHO_KEY_URL" \
+      ZOHOTOKENURL="$ZOHOTOKENURL"; \
   then
     echo "Deployment succeeded"
     SUCCESS=true
