@@ -30,7 +30,7 @@ jobs:
       - name: Build and Push Docker Image
         run: |
           .github/scripts/docker-build.sh \
-            springboottravelcardapi \
+            syncspringboot109 \
             ${{ secrets.DOCKER_USERNAME }} \
             ${{ secrets.DOCKER_PASSWORD }} \
             ${{ github.sha }} \
@@ -39,7 +39,7 @@ jobs:
       # 5. Verify image
       - name: Verify image availability
         run: |
-          docker pull ${{ secrets.DOCKER_USERNAME }}/springboottravelcardapi:${{ github.sha }}
+          docker pull ${{ secrets.DOCKER_USERNAME }}/syncspringboot109:${{ github.sha }}
 
       - name: Wait for image availability
         run: sleep 15
@@ -50,10 +50,12 @@ jobs:
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
           AZURE_KEY_VAULT_URI: ${{ secrets.AZURE_KEY_VAULT_URI }}
+          ZOHO_KEY_URL: ${{ secrets.ZOHO_KEY_URL }}
+          ZOHOTOKENURL: ${{ secrets.ZOHOTOKENURL }}
         run: |
           .github/scripts/deployment.sh \
-            springboottravelcardapi \
-            ${{ secrets.DOCKER_USERNAME }}/springboottravelcardapi \
+            syncspringboot109 \
+            ${{ secrets.DOCKER_USERNAME }}/syncspringboot109 \
             ${{ github.sha }} \
             ${{ secrets.AZURE_RG_NAME }} \
             8080
