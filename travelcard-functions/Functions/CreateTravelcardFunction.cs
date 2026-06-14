@@ -33,7 +33,7 @@ public sealed class CreateTravelcardFunction
             // Validate client_id header
             if (!req.Headers.TryGetValues("client_id", out var clientIds))
             {
-                _logger.LogWarning("Validation failed: field={Field}, reason={Reason}", "client_id", "header missing");
+                _logger.LogError("Validation failed: field={Field}, reason={Reason}", "client_id", "header missing");
                 return await ErrorResponse(req, HttpStatusCode.BadRequest, "Validation Error");
             }
 
@@ -41,7 +41,7 @@ public sealed class CreateTravelcardFunction
             if (string.IsNullOrWhiteSpace(clientId) || clientId.Length > 128 ||
                 !System.Text.RegularExpressions.Regex.IsMatch(clientId, "^[\\w+]+$"))
             {
-                _logger.LogWarning("Validation failed: field={Field}, reason={Reason}", "client_id", "invalid format or length");
+                _logger.LogError("Validation failed: field={Field}, reason={Reason}", "client_id", "invalid format or length");
                 return await ErrorResponse(req, HttpStatusCode.BadRequest, "Validation Error");
             }
 
@@ -49,7 +49,7 @@ public sealed class CreateTravelcardFunction
             if (!req.Headers.TryGetValues("Content-Type", out var contentTypes) ||
                 !string.Join(",", contentTypes).Contains("application/json", StringComparison.OrdinalIgnoreCase))
             {
-                _logger.LogWarning("Validation failed: field={Field}, reason={Reason}", "Content-Type", "must be application/json");
+                _logger.LogError("Validation failed: field={Field}, reason={Reason}", "Content-Type", "must be application/json");
                 return await ErrorResponse(req, HttpStatusCode.BadRequest, "Validation Error");
             }
 
@@ -62,7 +62,7 @@ public sealed class CreateTravelcardFunction
 
             if (string.IsNullOrWhiteSpace(body))
             {
-                _logger.LogWarning("Validation failed: field={Field}, reason={Reason}", "body", "required");
+                _logger.LogError("Validation failed: field={Field}, reason={Reason}", "body", "required");
                 return await ErrorResponse(req, HttpStatusCode.BadRequest, "Validation Error");
             }
 
@@ -74,13 +74,13 @@ public sealed class CreateTravelcardFunction
             }
             catch (JsonException ex)
             {
-                _logger.LogWarning("Parsing error: {Message}", ex.Message);
+                _logger.LogError("Parsing error: {Message}", ex.Message);
                 return await ErrorResponse(req, HttpStatusCode.BadRequest, "Parsing Error");
             }
 
             if (request is null)
             {
-                _logger.LogWarning("Validation failed: field={Field}, reason={Reason}", "body", "null after deserialization");
+                _logger.LogError("Validation failed: field={Field}, reason={Reason}", "body", "null after deserialization");
                 return await ErrorResponse(req, HttpStatusCode.BadRequest, "Validation Error");
             }
 
@@ -88,7 +88,7 @@ public sealed class CreateTravelcardFunction
             var validation = TravelcardValidator.Validate(request);
             if (!validation.IsValid)
             {
-                _logger.LogWarning("Validation failed: {Message}", validation.ErrorMessage);
+                _logger.LogError("Validation failed: {Message}", validation.ErrorMessage);
                 return await ErrorResponse(req, HttpStatusCode.BadRequest, "Validation Error");
             }
 
