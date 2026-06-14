@@ -12,7 +12,7 @@ using travelcard_functions.Validation;
 
 namespace travelcard_functions.Functions;
 
-public class CreateTravelcardFunction
+public sealed class CreateTravelcardFunction
 {
     private readonly ILogger<CreateTravelcardFunction> _logger;
     private readonly TravelcardService _service;
@@ -24,27 +24,36 @@ public class CreateTravelcardFunction
     }
 
     [Function("CreateTravelcard")]
-    public async Task<HttpResponseData> Run([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "travelcard")] HttpRequestData req)
+    public async Task<HttpResponseData> Run(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "travelcard")] HttpRequestData req)
     {
         _logger.LogInformation("ENTRY CreateTravelcard");
         try
         {
+            // Validate client_id header
             if (!req.Headers.TryGetValues("client_id", out var clientIds))
             {
-                return await ErrorResponse(req, HttpStatusCode.BadRequest, "client_id header is required.");
+                _logger.LogWarning("Validation failed: field={Field}, reason={Reason}", "client_id", "header missing");
+                return await ErrorResponse(req, HttpStatusCode.BadRequest, "Validation Error");
             }
 
             var clientId = string.Join(",", clientIds);
-            if (string.IsNullOrWhiteSpace(clientId) || clientId.Length > 128 || !System.Text.RegularExpressions.Regex.IsMatch(clientId, "^[\\w+]+$"))
+            if (string.IsNullOrWhiteSpace(clientId) || clientId.Length > 128 ||
+                !System.Text.RegularExpressions.Regex.IsMatch(clientId, "^[\\w+]+$"))
             {
-                return await ErrorResponse(req, HttpStatusCode.BadRequest, "client_id header is invalid.");
+                _logger.LogWarning("Validation failed: field={Field}, reason={Reason}", "client_id", "invalid format or length");
+                return await ErrorResponse(req, HttpStatusCode.BadRequest, "Validation Error");
             }
 
-            if (!req.Headers.TryGetValues("Content-Type", out var contentTypes) || !string.Join(",", contentTypes).Contains("application/json", StringComparison.OrdinalIgnoreCase))
+            // Validate Content-Type
+            if (!req.Headers.TryGetValues("Content-Type", out var contentTypes) ||
+                !string.Join(",", contentTypes).Contains("application/json", StringComparison.OrdinalIgnoreCase))
             {
-                return await ErrorResponse(req, HttpStatusCode.BadRequest, "Content-Type must contain application/json.");
+                _logger.LogWarning("Validation failed: field={Field}, reason={Reason}", "Content-Type", "must be application/json");
+                return await ErrorResponse(req, HttpStatusCode.BadRequest, "Validation Error");
             }
 
+            // Read body
             string body;
             using (var reader = new StreamReader(req.Body))
             {
@@ -53,48 +62,62 @@ public class CreateTravelcardFunction
 
             if (string.IsNullOrWhiteSpace(body))
             {
-                return await ErrorResponse(req, HttpStatusCode.BadRequest, "Request body is required.");
+                _logger.LogWarning("Validation failed: field={Field}, reason={Reason}", "body", "required");
+                return await ErrorResponse(req, HttpStatusCode.BadRequest, "Validation Error");
             }
 
+            // Deserialize request
             CreateTravelcardRequest? request;
             try
             {
                 request = JsonSerializer.Deserialize<CreateTravelcardRequest>(body, JsonOptions.Default);
             }
-            catch
+            catch (JsonException ex)
             {
-                return await ErrorResponse(req, HttpStatusCode.BadRequest, "Invalid JSON payload.");
+                _logger.LogWarning("Parsing error: {Message}", ex.Message);
+                return await ErrorResponse(req, HttpStatusCode.BadRequest, "Parsing Error");
             }
 
             if (request is null)
             {
-                return await ErrorResponse(req, HttpStatusCode.BadRequest, "Request body is required.");
+                _logger.LogWarning("Validation failed: field={Field}, reason={Reason}", "body", "null after deserialization");
+                return await ErrorResponse(req, HttpStatusCode.BadRequest, "Validation Error");
             }
 
+            // Business validation
             var validation = TravelcardValidator.Validate(request);
             if (!validation.IsValid)
             {
-                _logger.LogError("ERROR Validation failed: {Message}", validation.ErrorMessage);
-                return await ErrorResponse(req, HttpStatusCode.BadRequest, validation.ErrorMessage);
+                _logger.LogWarning("Validation failed: {Message}", validation.ErrorMessage);
+                return await ErrorResponse(req, HttpStatusCode.BadRequest, "Validation Error");
             }
 
+            // Process
             var result = await _service.CreateAsync(request);
+
+            // ✅ CORRECT: WriteStringAsync + JsonSerializer — NOT WriteAsJsonAsync(result, options)
             var response = req.CreateResponse(HttpStatusCode.Created);
-            await response.WriteAsJsonAsync(result);
-            _logger.LogInformation("EXIT CreateTravelcard");
+            response.Headers.Add("Content-Type", "application/json; charset=utf-8");
+            await response.WriteStringAsync(JsonSerializer.Serialize(result, JsonOptions.Default));
+
+            _logger.LogInformation("EXIT CreateTravelcard — success");
             return response;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "ERROR Unexpected error in CreateTravelcard");
-            return await ErrorResponse(req, HttpStatusCode.InternalServerError, "An unexpected error occurred.");
+            // Log full stack trace — return only generic message
+            _logger.LogError(ex, "Unexpected error in CreateTravelcard");
+            return await ErrorResponse(req, HttpStatusCode.InternalServerError, "Internal Error");
         }
     }
 
-    private static async Task<HttpResponseData> ErrorResponse(HttpRequestData req, HttpStatusCode statusCode, string message)
+    private static async Task<HttpResponseData> ErrorResponse(
+        HttpRequestData req, HttpStatusCode statusCode, string message)
     {
         var response = req.CreateResponse(statusCode);
-        await response.WriteAsJsonAsync(new ErrorResponse { Error = message });
+        response.Headers.Add("Content-Type", "application/json; charset=utf-8");
+        await response.WriteStringAsync(
+            JsonSerializer.Serialize(new ErrorResponse { Error = message }, JsonOptions.Default));
         return response;
     }
 }
