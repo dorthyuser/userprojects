@@ -152,41 +152,56 @@ def create_adverse_event(payload: AdverseEventCreateRequest, request: Request) -
         if conn is not None:
             release_conn(conn)
     # Publish to SNS, but be defensive about the configured value
-    topic_env = os.environ.get("SNS_TOPIC_ARN", "")
+    topic_env = os.environ.get("SNS_TOPIC_ARN", "").strip()
     if not topic_env:
         _log({"event": "sns_publish_skipped", "reason": "no_sns_topic_configured", "ae_id": ae_id, "notification_id": notification_id}, level="warning")
     else:
         try:
-            # If SNS_TOPIC_ARN looks like a full ARN, use it. Otherwise treat it as a topic name and create/get it.
-            topic_arn = None
+            topic_arn: str | None = None
             if topic_env.startswith("arn:"):
+                # Caller provided an ARN — use it as the candidate
                 topic_arn = topic_env
             else:
+                # Treat value as a topic name and attempt to create/get it
                 try:
                     resp = _sns_client.create_topic(Name=topic_env)
                     topic_arn = resp.get("TopicArn")
                 except Exception as exc:
                     _log({"event": "sns_topic_create_failed", "message": str(exc), "topic": topic_env}, level="error")
                     topic_arn = None
-            # Validate the ARN looks correct before attempting to publish
-            if not topic_arn or not isinstance(topic_arn, str) or not topic_arn.startswith("arn:") or topic_arn.count(":") < 5:
+
+            # Final validation: make sure AWS accepts the ARN before attempting publish
+            if not topic_arn or not isinstance(topic_arn, str):
                 _log({"event": "sns_publish_skipped", "reason": "invalid_topic_arn", "topic_env": topic_env, "topic_arn": topic_arn, "ae_id": ae_id, "notification_id": notification_id}, level="error")
             else:
-                publish_result = _sns_client.publish(TopicArn=topic_arn, Message=json.dumps({"aeId": ae_id, "notificationId": notification_id}))
-                sns_published = True
-                sns_message_id = publish_result.get("MessageId")
                 try:
-                    conn = get_conn()
-                    conn.rollback()
-                    conn.autocommit = True
-                    cur = conn.cursor()
-                    _log({"event": "db_op", "table": "ae_notifications", "operation": "UPDATE"})
-                    cur.execute("UPDATE ae_notifications SET sns_published = TRUE, sns_message_id = %s WHERE notification_id = %s", (sns_message_id, notification_id))
+                    # Validate the ARN with a lightweight call — this will raise if the ARN is malformed
+                    _sns_client.get_topic_attributes(TopicArn=topic_arn)
                 except Exception as exc:
-                    _log({"event": "sns_update_warning", "ae_id": ae_id, "notification_id": notification_id, "message": str(exc)}, level="warning")
-                finally:
-                    if conn is not None:
-                        release_conn(conn)
+                    # We intentionally skip publishing if AWS rejects the ARN format/attributes
+                    _log({"event": "sns_publish_skipped", "reason": "topic_arn_validation_failed", "topic_env": topic_env, "topic_arn": topic_arn, "message": str(exc), "ae_id": ae_id, "notification_id": notification_id}, level="error")
+                else:
+                    try:
+                        publish_result = _sns_client.publish(TopicArn=topic_arn, Message=json.dumps({"aeId": ae_id, "notificationId": notification_id}))
+                        sns_published = True
+                        sns_message_id = publish_result.get("MessageId")
+                        try:
+                            conn = get_conn()
+                            conn.rollback()
+                            conn.autocommit = True
+                            cur = conn.cursor()
+                            _log({"event": "db_op", "table": "ae_notifications", "operation": "UPDATE"})
+                            cur.execute("UPDATE ae_notifications SET sns_published = TRUE, sns_message_id = %s WHERE notification_id = %s", (sns_message_id, notification_id))
+                        except Exception as exc:
+                            _log({"event": "sns_update_warning", "ae_id": ae_id, "notification_id": notification_id, "message": str(exc)}, level="warning")
+                        finally:
+                            if conn is not None:
+                                release_conn(conn)
+                    except Exception as exc:
+                        # Capture publish failures but avoid propagating internal AWS parameter errors upstream
+                        sns_published = False
+                        sns_message_id = None
+                        _log({"event": "sns_publish_failed", "ae_id": ae_id, "notification_id": notification_id, "error_class": exc.__class__.__name__, "message": str(exc), "topic_arn": topic_arn, "topic_env": topic_env}, level="error")
         except Exception as exc:
             sns_published = False
             sns_message_id = None
