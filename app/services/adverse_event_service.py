@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 from time import sleep
 from typing import Any
 
+import boto3
 import psycopg2
 from dateutil import parser as date_parser
 from fastapi import HTTPException
@@ -66,6 +67,29 @@ def _coerce_payload(payload: AdverseEventCreateRequest) -> AdverseEventCreateReq
     serious = payload.serious or payload.ctcaeGrade >= 3
     outcome = "FATAL" if payload.ctcaeGrade == 5 else payload.outcome
     return payload.model_copy(update={"serious": serious, "outcome": outcome})
+
+
+def _publish_sns(message: dict[str, Any]) -> tuple[bool, str | None]:
+    """
+    Safely publish to SNS if SNS_TOPIC_ARN is configured.
+    Returns (published: bool, message_id: str|None).
+    """
+    topic = os.environ.get("SNS_TOPIC_ARN")
+    if not topic:
+        _log("sns_skipped", reason="no_topic_configured")
+        return False, None
+
+    try:
+        region = os.environ.get("AWS_REGION")
+        client = boto3.client("sns", region_name=region) if region else boto3.client("sns")
+        resp = client.publish(TopicArn=topic, Message=json.dumps(message))
+        message_id = resp.get("MessageId")
+        _log("sns_published", notification_id=message.get("notificationId"), message_id=message_id)
+        return True, message_id
+    except Exception as exc:
+        # Do not raise — just log failure and continue
+        _error("sns_publish_failed", notification_id=message.get("notificationId"), error=str(exc))
+        return False, None
 
 
 def submit_adverse_event_service(payload: AdverseEventCreateRequest) -> AdverseEventCreateResponse:
@@ -180,9 +204,39 @@ def submit_adverse_event_service(payload: AdverseEventCreateRequest) -> AdverseE
         if conn is not None:
             release_conn(conn)
 
-    # SNS has been removed from this implementation. Do not attempt to publish or log SNS-related events.
-    sns_published = False
-    sns_message_id = None
+    # Attempt to publish to SNS only if configured. Prevent KeyError when SNS_TOPIC_ARN is missing.
+    message_payload = {
+        "notificationId": notification_id,
+        "aeId": ae_id,
+        "trialId": payload.trialId,
+        "siteId": payload.siteId,
+        "patientId": payload.patientId,
+        "aeTermName": payload.aeTermName,
+        "ctcaeGrade": payload.ctcaeGrade,
+        "serious": payload.serious,
+        "outcome": payload.outcome,
+        "priority": priority,
+        "receivedAt": received_at.isoformat(),
+    }
+
+    sns_published, sns_message_id = _publish_sns(message_payload)
+
+    # Update ae_notifications.sns_published if we successfully published
+    if sns_published:
+        try:
+            conn = get_conn()
+            with conn.cursor() as cursor:
+                cursor.execute(
+                    "UPDATE ae_notifications SET sns_published = TRUE, updated_at = NOW() WHERE notification_id = %s",
+                    (notification_id,),
+                )
+                conn.commit()
+        except Exception:
+            # Non-fatal: log and continue
+            _error("sns_update_db_failed", notification_id=notification_id)
+        finally:
+            if conn is not None:
+                release_conn(conn)
 
     return AdverseEventCreateResponse(
         status="success",
