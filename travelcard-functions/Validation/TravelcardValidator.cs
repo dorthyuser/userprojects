@@ -88,8 +88,8 @@ public static class TravelcardValidator
         // Allow common separators in travelcard numbers (spaces, hyphens) by removing them before validation
         var travelcardNumberClean = Regex.Replace(request.TravelcardNumber ?? string.Empty, "[^A-Za-z0-9]", string.Empty).ToUpperInvariant();
 
-        // Enforce exact length and allowed characters to match DB constraint
-        if (!Regex.IsMatch(travelcardNumberClean, "^[A-Z0-9]{11}$"))
+        // Enforce DB-specific pattern: 3 uppercase letters followed by 8 digits (e.g. ABC12345678)
+        if (!Regex.IsMatch(travelcardNumberClean, "^[A-Z]{3}[0-9]{8}$"))
         {
             return ValidationResult.Fail("travelcardNumber is invalid.");
         }

@@ -28,9 +28,9 @@ public class TravelcardService
             var travelcardNumberOriginal = (request.TravelcardNumber ?? string.Empty).Trim();
 
             // Pre-validate against expected database check constraint to avoid DB-level 23514 errors.
-            // The DB constraint enforces a strict alphanumeric format and length; map that to a friendly validation error.
-            // Accept exactly 11 alphanumeric characters to match the DB check constraint.
-            if (!Regex.IsMatch(travelcardNumberClean, "^[A-Z0-9]{11}$"))
+            // The DB constraint enforces a strict format (e.g. 3 letters followed by 8 digits) and length; map that to a friendly validation error.
+            // Accept exact pattern of 3 uppercase letters followed by 8 digits to match DB check constraint.
+            if (!Regex.IsMatch(travelcardNumberClean, "^[A-Z]{3}[0-9]{8}$"))
             {
                 throw new ArgumentException("Validation Error: travelcardNumber is invalid.");
             }
@@ -64,7 +64,7 @@ VALUES (@travelcard_id, @cardholder_title, @cardholder_forename, @cardholder_sur
                 cardholderCmd.Parameters.AddWithValue("cardholder_forename", cardholder.CardholderForename);
                 cardholderCmd.Parameters.AddWithValue("cardholder_surname", cardholder.CardholderSurname);
                 // Explicitly type the cardholder_type parameter as text so CAST works reliably
-                cardholderCmd.Parameters.Add(new NpgsqlParameter("cardholder_type", NpgsqlDbType.Varchar) { Value = cardholder.CardholderType.ToString() });
+                cardholderCmd.Parameters.Add(new NpgsqlParameter("cardholder_type", NpgsqlDbType.Text) { Value = cardholder.CardholderType.ToString() });
                 cardholderCmd.Parameters.AddWithValue("cardholder_photo_name", cardholder.CardholderPhotoName);
                 cardholderCmd.Parameters.AddWithValue("cardholder_photo_rrs_key", string.IsNullOrWhiteSpace(cardholder.CardholderPhotoRRSKey) ? DBNull.Value : (object)cardholder.CardholderPhotoRRSKey);
                 cardholderCmd.Parameters.AddWithValue("cardholder_photo_url", string.IsNullOrWhiteSpace(cardholder.CardholderPhotoURL) ? DBNull.Value : (object)cardholder.CardholderPhotoURL);
@@ -105,14 +105,14 @@ VALUES (@travelcard_id, @cardholder_title, @cardholder_forename, @cardholder_sur
     {
         await using var cmd = new NpgsqlCommand(travelcardSql, connection, transaction);
         // Provide explicit types for a couple of parameters to make intent clear and avoid driver misinterpretation
-        var pType = new NpgsqlParameter("travelcard_type", NpgsqlDbType.Varchar) { Value = request.TravelcardType.ToString() };
+        var pType = new NpgsqlParameter("travelcard_type", NpgsqlDbType.Text) { Value = request.TravelcardType.ToString() };
         cmd.Parameters.Add(pType);
         cmd.Parameters.AddWithValue("travelcard_valid_from", request.TravelcardValidFrom);
         cmd.Parameters.AddWithValue("travelcard_valid_to", request.TravelcardValidTo);
         cmd.Parameters.AddWithValue("travelcard_name", (object?)request.TravelcardName ?? DBNull.Value);
 
         // Ensure travelcard_number is provided as text and trimmed — use the cleaned value validated above
-        var pNumber = new NpgsqlParameter("travelcard_number", NpgsqlDbType.Varchar) { Value = travelcardNumberValue };
+        var pNumber = new NpgsqlParameter("travelcard_number", NpgsqlDbType.Text) { Value = travelcardNumberValue };
         // Do not set Size to avoid fixed-length padding that can violate DB check constraints.
         cmd.Parameters.Add(pNumber);
 
