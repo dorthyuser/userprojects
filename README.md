@@ -22,8 +22,6 @@ Secret resolution order:
 1. Azure Key Vault via `AZURE_KEY_VAULT_URI`
 2. Environment variable fallback
 
-Database connection string is resolved using secret name `PostgresConnectionString` and fallback environment variable `POSTGRESQLCONNECTIONSTRING`.
-
 ## Local Run Steps
 1. Restore packages:
    - `dotnet restore`
