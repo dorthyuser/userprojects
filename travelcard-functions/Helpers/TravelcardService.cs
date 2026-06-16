@@ -112,7 +112,7 @@ VALUES (@travelcard_id, @cardholder_title, @cardholder_forename, @cardholder_sur
         cmd.Parameters.AddWithValue("travelcard_name", (object?)request.TravelcardName ?? DBNull.Value);
 
         // Ensure travelcard_number is provided as text and trimmed — use the cleaned value validated above
-        var pNumber = new NpgsqlParameter("travelcard_number", NpgsqlDbType.Text) { Value = travelcardNumberValue };
+        var pNumber = new NpgsqlParameter("travelcard_number", NpgsqlDbType.Varchar) { Value = travelcardNumberValue };
         // Do not set Size to avoid fixed-length padding that can violate DB check constraints.
         cmd.Parameters.Add(pNumber);
 
@@ -120,7 +120,25 @@ VALUES (@travelcard_id, @cardholder_title, @cardholder_forename, @cardholder_sur
         cmd.Parameters.AddWithValue("travelcard_transaction_reference", request.TravelcardTransactionReference);
         cmd.Parameters.AddWithValue("travelcard_usable_to", (object?)request.TravelcardUsableTo ?? DBNull.Value);
 
-        var travelcardIdObj = await cmd.ExecuteScalarAsync();
-        return Convert.ToInt32(travelcardIdObj);
+        try
+        {
+            var travelcardIdObj = await cmd.ExecuteScalarAsync();
+            return Convert.ToInt32(travelcardIdObj);
+        }
+        catch (PostgresException pex)
+        {
+            // If the DB reports a check constraint violation, surface a friendly validation error
+            await transaction.RollbackAsync();
+            if (pex.SqlState == "23514")
+            {
+                if (string.Equals(pex.ConstraintName, "travelcards_travelcard_number_check", StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new ArgumentException("Validation Error: travelcardNumber is invalid.", pex);
+                }
+                throw new ArgumentException($"Validation Error: database constraint '{pex.ConstraintName}' was violated.", pex);
+            }
+
+            throw;
+        }
     }
 }
