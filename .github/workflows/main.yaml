@@ -1,0 +1,48 @@
+name: .NET Function CI/CD
+
+on:
+  push:
+    branches:
+      - "**"
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Azure Login
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      # 3. Setup .NET
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      # 4. Install dependencies
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y zip
+
+      # 5. Set execute permission
+      - name: Make script executable
+        run: chmod +x .github/scripts/deployment.sh
+
+      # 6. Run deployment script
+      - name: Build & Deploy Azure Function
+        run: |
+          ./.github/scripts/deployment.sh \
+            "https://github.com/${{ github.repository }}.git" \
+            "${{ github.ref_name }}" \
+            "${{ secrets.AZURE_RG_NAME }}" \
+            "${{ secrets.AZURE_REGION }}" \
+            "${{ secrets.AZURE_STORAGE_ACCOUNT }}" \
+            "8.0"

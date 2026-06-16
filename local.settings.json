@@ -1,0 +1,16 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
+    "POSTGRESQLHOST": "161.97.137.17",
+    "POSTGRESQLPORT": "5432",
+    "POSTGRESQLDATABASE": "admin_travelcards",
+    "POSTGRESQLUSERNAME": "test_user_tc",
+    "POSTGRESQLPASSWORD": "u3m31~2gZ",
+    "POSTGRESQLCONNECTIONSTRING": "Host=161.97.137.17;Port=5432;Database=admin_travelcards;Username=test_user_tc;Password=u3m31~2gZ",
+    "AZURE_KEY_VAULT_URI": "",
+    "azure": "",
+    "AZURE_KEY_VAULT_URI_PLACEHOLDER": ""
+  }
+}
