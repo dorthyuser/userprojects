@@ -24,7 +24,7 @@ public class TravelcardService
         try
         {
             // Ensure travelcard_number matches DB expectations by removing separators and normalising case
-            var travelcardNumberClean = Regex.Replace(request.TravelcardNumber ?? string.Empty, "[^A-Za-z0-9]", "").ToUpperInvariant();
+            var travelcardNumberClean = Regex.Replace(request.TravelcardNumber ?? string.Empty, "[^A-Za-z0-9]", "").ToUpperInvariant().Trim();
             var travelcardNumberOriginal = (request.TravelcardNumber ?? string.Empty).Trim();
 
             // Pre-validate against expected database check constraint to avoid DB-level 23514 errors.
@@ -50,6 +50,12 @@ RETURNING id;";
             {
                 await transaction.RollbackAsync();
                 throw new ArgumentException("Validation Error: travelcardNumber is invalid.", pex);
+            }
+            catch (ArgumentException)
+            {
+                // Bubble up friendly validation errors from InsertTravelcard
+                await transaction.RollbackAsync();
+                throw;
             }
 
             foreach (var cardholder in request.Cardholders)
@@ -103,6 +109,9 @@ VALUES (@travelcard_id, @cardholder_title, @cardholder_forename, @cardholder_sur
 
     private static async Task<int> InsertTravelcard(NpgsqlConnection connection, NpgsqlTransaction transaction, string travelcardSql, CreateTravelcardRequest request, string travelcardNumberValue)
     {
+        // Ensure value is trimmed and already validated to expected DB format
+        travelcardNumberValue = (travelcardNumberValue ?? string.Empty).Trim();
+
         await using var cmd = new NpgsqlCommand(travelcardSql, connection, transaction);
         // Provide explicit types for a couple of parameters to make intent clear and avoid driver misinterpretation
         var pType = new NpgsqlParameter("travelcard_type", NpgsqlDbType.Text) { Value = request.TravelcardType.ToString() };
@@ -111,9 +120,9 @@ VALUES (@travelcard_id, @cardholder_title, @cardholder_forename, @cardholder_sur
         cmd.Parameters.AddWithValue("travelcard_valid_to", request.TravelcardValidTo);
         cmd.Parameters.AddWithValue("travelcard_name", (object?)request.TravelcardName ?? DBNull.Value);
 
-        // Ensure travelcard_number is provided as text and trimmed — use the cleaned value validated above
-        var pNumber = new NpgsqlParameter("travelcard_number", NpgsqlDbType.Text) { Value = travelcardNumberValue };
-        // Do not set Size to avoid fixed-length padding that can violate DB check constraints.
+        // Ensure travelcard_number is provided as varchar (variable length) and trimmed — use the cleaned value validated above
+        var pNumber = new NpgsqlParameter("travelcard_number", NpgsqlDbType.Varchar) { Value = travelcardNumberValue };
+        // Setting Size for varchar is optional; leaving it unset avoids fixed-length padding while ensuring server treats it as varchar.
         cmd.Parameters.Add(pNumber);
 
         cmd.Parameters.AddWithValue("travelcard_requested_date", request.TravelcardRequestedDate);
