@@ -130,8 +130,7 @@ public sealed class CreateTravelcardFunction
         // Try common alternatives
         var alt = headerName.Replace('_', '-');
         if (alt != headerName && req.Headers.TryGetValues(alt, out values)) return true;
-
-        values = null;
+        values = null;
         return false;
     }
 

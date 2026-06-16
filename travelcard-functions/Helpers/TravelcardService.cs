@@ -112,10 +112,8 @@ VALUES (@travelcard_id, @cardholder_title, @cardholder_forename, @cardholder_sur
         cmd.Parameters.AddWithValue("travelcard_name", (object?)request.TravelcardName ?? DBNull.Value);
 
         // Ensure travelcard_number is provided as text and trimmed — use the cleaned value validated above
-        var pNumber = new NpgsqlParameter("travelcard_number", NpgsqlDbType.Varchar) { Value = travelcardNumberValue };
-        // Explicitly set the declared Size so the parameter is transmitted with the expected length metadata.
-        // This can help the server-side check constraint evaluation behave consistently.
-        pNumber.Size = travelcardNumberValue?.Length ?? 0;
+        var pNumber = new NpgsqlParameter("travelcard_number", NpgsqlDbType.Text) { Value = travelcardNumberValue };
+        // Do not set Size to avoid fixed-length padding that can violate DB check constraints.
         cmd.Parameters.Add(pNumber);
 
         cmd.Parameters.AddWithValue("travelcard_requested_date", request.TravelcardRequestedDate);
