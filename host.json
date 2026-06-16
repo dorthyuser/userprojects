@@ -3,12 +3,13 @@
   "logging": {
     "logLevel": {
       "default": "Information",
+      "Host.Results": "Information",
       "Function": "Information"
     }
   },
   "extensions": {
     "http": {
-      "routePrefix": "hekiapi"
+      "routePrefix": "api"
     }
   }
 }
