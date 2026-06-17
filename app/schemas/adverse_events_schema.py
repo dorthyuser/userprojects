@@ -1,6 +1,7 @@
 from datetime import datetime
 
-from pydantic import AwareDatetime, BaseModel, ConfigDict, EmailStr, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+from dateutil import parser as date_parser
 
 
 class AdverseEventCreateRequest(BaseModel):
@@ -10,7 +11,7 @@ class AdverseEventCreateRequest(BaseModel):
     siteId: str = Field(min_length=1, max_length=50)
     patientId: str = Field(min_length=1, max_length=50)
     clinicianId: str = Field(min_length=1, max_length=50)
-    eventDate: AwareDatetime
+    eventDate: str
     aeTermCode: str = Field(min_length=1, max_length=20)
     aeTermName: str = Field(min_length=1, max_length=255)
     ctcaeGrade: int
@@ -19,13 +20,32 @@ class AdverseEventCreateRequest(BaseModel):
     actionTaken: str = Field(min_length=1, max_length=30)
     narrative: str = Field(min_length=1, max_length=2000)
     relatedDrugId: str | None = Field(default=None, max_length=50)
-    reportedBy: EmailStr
+    reportedBy: str = Field(min_length=3, max_length=254)
 
     @field_validator("ctcaeGrade")
     @classmethod
     def validate_ctcae_grade(cls, value: int) -> int:
         if not isinstance(value, int):
             raise ValueError("ctcaeGrade must be an integer")
+        return value
+
+    @field_validator("eventDate")
+    @classmethod
+    def validate_event_date(cls, value: str) -> str:
+        try:
+            parsed = date_parser.isoparse(value)
+        except Exception as exc:
+            raise ValueError("eventDate must be a valid ISO8601 datetime string") from exc
+        if parsed.tzinfo is None:
+            raise ValueError("eventDate must include timezone information")
+        return value
+
+    @field_validator("reportedBy")
+    @classmethod
+    def validate_reported_by(cls, value: str) -> str:
+        # Minimal email sanity check to avoid pydantic's EmailStr dependency
+        if "@" not in value or "." not in value.split("@")[-1]:
+            raise ValueError("reportedBy must be a valid email address")
         return value
 
 
