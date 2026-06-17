@@ -23,7 +23,6 @@ from app.schemas.adverse_events_schema import (
 
 logger = logging.getLogger(__name__)
 logger.setLevel(os.environ.get("LOG_LEVEL", "INFO"))
-_sns_client = boto3.client("sns", region_name=os.environ.get("AWS_REGION", "eu-west-2"))
 
 
 def _utc_now() -> datetime:
@@ -225,7 +224,9 @@ def create_adverse_event(payload: AdverseEventCreateRequest) -> AdverseEventCrea
             topic_arn = os.environ.get("SNS_TOPIC_ARN")
             if topic_arn:
                 try:
-                    response = _sns_client.publish(
+                    # Create SNS client lazily to avoid depending on environment at import-time
+                    sns_client = boto3.client("sns", region_name=os.environ.get("AWS_REGION", "eu-west-2"))
+                    response = sns_client.publish(
                         TopicArn=topic_arn,
                         Message=json.dumps({"aeId": ae_id, "notificationId": notification_id}),
                     )
@@ -246,12 +247,13 @@ def create_adverse_event(payload: AdverseEventCreateRequest) -> AdverseEventCrea
                     except Exception as exc:
                         _error({"event": "sns_update_failed", "ae_id": ae_id, "notification_id": notification_id, "message": str(exc)})
                 except Exception as exc:
+                    # Log the exception class and message; do not raise to avoid failing the AE creation
                     _error({"event": "sns_publish_failed", "ae_id": ae_id, "notification_id": notification_id, "exception": exc.__class__.__name__, "message": str(exc)})
                     sns_published = False
                     sns_message_id = None
             else:
                 # Do not raise an exception if SNS isn't configured; log and continue
-                _error({"event": "sns_publish_failed", "ae_id": ae_id, "notification_id": notification_id, "exception": "MissingEnvironment", "message": "SNS_TOPIC_ARN not configured"})
+                _error({"event": "sns_publish_skipped", "ae_id": ae_id, "notification_id": notification_id, "reason": "SNS_TOPIC_ARN not configured"})
                 sns_published = False
                 sns_message_id = None
 
