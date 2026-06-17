@@ -73,8 +73,23 @@ def _publish_sns(message: dict[str, Any]) -> tuple[bool, str | None]:
     """
     Safely publish to SNS if SNS_TOPIC_ARN is configured.
     Returns (published: bool, message_id: str|None).
+    This function is defensive: it avoids raising when environment variables are missing
+    or when publish fails, and it logs clear structured messages.
     """
-    topic = os.environ.get("SNS_TOPIC_ARN")
+    # Defensive read of environment variable. Some runtimes or custom environment mappings
+    # could raise on direct env access (rare). Guard against unexpected exceptions.
+    try:
+        topic = os.environ.get("SNS_TOPIC_ARN")
+    except Exception as exc:
+        _error(
+            "sns_publish_failed",
+            notification_id=message.get("notificationId"),
+            error=str(exc),
+            error_class=exc.__class__.__name__,
+            note="env_access_failed",
+        )
+        return False, None
+
     if not topic:
         _log("sns_skipped", reason="no_topic_configured")
         return False, None
@@ -82,13 +97,19 @@ def _publish_sns(message: dict[str, Any]) -> tuple[bool, str | None]:
     try:
         region = os.environ.get("AWS_REGION")
         client = boto3.client("sns", region_name=region) if region else boto3.client("sns")
-        resp = client.publish(TopicArn=topic, Message=json.dumps(message))
-        message_id = resp.get("MessageId")
+        # Use json.dumps with default=str to avoid serialization errors for unexpected types
+        resp = client.publish(TopicArn=topic, Message=json.dumps(message, default=str))
+        message_id = resp.get("MessageId") if isinstance(resp, dict) else None
         _log("sns_published", notification_id=message.get("notificationId"), message_id=message_id)
         return True, message_id
     except Exception as exc:
-        # Do not raise — just log failure and continue; include exception class for clearer logs
-        _error("sns_publish_failed", notification_id=message.get("notificationId"), error=str(exc), error_class=exc.__class__.__name__)
+        # Log the exception but do not propagate — publishing is best-effort
+        _error(
+            "sns_publish_failed",
+            notification_id=message.get("notificationId"),
+            error=str(exc),
+            error_class=exc.__class__.__name__,
+        )
         return False, None
 
 
