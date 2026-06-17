@@ -4,9 +4,6 @@ import os
 from datetime import datetime, timezone
 from typing import Optional
 
-import boto3
-import psycopg2
-
 from app.db.connection import get_conn, release_conn
 from app.schemas.adverse_events_schema import (
     AdverseEventCreateRequest,
@@ -17,10 +14,7 @@ from app.schemas.adverse_events_schema import (
 
 logger = logging.getLogger(__name__)
 
-SNS_TOPIC_ARN         = os.environ.get("SNS_TOPIC_ARN", "")
-IDEMPOTENCY_WINDOW_S  = int(os.environ.get("IDEMPOTENCY_WINDOW_S", "60"))
-
-_sns_client = boto3.client("sns")
+IDEMPOTENCY_WINDOW_S = int(os.environ.get("IDEMPOTENCY_WINDOW_S", "60"))
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
@@ -185,55 +179,16 @@ def create_adverse_event(payload: AdverseEventCreateRequest) -> AdverseEventCrea
     finally:
         release_conn(conn)
 
-    # Step 12 — SNS best-effort publish (OUTSIDE transaction)
-    sns_published  = False
-    sns_message_id: Optional[str] = None
-    try:
-        resp = _sns_client.publish(
-            TopicArn=SNS_TOPIC_ARN,
-            Message=json.dumps({
-                "aeId":           ae_id,
-                "notificationId": notification_id,
-                "trialId":        payload.trialId,
-                "patientId":      payload.patientId,
-                "ctcaeGrade":     payload.ctcaeGrade,
-                "serious":        payload.serious,
-                "priority":       priority,
-            }),
-            Subject="AdverseEventAlert",
-        )
-        sns_message_id = resp.get("MessageId")
-        sns_published  = True
-
-        # Best-effort update of sns_published flag
-        try:
-            upd_conn = get_conn()
-            try:
-                with upd_conn.cursor() as cur:
-                    cur.execute(
-                        "UPDATE ae_notifications SET sns_published = TRUE, sns_message_id = %s WHERE notification_id = %s",
-                        (sns_message_id, notification_id),
-                    )
-                upd_conn.commit()
-            finally:
-                release_conn(upd_conn)
-        except Exception as upd_exc:
-            logger.warning(json.dumps({
-                "event":           "sns_flag_update_failed",
-                "ae_id":           ae_id,
-                "notification_id": notification_id,
-                "error":           str(upd_exc),
-            }))
-
-    except Exception as sns_exc:
-        logger.error(json.dumps({
-            "event":           "sns_publish_failed",
-            "ae_id":           ae_id,
-            "notification_id": notification_id,
-            "error_class":     type(sns_exc).__name__,
-            "error":           str(sns_exc),
-        }))
-        # NEVER re-raise — SNS failure must not break the 201 response
+    # Step 12 — SNS not configured for this deployment (Azure ACI)
+    # sns_published is always false; field retained in response for spec compatibility
+    sns_published:  bool            = False
+    sns_message_id: Optional[str]   = None
+    logger.warning(json.dumps({
+        "event":           "sns_skipped",
+        "reason":          "SNS not configured — Azure deployment",
+        "ae_id":           ae_id,
+        "notification_id": notification_id,
+    }))
 
     # Step 13 — Return HTTP 201 response
     return AdverseEventCreateResponse(
