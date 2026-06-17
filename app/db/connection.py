@@ -7,7 +7,11 @@ logger = logging.getLogger(__name__)
 _pool = None
 
 def _get_secret():
-    secret_name = os.environ["AWS_SECRET_NAME"]
+    # Use .get to avoid KeyError if the env var is not present and provide a helpful error message
+    secret_name = os.environ.get("AWS_SECRET_NAME")
+    if not secret_name:
+        logger.error("Missing required environment variable: AWS_SECRET_NAME")
+        raise RuntimeError("Missing required environment variable: AWS_SECRET_NAME")
     region = os.environ.get("AWS_REGION", "eu-west-2")
     client = boto3.client("secretsmanager", region_name=region)
     secret = client.get_secret_value(SecretId=secret_name)

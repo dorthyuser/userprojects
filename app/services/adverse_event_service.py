@@ -87,8 +87,8 @@ def _publish_sns(message: dict[str, Any]) -> tuple[bool, str | None]:
         _log("sns_published", notification_id=message.get("notificationId"), message_id=message_id)
         return True, message_id
     except Exception as exc:
-        # Do not raise — just log failure and continue
-        _error("sns_publish_failed", notification_id=message.get("notificationId"), error=str(exc))
+        # Do not raise — just log failure and continue; include exception class for clearer logs
+        _error("sns_publish_failed", notification_id=message.get("notificationId"), error=str(exc), error_class=exc.__class__.__name__)
         return False, None
 
 
