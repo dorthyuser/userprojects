@@ -6,37 +6,52 @@ APP_NAME=$1
 DOCKER_USERNAME=$2
 DOCKER_PASSWORD=$3
 IMAGE_TAG=$4
-JDK_VERSION=$5
+PYTHON_VERSION=${5:-3.13}
 
 IMAGE_NAME="$DOCKER_USERNAME/$APP_NAME:$IMAGE_TAG"
 
 echo "----------------------------------"
-echo "🚀 Java Spring Boot Docker Build"
-echo "App:  $APP_NAME"
-echo "Tag:  $IMAGE_TAG"
-echo "JDK:  $JDK_VERSION"
+echo "Python FastAPI Docker Build"
+echo "App:    $APP_NAME"
+echo "Tag:    $IMAGE_TAG"
+echo "Python: $PYTHON_VERSION"
 echo "----------------------------------"
 
 # --- Validate project ---
-if [ ! -f "build.gradle" ] && [ ! -f "build.gradle.kts" ]; then
-  echo "❌ No Gradle project found"
+if [ ! -f "requirements.txt" ]; then
+  echo "No requirements.txt found"
+  exit 1
+fi
+
+if [ ! -f "main.py" ] && [ ! -f "app/main.py" ]; then
+  echo "No main.py or app/main.py found"
   exit 1
 fi
 
 # --- Create Dockerfile ---
 cat <<EOF > Dockerfile
 # -------- Build Stage --------
-FROM gradle:8.14.2-jdk${JDK_VERSION} AS build
+FROM python:${PYTHON_VERSION}-slim AS build
 WORKDIR /app
-COPY . .
-RUN gradle clean bootJar -x test --no-daemon
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+COPY requirements.txt .
+RUN pip install --upgrade pip && \
+    pip install --no-cache-dir --prefix=/install -r requirements.txt
 
 # -------- Runtime Stage --------
-FROM eclipse-temurin:${JDK_VERSION}-jre
+FROM python:${PYTHON_VERSION}-slim
 WORKDIR /app
-COPY --from=build /app/build/libs/*.jar app.jar
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq5 \
+    && rm -rf /var/lib/apt/lists/*
+COPY --from=build /install /usr/local
+COPY . .
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENV PYTHONUNBUFFERED=1
+ENTRYPOINT ["python", "main.py"]
 EOF
 
 # --- Build Image ---
@@ -51,4 +66,4 @@ echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
 echo "Pushing image..."
 docker push "$IMAGE_NAME"
 
-echo "✅ Done: $IMAGE_NAME"
+echo "Done: $IMAGE_NAME"
