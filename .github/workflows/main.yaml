@@ -1,9 +1,9 @@
-name: Java Spring Boot Docker + Azure Container Instance
+name: Python FastAPI Docker + Azure Container Instance
 
 on:
   push:
     branches:
-      - zoho-project-2
+      - '**'
 
 jobs:
   build-deploy:
@@ -20,31 +20,38 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      # 3. Set permissions
+      # 3. Set execute permissions
       - name: Set execute permissions
         run: |
           chmod +x .github/scripts/docker-build.sh
           chmod +x .github/scripts/deployment.sh
 
-      # 4. Build & Push Docker Image
+      # 4. Slugify branch name (replaces / and _ with -, max 40 chars)
+      - name: Slugify branch name
+        id: slug
+        run: |
+          echo "branch=$(echo '${{ github.ref_name }}' | tr '/' '-' | tr '_' '-' | cut -c1-40)" >> $GITHUB_OUTPUT
+
+      # 5. Build & Push Docker Image
       - name: Build and Push Docker Image
         run: |
           .github/scripts/docker-build.sh \
-            springboottravelcardapi \
+            pythonadverseae1039 \
             ${{ secrets.DOCKER_USERNAME }} \
             ${{ secrets.DOCKER_PASSWORD }} \
             ${{ github.sha }} \
-            21
+            3.13
 
-      # 5. Verify image
+      # 6. Verify image availability
       - name: Verify image availability
         run: |
-          docker pull ${{ secrets.DOCKER_USERNAME }}/springboottravelcardapi:${{ github.sha }}
+          docker pull ${{ secrets.DOCKER_USERNAME }}/pythonadverseae1039:${{ github.sha }}
 
+      # 7. Wait for Docker Hub propagation
       - name: Wait for image availability
         run: sleep 15
 
-      # 6. Deploy to Azure Container Instance
+      # 8. Deploy to Azure Container Instance
       - name: Deploy to ACI
         env:
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
@@ -52,8 +59,8 @@ jobs:
           AZURE_KEY_VAULT_URI: ${{ secrets.AZURE_KEY_VAULT_URI }}
         run: |
           .github/scripts/deployment.sh \
-            springboottravelcardapi \
-            ${{ secrets.DOCKER_USERNAME }}/springboottravelcardapi \
+            ${{ steps.slug.outputs.branch }} \
+            ${{ secrets.DOCKER_USERNAME }}/pythonadverseae1039 \
             ${{ github.sha }} \
             ${{ secrets.AZURE_RG_NAME }} \
             8080
