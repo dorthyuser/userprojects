@@ -42,11 +42,11 @@ def _utcnow() -> datetime:
 
 def _parse_uuid(value: str, field_name: str) -> UUID:
     try:
+        # Accept any valid UUID string regardless of version. Many clients may
+        # use v1 or v4; insisting on version 4 caused valid requests to fail
+        # with HTTP 422. We only validate format here and return the UUID.
         parsed = UUID(value)
     except Exception:
-        _log(json.dumps({"event": "validation_failed", "rule": field_name}))
-        raise HTTPException(status_code=422, detail="Validation Error")
-    if parsed.version != 4:
         _log(json.dumps({"event": "validation_failed", "rule": field_name}))
         raise HTTPException(status_code=422, detail="Validation Error")
     return parsed

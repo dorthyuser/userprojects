@@ -2,44 +2,46 @@
 
 Project name: patient-consent-management1005
 
-Description:
-A production-ready Patient Consent Management API built with FastAPI. The service provides endpoints to grant, withdraw, query, and audit patient consents. It is designed to run as an AWS Lambda (via Mangum) and persist data in PostgreSQL. It includes idempotency, audit logging, and optional SNS notifications for consent events.
+Overview
+
+patient-consent-management1005 is a production-oriented REST API for managing patient consents. It provides endpoints to grant, withdraw, list, and audit consent events. The service is implemented with FastAPI, designed to run locally with Uvicorn for development and in AWS Lambda using the Mangum adapter for production. Data persistence uses PostgreSQL and access is via a lightweight psycopg2 connection pool. The project supports deterministic idempotency, comprehensive audit logging, optional SNS notifications, and robust validation via pydantic v2.
 
 Features
-- Grant consent with purpose, legal basis, scope, version, and channel
-- Withdraw consent (idempotent)
+
+- Grant and withdraw consents for specific purposes
 - Retrieve all consents for a patient
 - Retrieve a single consent for a purpose
-- Audit history for patient consent events
-- Deterministic idempotency using UUIDv5
-- Audit logging persisted in consent_audit_log
-- Optional SNS notifications for granted/withdrawn events
+- Audit trail for all consent-related actions
+- Deterministic idempotency (UUIDv5) for safe retries
+- Optional SNS notifications for events (grant/withdraw)
+- Designed to run in AWS Lambda (Mangum) or as a standalone FastAPI app
 
 Tech stack
+
 - Python 3.13
 - FastAPI
-- Uvicorn (for local dev)
-- Mangum (AWS Lambda adapter)
+- Uvicorn (development)
+- Mangum (Lambda adapter)
 - PostgreSQL (psycopg2)
-- AWS Secrets Manager (DB credentials)
-- AWS SNS (optional notifications)
-- Pydantic v2 for validation
+- AWS Secrets Manager for DB credentials
+- AWS SNS (optional)
+- Pydantic v2 for request/response validation
 
-Installation
+Quickstart — Installation
 
 Prerequisites
-- Python 3.13 installed (or use Docker)
+
+- Python 3.13 or compatible (Docker can be used)
 - pip
 - PostgreSQL database
-- (Optional) Docker for building Lambda ZIP locally
-- AWS CLI configured for deployment if deploying to AWS
+- AWS account if deploying to Lambda
 
 Clone repository
 
     git clone <repo-url>
     cd patient-consent-management1005
 
-Create and activate a virtual environment (recommended)
+Create & activate virtualenv (recommended)
 
     python3.13 -m venv .venv
     source .venv/bin/activate
@@ -50,12 +52,12 @@ Install dependencies
 
 Environment variables (.env example)
 
-Create a .env file in the project root or set environment variables in your environment. Example:
+Create a .env file at project root or export these variables in your environment. Example values shown below:
 
     AWS_SECRET_NAME=prod/patient-consent-db
     AWS_REGION=eu-west-2
 
-Optional direct DB overrides (when you don't want to use Secrets Manager):
+Direct DB overrides (optional — overrides Secrets Manager):
 
     DB_HOST=your-db-host
     DB_PORT=5432
@@ -63,38 +65,39 @@ Optional direct DB overrides (when you don't want to use Secrets Manager):
     DB_USER=db_user
     DB_PASSWORD=db_password
 
-Optional SNS topic for events (CONSENT_GRANTED, CONSENT_WITHDRAWN):
+Optional SNS topic ARN for notifications:
 
     CONSENT_SNS_TOPIC_ARN=arn:aws:sns:eu-west-2:123456789012:consent-events
 
 Notes on AWS_SECRET_NAME
-The Secrets Manager secret should contain JSON with keys: host, port, dbname, username, password. The service will prefer explicit DB_* environment variables over Secrets Manager values when provided.
 
-Run commands
+If using AWS Secrets Manager, the secret value should be JSON with the following keys: host, port, dbname, username, password. The code will prefer explicit DB_* environment variables over values from the secret if provided.
 
-Development (local)
+Running locally (development)
 
-Start with Uvicorn:
+Start the app with Uvicorn:
 
     uvicorn app.main:app --reload --port 8000
 
-The API will be available at: http://localhost:8000
+The API will be available at http://localhost:8000
 
 Production (AWS Lambda)
 
-The project includes a GitHub Actions workflow and a Docker-based deployment script to produce a Linux-compatible ZIP for Lambda. The handler configured is handler.lambda_handler (Mangum adapter).
+The application is set up to run in AWS Lambda via the Mangum adapter. The Lambda handler path is handler.lambda_handler.
 
 Build & deployment
 
-Local Docker build (Linux-compatible ZIP for Lambda):
-- Use the included .github/scripts/deployment.sh script (see header comments) or run your own Docker packaging flow to install dependencies into the package.
+Local Docker build (produce linux-compatible ZIP for Lambda)
+
+- Use the included deployment script (.github/scripts/deployment.sh) which builds a Docker image that installs dependencies for the target Python version and outputs a function.zip ready for Lambda.
 
 GitHub Actions
-- The repo contains .github/workflows/main.yaml which runs the deployment script. Configure secrets in your repository for AWS access, LAMBDA_ROLE_ARN, AWS_SECRET_NAME, and AWS_REGION.
 
-Manual deploy with AWS CLI (example)
+- A workflow is provided at .github/workflows/main.yaml. Configure repository secrets: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION, LAMBDA_ROLE_ARN, AWS_SECRET_NAME.
 
-1. Build function.zip containing application and dependencies installed for Linux.
+Manual AWS CLI deploy example
+
+1. Build a function.zip containing application and Linux-installed dependencies.
 2. Create or update the Lambda function:
 
     aws lambda create-function \
@@ -107,21 +110,22 @@ Manual deploy with AWS CLI (example)
 
 Folder structure
 
-- .github/: CI/CD scripts and workflows
-  - scripts/deployment.sh: Docker-based build & deploy helper
-  - workflows/main.yaml: GitHub Actions workflow
-- app/: application package
-  - db/connection.py: psycopg2 pool using AWS Secrets Manager
-  - exceptions/handlers.py: central FastAPI exception handlers
-  - main.py: FastAPI app factory and router registration
-  - models/: dataclasses representing DB rows
-  - routers/consent_router.py: API routes (grant, withdraw, get, audit)
-  - schemas/consent_schema.py: Pydantic models used for validation and serialization
-  - services/consent_service.py: business logic, DB access, idempotency, audit
-- handler.py: Mangum adapter entrypoint for Lambda
-- requirements.txt: pinned dependencies
+- .github/
+  - scripts/deployment.sh — Docker-based build & deploy helper
+  - workflows/main.yaml — GitHub Actions CI/CD
+- app/
+  - db/connection.py — PostgreSQL connection pool using AWS Secrets Manager
+  - exceptions/handlers.py — FastAPI exception handlers
+  - main.py — FastAPI app factory and route registration
+  - models/ — dataclasses for internal models
+  - routers/consent_router.py — API routes
+  - schemas/consent_schema.py — pydantic request/response models
+  - services/consent_service.py — business logic, DB interaction, idempotency
+- handler.py — Mangum Lambda adapter entrypoint
+- requirements.txt — pinned dependencies
 
 API Documentation
+
 Base path: /consent
 
 1) Grant consent
@@ -129,8 +133,8 @@ Base path: /consent
 - Headers:
   - Content-Type: application/json
   - Idempotency-Key: string (required, max 128 chars)
-  - x-actor-id (optional)
-  - x-actor-role (optional)
+  - x-actor-id: string (optional)
+  - x-actor-role: string (optional; one of patient, clinician, dpo, system)
 - Body example:
 
   {
@@ -153,7 +157,7 @@ Base path: /consent
   }
 
 - Errors:
-  - 422 Validation Error (malformed body, expired expires_at, invalid UUID)
+  - 422 Validation Error (malformed body or expired expires_at)
   - 503 Database Error
   - 500 Internal Error
 
@@ -191,7 +195,7 @@ Base path: /consent
   }
 
 - Errors:
-  - 422 Validation Error (invalid UUID)
+  - 422 Validation Error (invalid UUID format)
   - 503 Database Error
 
 4) Get one consent for a purpose
@@ -219,13 +223,15 @@ Base path: /consent
   - 503 Database Error
 
 Authentication & Actor Context
-- This service expects actor context to be provided by an API Gateway authorizer in production.
+
+- In production, actor context (actor_id & actor_role) is expected to be injected by an API Gateway authorizer into the request context.
 - For local testing or when no authorizer is present, supply the following headers to simulate actor context:
   - x-actor-id: actor identifier
   - x-actor-role: one of [patient, clinician, dpo, system]
 - If no actor context is provided, the service defaults actor_role to "system".
 
 Usage examples
+
 Grant consent (curl):
 
     curl -X POST 'http://localhost:8000/consent' \
@@ -243,18 +249,17 @@ Withdraw consent (curl):
 Troubleshooting
 
 - 422 Validation Errors:
-  - Ensure path parameters for patient_id/consent_id are valid UUIDs.
-  - Ensure request bodies conform to the Pydantic schemas (scope non-empty, expires_at in the future).
-  - Be careful with route ordering: the router places more specific routes ahead of generic ones. If you see unexpected route matches, confirm path segments.
+  - Ensure path parameters for patient_id/consent_id are valid UUID strings (any UUID version is accepted).
+  - Ensure request bodies conform to pydantic schemas (scope non-empty, expires_at in the future).
+  - Validate headers: Idempotency-Key is required for mutating endpoints.
 
 - 503 Database Error:
   - Verify AWS_SECRET_NAME points to a valid secret with JSON: {"host":"...","port":5432,"dbname":"...","username":"...","password":"..."}
-  - Validate network connectivity between Lambda and DB (VPC, subnets, security groups).
-  - Check DB resource limits and increase connection pool or reduce concurrency if needed.
+  - Check network connectivity between Lambda and DB (VPC, subnets, SGs).
 
 - Idempotency issues:
-  - The service uses deterministic UUIDv5 for event ids. If idempotency key generation is changed, ensure event_id is a valid UUID.
+  - Service uses deterministic UUIDv5 for event ids. Provide stable idempotency keys to achieve deduplication.
 
 License
 
-This project is provided as-is. Add a LICENSE file if you intend to release under a specific license.
+This project is provided as-is. Add a LICENSE file to indicate a specific license if needed.
