@@ -44,14 +44,9 @@ def withdraw_consent(
     )
 
 
-@router.get("/{patient_id}", response_model=ConsentListResponse)
-def get_consent_all(request: Request, patient_id: str) -> ConsentListResponse:
-    return get_consent_all_service(request=request, patient_id=patient_id)
-
-
-@router.get("/{patient_id}/{purpose}", response_model=ConsentResponse)
-def get_consent_one(request: Request, patient_id: str, purpose: str) -> ConsentResponse:
-    return get_consent_one_service(request=request, patient_id=patient_id, purpose=purpose)
+# Important: more specific routes must be declared before generic ones to avoid
+# path conflicts. For example, /{patient_id}/audit must come before /{patient_id}/{purpose}
+# and both must come before the generic /{patient_id}.
 
 
 @router.get("/{patient_id}/audit", response_model=ConsentAuditHistoryResponse)
@@ -62,3 +57,13 @@ def get_audit_history(
     offset: int = Query(0, ge=0),
 ) -> ConsentAuditHistoryResponse:
     return get_audit_history_service(request=request, patient_id=patient_id, limit=limit, offset=offset)
+
+
+@router.get("/{patient_id}/{purpose}", response_model=ConsentResponse)
+def get_consent_one(request: Request, patient_id: str, purpose: str) -> ConsentResponse:
+    return get_consent_one_service(request=request, patient_id=patient_id, purpose=purpose)
+
+
+@router.get("/{patient_id}", response_model=ConsentListResponse)
+def get_consent_all(request: Request, patient_id: str) -> ConsentListResponse:
+    return get_consent_all_service(request=request, patient_id=patient_id)

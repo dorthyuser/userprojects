@@ -1,45 +1,45 @@
 # patient-consent-management1005
 
-Project overview
+Project name: patient-consent-management1005
 
-This service implements a Patient Consent Management API using FastAPI. It allows granting, withdrawing, querying, and auditing patient consents. The application is designed to run as an AWS Lambda function (Mangum adapter) and uses PostgreSQL (psycopg2) for persistence. It includes idempotency handling, audit logging, and SNS notifications for consent events.
+Description:
+A production-ready Patient Consent Management API built with FastAPI. The service provides endpoints to grant, withdraw, query, and audit patient consents. It is designed to run as an AWS Lambda (via Mangum) and persist data in PostgreSQL. It includes idempotency, audit logging, and optional SNS notifications for consent events.
 
 Features
-
-- Grant consent for a patient with a purpose, legal basis, scope, version, and channel
-- Withdraw consent
-- Get all consents for a patient
-- Get a single consent for a specific purpose
-- Get audit history for a patient
-- Idempotent operations using deterministic UUID-based event ids
-- Audit log entries for all view and change operations
-- Optional SNS notifications on consent grant/withdraw
+- Grant consent with purpose, legal basis, scope, version, and channel
+- Withdraw consent (idempotent)
+- Retrieve all consents for a patient
+- Retrieve a single consent for a purpose
+- Audit history for patient consent events
+- Deterministic idempotency using UUIDv5
+- Audit logging persisted in consent_audit_log
+- Optional SNS notifications for granted/withdrawn events
 
 Tech stack
-
-- Python 3.13+ (tested with 3.13)
+- Python 3.13
 - FastAPI
-- Uvicorn
+- Uvicorn (for local dev)
 - Mangum (AWS Lambda adapter)
 - PostgreSQL (psycopg2)
-- AWS Secrets Manager for DB credentials
-- AWS SNS for notifications
-- Pydantic v2 for request/response validation
+- AWS Secrets Manager (DB credentials)
+- AWS SNS (optional notifications)
+- Pydantic v2 for validation
 
 Installation
 
 Prerequisites
-
-- Python 3.13
-- Docker (for building Lambda package locally)
-- AWS CLI configured with permissions to deploy Lambda (create/update) and to access Secrets Manager and SNS
+- Python 3.13 installed (or use Docker)
+- pip
+- PostgreSQL database
+- (Optional) Docker for building Lambda ZIP locally
+- AWS CLI configured for deployment if deploying to AWS
 
 Clone repository
 
     git clone <repo-url>
     cd patient-consent-management1005
 
-Create and activate a virtual environment (optional but recommended)
+Create and activate a virtual environment (recommended)
 
     python3.13 -m venv .venv
     source .venv/bin/activate
@@ -50,50 +50,52 @@ Install dependencies
 
 Environment variables (.env example)
 
-Create a .env file or set environment variables in your deployment environment. Example variables:
+Create a .env file in the project root or set environment variables in your environment. Example:
 
     AWS_SECRET_NAME=prod/patient-consent-db
     AWS_REGION=eu-west-2
+
+Optional direct DB overrides (when you don't want to use Secrets Manager):
+
     DB_HOST=your-db-host
     DB_PORT=5432
     DB_NAME=patient_consent_db
     DB_USER=db_user
     DB_PASSWORD=db_password
+
+Optional SNS topic for events (CONSENT_GRANTED, CONSENT_WITHDRAWN):
+
     CONSENT_SNS_TOPIC_ARN=arn:aws:sns:eu-west-2:123456789012:consent-events
 
-Notes
-
-- AWS_SECRET_NAME: the Secret in AWS Secrets Manager that contains the DB connection info in JSON form: {"host":"...","port":5432,"dbname":"...","username":"...","password":"..."}
-- The application will prefer explicit DB_* env vars over values from the secret when present.
+Notes on AWS_SECRET_NAME
+The Secrets Manager secret should contain JSON with keys: host, port, dbname, username, password. The service will prefer explicit DB_* environment variables over Secrets Manager values when provided.
 
 Run commands
 
 Development (local)
 
-- Start the app locally using Uvicorn:
+Start with Uvicorn:
 
     uvicorn app.main:app --reload --port 8000
 
-- The API will be available at http://localhost:8000
+The API will be available at: http://localhost:8000
 
 Production (AWS Lambda)
 
-- The project includes a deployment script (./.github/scripts/deployment.sh) and a GitHub Actions workflow to build and deploy the Lambda package. See the Build and deployment steps below.
+The project includes a GitHub Actions workflow and a Docker-based deployment script to produce a Linux-compatible ZIP for Lambda. The handler configured is handler.lambda_handler (Mangum adapter).
 
-Build and deployment
+Build & deployment
 
-Local Docker build (create a zip suitable for Lambda)
-
-The included deployment script builds a Linux-compatible package using Docker, installs dependencies into the package, and zips the artifact. The script expects inputs documented in .github/scripts/deployment.sh header.
+Local Docker build (Linux-compatible ZIP for Lambda):
+- Use the included .github/scripts/deployment.sh script (see header comments) or run your own Docker packaging flow to install dependencies into the package.
 
 GitHub Actions
+- The repo contains .github/workflows/main.yaml which runs the deployment script. Configure secrets in your repository for AWS access, LAMBDA_ROLE_ARN, AWS_SECRET_NAME, and AWS_REGION.
 
-A workflow is provided in .github/workflows/main.yaml that will run the deployment script in CI. Configure secrets in the repository settings for AWS access, LAMBDA_ROLE_ARN, AWS_SECRET_NAME, and AWS_REGION.
+Manual deploy with AWS CLI (example)
 
-Manual deploy with AWS CLI
-
-1. Build artifact (zip) locally, ensuring platform compatibility (Linux): use the provided Docker-based script or produce the zip with requirements installed for Linux.
-2. Create or update the Lambda function with AWS CLI. Example:
+1. Build function.zip containing application and dependencies installed for Linux.
+2. Create or update the Lambda function:
 
     aws lambda create-function \
       --function-name patient-consent-management1005 \
@@ -103,176 +105,156 @@ Manual deploy with AWS CLI
       --zip-file fileb://function.zip \
       --timeout 120 --memory-size 512 --environment Variables={AWS_SECRET_NAME=<secret_name>} --region eu-west-2
 
-Folder structure explanation
+Folder structure
 
-- .github: CI/CD scripts and workflow
+- .github/: CI/CD scripts and workflows
   - scripts/deployment.sh: Docker-based build & deploy helper
-  - workflows/main.yaml: GitHub Actions workflow for deployment
-- app: application package
-  - db/connection.py: psycopg2 connection pool using AWS Secrets Manager
-  - exceptions/handlers.py: FastAPI exception handlers (validation, HTTP, generic)
-  - main.py: FastAPI app initialization
-  - models: dataclasses used internally for mapping DB rows
-  - routers/consent_router.py: API routes for consent operations
-  - schemas/consent_schema.py: Pydantic models for requests and responses
-  - services/consent_service.py: Business logic, DB queries, idempotency, audit logging
+  - workflows/main.yaml: GitHub Actions workflow
+- app/: application package
+  - db/connection.py: psycopg2 pool using AWS Secrets Manager
+  - exceptions/handlers.py: central FastAPI exception handlers
+  - main.py: FastAPI app factory and router registration
+  - models/: dataclasses representing DB rows
+  - routers/consent_router.py: API routes (grant, withdraw, get, audit)
+  - schemas/consent_schema.py: Pydantic models used for validation and serialization
+  - services/consent_service.py: business logic, DB access, idempotency, audit
 - handler.py: Mangum adapter entrypoint for Lambda
-- requirements.txt: pinned Python dependencies
+- requirements.txt: pinned dependencies
 
-API documentation
-
-The API base path is /consent. Below are the available endpoints.
+API Documentation
+Base path: /consent
 
 1) Grant consent
-
-- Endpoint: POST /consent
+- URL: POST /consent
 - Headers:
-  - Idempotency-Key: string (required) — used to ensure idempotent grant operations
-  - Authorization / x-actor-* headers: optional (actor context)
-- Request body (JSON):
+  - Content-Type: application/json
+  - Idempotency-Key: string (required, max 128 chars)
+  - x-actor-id (optional)
+  - x-actor-role (optional)
+- Body example:
 
   {
-    "patient_id": "<uuid-v4>",
-    "purpose": "treatment", // one of: treatment, research, marketing, data_sharing
-    "legal_basis": "consent", // one of: consent, vital_interest, legal_obligation
+    "patient_id": "11111111-1111-4111-8111-111111111111",
+    "purpose": "treatment",
+    "legal_basis": "consent",
     "scope": ["record", "labs"],
     "consent_version": "v1",
-    "channel": "web", // one of: web, paper, phone, in_person
-    "expires_at": "2027-01-01T00:00:00Z" // optional, ISO8601 aware datetime
+    "channel": "web",
+    "expires_at": "2027-01-01T00:00:00Z"
   }
 
-- Response (201 Created):
+- Success (201 Created):
 
   {
-    "consent_id": "<uuid>",
+    "consent_id": "22222222-2222-4222-8222-222222222222",
     "status": "granted",
     "audit_id": 123,
     "occurred_at": "2026-06-17T12:00:00Z"
   }
 
 - Errors:
-  - 422 Validation Error — malformed payload or invalid UUIDs
-  - 503 Database Error — DB connectivity problems
-  - 500 Internal Error — unexpected server errors
+  - 422 Validation Error (malformed body, expired expires_at, invalid UUID)
+  - 503 Database Error
+  - 500 Internal Error
 
 2) Withdraw consent
-
-- Endpoint: PUT /consent/{consent_id}/withdraw
+- URL: PUT /consent/{consent_id}/withdraw
 - Headers:
+  - Content-Type: application/json
   - Idempotency-Key: string (required)
-- Request body (JSON):
+- Body example:
+
+  { "reason": "No longer needed" }
+
+- Success (200 OK):
 
   {
-    "reason": "No longer needed"
-  }
-
-- Response (200 OK):
-
-  {
-    "consent_id": "<uuid>",
+    "consent_id": "22222222-2222-4222-8222-222222222222",
     "status": "withdrawn",
     "withdrawn_at": "2026-06-17T12:01:00Z",
     "audit_id": 124
   }
 
 - Errors:
-  - 404 Resource Not Found — consent_id not found
-  - 422 Validation Error — consent already withdrawn or invalid input
+  - 404 Resource Not Found
+  - 422 Validation Error (already withdrawn)
   - 503 Database Error
 
 3) Get all consents for a patient
-
-- Endpoint: GET /consent/{patient_id}
+- URL: GET /consent/{patient_id}
 - Query params: none
-- Response (200 OK):
+- Success (200 OK):
 
   {
-    "patient_id": "<uuid>",
-    "consents": [
-      {
-        "consent_id": "<uuid>",
-        "patient_id": "<uuid>",
-        "purpose": "treatment",
-        "status": "granted",
-        "legal_basis": "consent",
-        "scope": ["record"],
-        "consent_version": "v1",
-        "channel": "web",
-        "granted_at": "2026-06-01T00:00:00Z",
-        "expires_at": null,
-        "withdrawn_at": null
-      }
-    ]
+    "patient_id": "11111111-1111-4111-8111-111111111111",
+    "consents": [ { /* ConsentRecordSchema */ } ]
   }
 
-- Errors: 422 Validation Error, 503 Database Error
+- Errors:
+  - 422 Validation Error (invalid UUID)
+  - 503 Database Error
 
-4) Get one consent for a given purpose
-
-- Endpoint: GET /consent/{patient_id}/{purpose}
-- Response (200 OK): ConsentRecord object (same shape as above single item)
-- Errors: 404 Resource Not Found, 422 Validation Error
+4) Get one consent for a purpose
+- URL: GET /consent/{patient_id}/{purpose}
+- Allowed purposes: treatment, research, marketing, data_sharing
+- Success (200 OK): ConsentRecordSchema object
+- Errors:
+  - 404 Resource Not Found
+  - 422 Validation Error
 
 5) Get audit history
-
-- Endpoint: GET /consent/{patient_id}/audit
+- URL: GET /consent/{patient_id}/audit
 - Query params:
   - limit: int (default 100, max 500)
   - offset: int (default 0)
-- Response (200 OK):
+- Success (200 OK):
 
   {
-    "patient_id": "<uuid>",
-    "entries": [
-      {
-        "audit_id": 123,
-        "action": "GRANT",
-        "actor_id": "user-1",
-        "actor_role": "clinician",
-        "occurred_at": "2026-06-17T12:00:00Z"
-      }
-    ]
+    "patient_id": "11111111-1111-4111-8111-111111111111",
+    "entries": [ { /* AuditRecordSchema */ } ]
   }
 
-- Errors: 422 Validation Error, 503 Database Error
+- Errors:
+  - 422 Validation Error
+  - 503 Database Error
 
-Authentication details
-
-- The service expects actor context provided by an API Gateway authorizer at runtime. When running locally or without an authorizer, you can simulate actor context with headers:
-  - x-actor-id: actor identifier (string)
-  - x-actor-role: one of: patient, clinician, dpo, system
-
-- If no actor context is provided, the service defaults to role "system".
+Authentication & Actor Context
+- This service expects actor context to be provided by an API Gateway authorizer in production.
+- For local testing or when no authorizer is present, supply the following headers to simulate actor context:
+  - x-actor-id: actor identifier
+  - x-actor-role: one of [patient, clinician, dpo, system]
+- If no actor context is provided, the service defaults actor_role to "system".
 
 Usage examples
+Grant consent (curl):
 
-Grant consent curl example
-
-    curl -X POST 'https://<api>/consent' \
+    curl -X POST 'http://localhost:8000/consent' \
       -H 'Content-Type: application/json' \
       -H 'Idempotency-Key: key-123' \
       -d '{"patient_id":"11111111-1111-4111-8111-111111111111","purpose":"treatment","legal_basis":"consent","scope":["record"],"consent_version":"v1","channel":"web"}'
 
-Withdraw consent example
+Withdraw consent (curl):
 
-    curl -X PUT 'https://<api>/consent/22222222-2222-4222-8222-222222222222/withdraw' \
+    curl -X PUT 'http://localhost:8000/consent/22222222-2222-4222-8222-222222222222/withdraw' \
       -H 'Content-Type: application/json' \
       -H 'Idempotency-Key: withdraw-123' \
       -d '{"reason":"No longer required"}'
 
 Troubleshooting
 
-- Database errors (503):
-  - Ensure AWS_SECRET_NAME is correct and the Secrets Manager secret contains valid JSON with host, port, dbname, username, password.
-  - Check network connectivity from Lambda to your RDS instance (VPC configuration, security groups).
-  - Increase DB connection pool size or reduce concurrency if you see connection exhaustion.
+- 422 Validation Errors:
+  - Ensure path parameters for patient_id/consent_id are valid UUIDs.
+  - Ensure request bodies conform to the Pydantic schemas (scope non-empty, expires_at in the future).
+  - Be careful with route ordering: the router places more specific routes ahead of generic ones. If you see unexpected route matches, confirm path segments.
 
-- Idempotency errors / audit queries failing with uuid issues:
-  - The service generates deterministic UUIDs (v5) for event ids to ensure compatibility with a uuid column. If you modify _hash_event in services/consent_service.py, ensure it returns a valid UUID string for storage in the DB.
+- 503 Database Error:
+  - Verify AWS_SECRET_NAME points to a valid secret with JSON: {"host":"...","port":5432,"dbname":"...","username":"...","password":"..."}
+  - Validate network connectivity between Lambda and DB (VPC, subnets, security groups).
+  - Check DB resource limits and increase connection pool or reduce concurrency if needed.
 
-- Local testing differences:
-  - The authorizer-provided request context is not present locally. Use x-actor-id and x-actor-role headers to simulate actor context.
+- Idempotency issues:
+  - The service uses deterministic UUIDv5 for event ids. If idempotency key generation is changed, ensure event_id is a valid UUID.
 
 License
 
-This project is provided as-is. Add your preferred license file if you intend to distribute or publish the code.
+This project is provided as-is. Add a LICENSE file if you intend to release under a specific license.
