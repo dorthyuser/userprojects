@@ -1,9 +1,8 @@
 # db/connection.py — psycopg2 pool sourced from AWS Secrets Manager (no ORM)
 import psycopg2
 from psycopg2 import pool
-import boto3, json, os, logging
+import boto3, json, os
 
-logger = logging.getLogger(__name__)
 _pool = None
 
 def _get_secret():
@@ -28,7 +27,6 @@ def get_pool():
             options="-c search_path=public",
             connect_timeout=5
         )
-        logger.info("psycopg2 pool created from Secrets Manager: pool=pythonlambdaae957Pool")
     return _pool
 
 def get_conn():
