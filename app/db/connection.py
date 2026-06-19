@@ -1,10 +1,14 @@
 # db/connection.py — psycopg2 pool sourced from AWS Secrets Manager (no ORM)
 import psycopg2
 from psycopg2 import pool
+from psycopg2.extras import register_uuid
 import boto3, json, os, logging
 
 logger = logging.getLogger(__name__)
 _pool = None
+
+register_uuid()  # lets psycopg2 send/receive uuid.UUID objects directly (fixes "can't adapt type 'UUID'")
+
 
 def _get_secret():
     secret_name = os.environ["AWS_SECRET_KEY_NAME"]
@@ -12,6 +16,7 @@ def _get_secret():
     client = boto3.client("secretsmanager", region_name=region)
     secret = client.get_secret_value(SecretId=secret_name)
     return json.loads(secret["SecretString"])
+
 
 def get_pool():
     global _pool
@@ -31,8 +36,10 @@ def get_pool():
         logger.info("psycopg2 pool created from Secrets Manager: pool=patientconsentmanagement1005Pool")
     return _pool
 
+
 def get_conn():
     return get_pool().getconn()
+
 
 def release_conn(conn):
     get_pool().putconn(conn)
