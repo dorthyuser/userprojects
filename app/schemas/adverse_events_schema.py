@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import Any
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
 
@@ -7,6 +6,7 @@ from pydantic import AwareDatetime, BaseModel, ConfigDict, EmailStr, Field, fiel
 class AdverseEventCreateRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
+    userId: str = Field(min_length=1, max_length=50)
     trialId: str = Field(min_length=1, max_length=50)
     siteId: str = Field(min_length=1, max_length=50)
     patientId: str = Field(min_length=1, max_length=50)
@@ -53,6 +53,7 @@ class AdverseEventCreateRequest(BaseModel):
     @model_validator(mode="after")
     def validate_required_fields(self) -> "AdverseEventCreateRequest":
         required_fields = [
+            "userId",
             "trialId",
             "siteId",
             "patientId",
