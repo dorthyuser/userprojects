@@ -1,0 +1,56 @@
+[
+  {
+    "name": "SubmitAdverseEvent",
+    "scriptFile": "AdverseEventReporter.dll",
+    "entryPoint": "AdverseEventReporter.Functions.AdverseEventsFunction.SubmitAdverseEvent",
+    "language": "dotnet-isolated",
+    "properties": {
+      "IsCodeless": false
+    },
+    "bindings": [
+      {
+        "name": "req",
+        "direction": "In",
+        "type": "httpTrigger",
+        "authLevel": "Function",
+        "methods": [
+          "post"
+        ],
+        "route": "v1/adverse-events",
+        "properties": {}
+      },
+      {
+        "name": "$return",
+        "type": "http",
+        "direction": "Out"
+      }
+    ]
+  },
+  {
+    "name": "GetNotifications",
+    "scriptFile": "AdverseEventReporter.dll",
+    "entryPoint": "AdverseEventReporter.Functions.AdverseEventsFunction.GetNotifications",
+    "language": "dotnet-isolated",
+    "properties": {
+      "IsCodeless": false
+    },
+    "bindings": [
+      {
+        "name": "req",
+        "direction": "In",
+        "type": "httpTrigger",
+        "authLevel": "Function",
+        "methods": [
+          "get"
+        ],
+        "route": "v1/adverse-events/notifications",
+        "properties": {}
+      },
+      {
+        "name": "$return",
+        "type": "http",
+        "direction": "Out"
+      }
+    ]
+  }
+]
