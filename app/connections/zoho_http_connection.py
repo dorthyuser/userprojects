@@ -26,10 +26,10 @@ if _secret_name:
 
 
 def _resolve_credential(env_name: str) -> str:
-    key_name: str = os.environ.get(env_name, "")
-    if not key_name:
+    value = _secrets.get(env_name) or os.environ.get(env_name, "")
+    if not value:
         raise RuntimeError(f"Missing required environment variable: {env_name}")
-    return str(_secrets.get(key_name, key_name))
+    return value
 
 
 class ZohoHttpConnectionConnection:
