@@ -36,8 +36,8 @@ class ZohoHttpConnectionConnection:
     def __init__(self) -> None:
         self._base_url: str = os.environ.get("ZOHO_KEY_URL", "").rstrip("/")
         self._token_url: str = os.environ.get("ZOHOTOKENURL", "")
-        self._client_id: str = _resolve_credential("AZURE-CLIENT-ID")
-        self._client_secret: str = _resolve_credential("AZURE-CLIENT-SECRET")
+        self._client_id: str = _resolve_credential("ZOHOCLIENTID")
+        self._client_secret: str = _resolve_credential("ZOHOCLIENTSECRET")
         self._refresh_token: str = _resolve_credential("ZOHOREFRESHTOKEN")
         self._api_domain: str = self._base_url
         self._access_token: str = ""
