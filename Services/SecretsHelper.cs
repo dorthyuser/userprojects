@@ -23,7 +23,7 @@ public static class SecretsHelper
         lock (_lock)
         {
             if (_cache != null) return;
-            var secretName = Environment.GetEnvironmentVariable("AWS_SECRET_NAME");
+            var secretName = Environment.GetEnvironmentVariable("AWS_NAME");
             if (string.IsNullOrWhiteSpace(secretName))
             {
                 _cache = new Dictionary<string, string>();
