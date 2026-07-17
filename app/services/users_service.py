@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 from dataclasses import asdict
 from datetime import datetime, timezone
 from typing import Any
@@ -23,6 +24,10 @@ from app.schemas.users_schema import (
 
 logger = logging.getLogger(__name__)
 
+# Allowlists for sort parameters — prevents SQL injection via ORDER BY
+_ALLOWED_SORT_BY = {"family_name", "email_address", "zoho_modified_at", "local_synced_at"}
+_ALLOWED_SORT_ORDER = {"asc", "desc"}
+
 
 class UsersService:
     def __init__(self, connection: ZohoHttpConnectionConnection) -> None:
@@ -35,28 +40,25 @@ class UsersService:
         self._log(json.dumps({"event": "validation_failure", "message": message}))
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Validation Error")
 
-    def _validate_auth(self, authorization: str, scope: str) -> str:
-        if not authorization or not authorization.lower().startswith("zoho-oauthtoken "):
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication Error")
-        token = authorization.split(" ", 1)[1].strip()
-        if not token:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication Error")
-        if not self._connection.token_has_scope(token, scope):
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Authentication Error")
-        return token
+    def _validate_api_key(self, api_key: str) -> None:
+        """Validate inbound X-API-Key header against API_KEY env var."""
+        expected = os.environ.get("API_KEY", "")
+        if not expected or api_key != expected:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or missing API key")
 
-    def create_user(self, request: Request, payload: CreateUserRequest, authorization: str, x_correlation_id: str | None) -> CreateUserResponse:
+    def create_user(self, request: Request, payload: CreateUserRequest, api_key: str, x_correlation_id: str | None) -> CreateUserResponse:
         self._log(json.dumps({"event": "create_user", "resource": "users", "correlation_id": x_correlation_id}))
-        self._validate_auth(authorization, "ZohoCRM.users.CREATE")
+        self._validate_api_key(api_key)
         if len(payload.users) != 1:
             self._raise_validation("users array must contain exactly one user")
         user = payload.users[0]
-        status_code, duplicate_body = self._connection.request("GET", "/crm/v8/users", token=authorization.split(" ", 1)[1].strip(), params={"type": "AllUsers", "page": 1, "per_page": 10})
+        # Duplicate email pre-check
+        status_code, duplicate_body = self._connection.request("GET", "/crm/v8/users", params={"type": "AllUsers", "page": 1, "per_page": 10})
         if status_code == 200 and isinstance(duplicate_body, dict):
             for existing in duplicate_body.get("users", []):
                 if existing.get("email") == user.email:
-                    raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Resource Not Found")
-        status_code, body = self._connection.request("POST", "/crm/v8/users", token=authorization.split(" ", 1)[1].strip(), json={"users": [user.model_dump(exclude_none=True)]})
+                    raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="DUPLICATE_EMAIL")
+        status_code, body = self._connection.request("POST", "/crm/v8/users", json={"users": [user.model_dump(exclude_none=True)]})
         if status_code not in (200, 201):
             raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="Service Unavailable")
         zoho_id = ""
@@ -67,31 +69,29 @@ class UsersService:
                 zoho_id = str(details.get("id", ""))
         if not zoho_id:
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal Error")
-        response = CreateUserResponse(status="success", zoho_id=zoho_id, email=user.email, created_at=datetime.now(timezone.utc))
-        return response
+        return CreateUserResponse(status="success", zoho_id=zoho_id, email=user.email, created_at=datetime.now(timezone.utc))
 
-    def get_zoho_users(self, request: Request, authorization: str, x_correlation_id: str | None, if_modified_since: str | None, zoho_id: str | None, type: str | None, page: int | None, per_page: int | None) -> UserResponse | UserListResponse:
+    def get_zoho_users(self, request: Request, api_key: str, x_correlation_id: str | None, if_modified_since: str | None, zoho_id: str | None, type: str | None, page: int | None, per_page: int | None) -> UserResponse | UserListResponse:
         self._log(json.dumps({"event": "get_zoho_users", "resource": "users", "correlation_id": x_correlation_id}))
-        self._validate_auth(authorization, "ZohoCRM.users.READ")
-        token = authorization.split(" ", 1)[1].strip()
+        self._validate_api_key(api_key)
         if zoho_id is not None:
-            status_code, body = self._connection.request("GET", f"/crm/v8/users/{zoho_id}", token=token, headers={"If-Modified-Since": if_modified_since} if if_modified_since else None)
+            status_code, body = self._connection.request("GET", f"/crm/v8/users/{zoho_id}", headers={"If-Modified-Since": if_modified_since} if if_modified_since else None)
             if status_code == 404:
-                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resource Not Found")
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="USER_NOT_FOUND")
             if status_code != 200 or not isinstance(body, dict):
                 raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="Service Unavailable")
             users = body.get("users", [])
             if not users:
-                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resource Not Found")
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="USER_NOT_FOUND")
             return UserResponse(status="success", user=users[0])
-        status_code, body = self._connection.request("GET", "/crm/v8/users", token=token, params={"type": type or "AllUsers", "page": page or 1, "per_page": per_page or 50}, headers={"If-Modified-Since": if_modified_since} if if_modified_since else None)
+        status_code, body = self._connection.request("GET", "/crm/v8/users", params={"type": type or "AllUsers", "page": page or 1, "per_page": per_page or 50}, headers={"If-Modified-Since": if_modified_since} if if_modified_since else None)
         if status_code != 200 or not isinstance(body, dict):
             raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="Service Unavailable")
         return UserListResponse(status="success", info=body.get("info", {}), users=body.get("users", []))
 
-    def sync_users(self, request: Request, payload: DeltaSyncRequest, authorization: str, x_correlation_id: str | None) -> DeltaSyncResponse:
+    def sync_users(self, request: Request, payload: DeltaSyncRequest, api_key: str, x_correlation_id: str | None) -> DeltaSyncResponse:
         self._log(json.dumps({"event": "sync_users", "resource": "users", "correlation_id": x_correlation_id}))
-        self._validate_auth(authorization, "ZohoCRM.users.READ")
+        self._validate_api_key(api_key)
         conn = get_conn()
         try:
             conn.rollback()
@@ -110,8 +110,9 @@ class UsersService:
                 errors = 0
                 records_read = 0
                 pages_fetched = 0
+                start_time = datetime.now(timezone.utc)
                 while more_records:
-                    status_code, body = self._connection.request("GET", "/crm/v8/users", token=authorization.split(" ", 1)[1].strip(), params={"type": payload.type or "AllUsers", "page": page, "per_page": payload.per_page}, headers={"If-Modified-Since": watermark.isoformat()})
+                    status_code, body = self._connection.request("GET", "/crm/v8/users", params={"type": payload.type or "AllUsers", "page": page, "per_page": payload.per_page}, headers={"If-Modified-Since": watermark.isoformat()})
                     if status_code == 304:
                         break
                     if status_code != 200 or not isinstance(body, dict):
@@ -134,7 +135,11 @@ class UsersService:
                                 pass
                         try:
                             self._upsert_user(cursor, user)
-                            upserted += 1
+                            # cursor.rowcount > 0 means a row was inserted or updated
+                            if cursor.rowcount > 0:
+                                upserted += 1
+                            else:
+                                unchanged += 1
                         except Exception as exc:
                             errors += 1
                             logger.error(str(exc))
@@ -144,7 +149,8 @@ class UsersService:
                     ("zoho_users", new_watermark, upserted),
                 )
                 conn.commit()
-                return DeltaSyncResponse(status="success", watermark_used=watermark, new_watermark=new_watermark, pages_fetched=pages_fetched, zoho_records_read=records_read, upserted=upserted, unchanged=unchanged, errors=errors, sync_duration_ms=0)
+                duration_ms = int((datetime.now(timezone.utc) - start_time).total_seconds() * 1000)
+                return DeltaSyncResponse(status="success", watermark_used=watermark, new_watermark=new_watermark, pages_fetched=pages_fetched, zoho_records_read=records_read, upserted=upserted, unchanged=unchanged, errors=errors, sync_duration_ms=duration_ms)
         except Psycopg2Error as exc:
             conn.rollback()
             logger.error(str(exc), exc_info=True)
@@ -180,9 +186,14 @@ class UsersService:
             ),
         )
 
-    def get_local_users(self, request: Request, authorization: str, x_correlation_id: str | None, user_pk: int | None, account_status: str | None, zoho_role_id: str | None, zoho_profile_id: str | None, is_confirmed: bool | None, synced_after: str | None, page: int | None, page_size: int | None, sort_by: str | None, sort_order: str | None, zoho_uid: str | None = None) -> LocalUserResponse | LocalUserListResponse:
+    def get_local_users(self, request: Request, api_key: str, x_correlation_id: str | None, user_pk: int | None, account_status: str | None, zoho_role_id: str | None, zoho_profile_id: str | None, is_confirmed: bool | None, synced_after: str | None, page: int | None, page_size: int | None, sort_by: str | None, sort_order: str | None, zoho_uid: str | None = None) -> LocalUserResponse | LocalUserListResponse:
         self._log(json.dumps({"event": "get_local_users", "resource": "users", "correlation_id": x_correlation_id}))
-        self._validate_auth(authorization, "ZohoCRM.users.READ")
+        self._validate_api_key(api_key)
+
+        # Validate sort params against allowlist — prevents SQL injection via ORDER BY
+        safe_sort_by = sort_by if sort_by in _ALLOWED_SORT_BY else "family_name"
+        safe_sort_order = sort_order if sort_order in _ALLOWED_SORT_ORDER else "asc"
+
         conn = get_conn()
         try:
             conn.rollback()
@@ -192,39 +203,48 @@ class UsersService:
                     cursor.execute("SELECT * FROM crm_users WHERE user_pk = %s", (user_pk,))
                     row = cursor.fetchone()
                     if not row:
-                        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resource Not Found")
+                        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="USER_NOT_FOUND")
                     return LocalUserResponse(status="success", user=self._row_to_local_user(cursor, row))
                 if zoho_uid is not None:
                     cursor.execute("SELECT * FROM crm_users WHERE zoho_uid = %s", (zoho_uid,))
                     row = cursor.fetchone()
                     if not row:
-                        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resource Not Found")
+                        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="USER_NOT_FOUND")
                     return LocalUserResponse(status="success", user=self._row_to_local_user(cursor, row))
-                query = "SELECT * FROM crm_users WHERE 1=1"
-                params: list[Any] = []
+
+                # Build WHERE clause — same params used for both SELECT and COUNT
+                where = "WHERE 1=1"
+                filter_params: list[Any] = []
                 if account_status is not None:
-                    query += " AND account_status = %s"
-                    params.append(account_status)
+                    where += " AND account_status = %s"
+                    filter_params.append(account_status)
                 if zoho_role_id is not None:
-                    query += " AND zoho_role_id = %s"
-                    params.append(zoho_role_id)
+                    where += " AND zoho_role_id = %s"
+                    filter_params.append(zoho_role_id)
                 if zoho_profile_id is not None:
-                    query += " AND zoho_profile_id = %s"
-                    params.append(zoho_profile_id)
+                    where += " AND zoho_profile_id = %s"
+                    filter_params.append(zoho_profile_id)
                 if is_confirmed is not None:
-                    query += " AND is_confirmed = %s"
-                    params.append(is_confirmed)
+                    where += " AND is_confirmed = %s"
+                    filter_params.append(is_confirmed)
                 if synced_after is not None:
-                    query += " AND local_synced_at >= %s"
-                    params.append(synced_after)
-                query += f" ORDER BY {sort_by or 'family_name'} {sort_order or 'asc'} LIMIT %s OFFSET %s"
-                params.extend([page_size or 50, ((page or 1) - 1) * (page_size or 50)])
-                cursor.execute(query, tuple(params))
-                rows = cursor.fetchall()
-                cursor.execute("SELECT COUNT(*) FROM crm_users WHERE 1=1", ())
+                    where += " AND local_synced_at >= %s"
+                    filter_params.append(synced_after)
+
+                # COUNT uses the same WHERE — without LIMIT/OFFSET
+                cursor.execute(f"SELECT COUNT(*) FROM crm_users {where}", tuple(filter_params))
                 total_count = cursor.fetchone()[0]
+
+                # SELECT with ORDER BY + pagination
+                lim = page_size or 50
+                off = ((page or 1) - 1) * lim
+                cursor.execute(
+                    f"SELECT * FROM crm_users {where} ORDER BY {safe_sort_by} {safe_sort_order} LIMIT %s OFFSET %s",
+                    tuple(filter_params) + (lim, off)
+                )
+                rows = cursor.fetchall()
                 users = [self._row_to_local_user(cursor, row) for row in rows]
-                return LocalUserListResponse(status="success", page=page or 1, page_size=page_size or 50, total_count=total_count, users=users)
+                return LocalUserListResponse(status="success", page=page or 1, page_size=lim, total_count=total_count, users=users)
         except Psycopg2Error as exc:
             conn.rollback()
             logger.error(str(exc), exc_info=True)
