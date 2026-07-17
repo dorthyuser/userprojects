@@ -38,7 +38,9 @@ class ZohoHttpConnectionConnection:
         self._token_url: str = os.environ.get("ZOHOTOKENURL", "")
         self._client_id: str = _resolve_credential("ZOHOCLIENTID")
         self._client_secret: str = _resolve_credential("ZOHOCLIENTSECRET")
-        self._refresh_token: str = _resolve_credential("ZOHOREFRESHTOKEN")
+        # FIX: renamed from _refresh_token to _stored_refresh_token
+        # to avoid shadowing the _refresh_token() method
+        self._stored_refresh_token: str = _resolve_credential("ZOHOREFRESHTOKEN")
         self._api_domain: str = self._base_url
         self._access_token: str = ""
         self._token_expiry: float = 0.0
@@ -61,7 +63,7 @@ class ZohoHttpConnectionConnection:
             "grant_type": "refresh_token",
             "client_id": self._client_id,
             "client_secret": self._client_secret,
-            "refresh_token": self._refresh_token,
+            "refresh_token": self._stored_refresh_token,  # FIX: use renamed attribute
         }
         response: requests.Response = self._token_session.post(self._token_url, data=payload, timeout=(5, 30))
         if not response.ok:
@@ -86,10 +88,7 @@ class ZohoHttpConnectionConnection:
                 if self._is_token_expired():
                     self._refresh_token()
 
-    def token_has_scope(self, token: str, scope: str) -> bool:
-        return bool(token) and bool(scope)
-
-    def request(self, method: str, path: str, token: str | None = None, params: dict[str, Any] | None = None, json_body: dict[str, Any] | None = None, json: dict[str, Any] | None = None, headers: dict[str, str] | None = None) -> tuple[int, Any]:
+    def request(self, method: str, path: str, params: dict[str, Any] | None = None, json_body: dict[str, Any] | None = None, json: dict[str, Any] | None = None, headers: dict[str, str] | None = None) -> tuple[int, Any]:
         self._ensure_token()
         request_headers: dict[str, str] = {"Authorization": f"Zoho-oauthtoken {self._access_token}"}
         if headers:
