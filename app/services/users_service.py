@@ -141,7 +141,7 @@ class UsersService:
                         break
                     for user in users:
                         records_read += 1
-                        modified_time = user.get("modified_time")
+                        modified_time = user.get("Modified_Time") or user.get("modified_time")
                         if modified_time:
                             try:
                                 modified_dt = datetime.fromisoformat(modified_time.replace("Z", "+00:00"))
@@ -156,6 +156,8 @@ class UsersService:
                             else:
                                 unchanged += 1
                         except Exception as exc:
+                            conn.rollback()
+                            conn.autocommit = False
                             errors += 1
                             _log_error("sync_users_upsert_error", zoho_id=user.get("id"), error=str(exc))
                     page += 1
@@ -185,7 +187,7 @@ class UsersService:
                 (user.get("profile") or {}).get("id"), (user.get("profile") or {}).get("name"),
                 (user.get("reporting_to") or {}).get("id"),
                 user.get("country"), user.get("country_locale"), user.get("time_zone"),
-                user.get("created_time"), user.get("modified_time"),
+                user.get("created_time"), user.get("Modified_Time") or user.get("modified_time"),
             ),
         )
 
