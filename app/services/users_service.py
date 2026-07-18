@@ -9,7 +9,7 @@ from psycopg2 import Error as Psycopg2Error
 
 from app.connections.zoho_http_connection import ZohoHttpConnectionConnection, get_zoho_http_connection
 from app.db.connection import get_conn, release_conn
-from app.models.users_model import LocalUserRecord, SyncSummary, ZohoUserRecord
+from app.models.users_model import SyncSummary, ZohoUserRecord
 from app.schemas.users_schema import CreateUserRequest, SyncUsersRequest
 
 logger = logging.getLogger(__name__)
