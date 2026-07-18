@@ -224,7 +224,8 @@ class UsersService:
                     sync_duration_ms=0,
                     error_detail=error_detail or None,
                 )
-                return 200 if not errors else 207, summary.model_dump(exclude_none=True)
+                from dataclasses import asdict
+                return 200 if not errors else 207, {k: v for k, v in asdict(summary).items() if v is not None}
         except Psycopg2Error as exc:
             conn.rollback()
             logger.error(str(exc))
