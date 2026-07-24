@@ -1,0 +1,1 @@
+Csharpae1012 Lambda project targeting .NET 8 for PostgreSQL-backed adverse event reporting.
