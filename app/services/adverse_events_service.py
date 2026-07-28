@@ -105,6 +105,8 @@ def create_adverse_event(request: Request, payload: AdverseEventCreateRequest) -
     _log("INFO", "VALIDATION", "SUCCESS", request_id, trial_id=payload.trialId, patient_id=payload.patientId)
     validated = _validate_request(payload)
     conn = None
+    ae_id = None
+    notification_id = None
     try:
         conn = get_conn()
         conn.rollback()

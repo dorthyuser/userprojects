@@ -35,4 +35,11 @@ def get_conn():
     return get_pool().getconn()
 
 def release_conn(conn):
-    get_pool().putconn(conn)
+    pool_obj = get_pool()
+    try:
+        pool_obj.putconn(conn)
+    except psycopg2.pool.PoolError:
+        try:
+            conn.close()
+        except Exception:
+            pass
