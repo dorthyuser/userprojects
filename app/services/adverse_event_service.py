@@ -1,7 +1,6 @@
 import json
 import logging
 import secrets
-from dataclasses import asdict
 from datetime import datetime, timezone
 from typing import Any
 
@@ -75,11 +74,11 @@ def create_adverse_event(payload: AdverseEventCreateRequest) -> AdverseEventCrea
         conn.rollback()
         conn.autocommit = False
         with conn.cursor() as cursor:
-            cursor.execute("SELECT 1 FROM trials WHERE trial_id = %s AND active = TRUE", (coerced.trialId,))
+            cursor.execute("SELECT 1 FROM trials WHERE trial_id = %s AND status = 'ACTIVE'", (coerced.trialId,))
             if cursor.fetchone() is None:
                 raise HTTPException(status_code=400, detail="TRIAL_NOT_FOUND")
             cursor.execute(
-                "SELECT 1 FROM trial_enrolments WHERE trial_id = %s AND patient_id = %s",
+                "SELECT 1 FROM trial_enrolments WHERE trial_id = %s AND patient_id = %s AND status = 'ENROLLED'",
                 (coerced.trialId, coerced.patientId),
             )
             if cursor.fetchone() is None:
@@ -167,7 +166,7 @@ def create_adverse_event(payload: AdverseEventCreateRequest) -> AdverseEventCrea
             )
             logger.info(json.dumps({"event": "db_operation", "table": "ae_notifications", "operation": "INSERT"}))
             cursor.execute(
-                "INSERT INTO ae_notifications (notification_id, ae_id, trial_id, site_id, patient_id, ae_term_name, ctcae_grade, serious, outcome, priority, acknowledged, acknowledged_by, acknowledged_at, notified, message_id, created_at, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                "INSERT INTO ae_notifications (notification_id, ae_id, trial_id, site_id, patient_id, ae_term_name, ctcae_grade, serious, outcome, priority, acknowledged, acknowledged_by, acknowledged_at, sns_published, sns_message_id, created_at, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
                 (
                     notification.notification_id,
                     notification.ae_id,
@@ -190,12 +189,13 @@ def create_adverse_event(payload: AdverseEventCreateRequest) -> AdverseEventCrea
             )
             logger.info(json.dumps({"event": "db_operation", "table": "ae_audit_log", "operation": "INSERT"}))
             cursor.execute(
-                "INSERT INTO ae_audit_log (ae_id, action, performed_by, details) VALUES (%s, %s, %s, %s)",
+                "INSERT INTO ae_audit_log (ae_id, action, performed_by, sae, notes) VALUES (%s, %s, %s, %s, %s)",
                 (
                     ae_id,
                     "CREATED",
                     coerced.reportedBy,
-                    json.dumps(asdict(record), default=str),
+                    coerced.serious,
+                    f"AE {ae_id} submitted for trial {coerced.trialId}, patient {coerced.patientId}, grade {coerced.ctcaeGrade}",
                 ),
             )
         conn.commit()
@@ -247,7 +247,7 @@ def create_adverse_event(payload: AdverseEventCreateRequest) -> AdverseEventCrea
             with conn.cursor() as cursor:
                 logger.info(json.dumps({"event": "db_operation", "table": "ae_notifications", "operation": "UPDATE"}))
                 cursor.execute(
-                    "UPDATE ae_notifications SET notified = %s, message_id = %s, updated_at = NOW() WHERE notification_id = %s",
+                    "UPDATE ae_notifications SET sns_published = %s, sns_message_id = %s, updated_at = NOW() WHERE notification_id = %s",
                     (True, message_id, notification_id),
                 )
             conn.commit()
