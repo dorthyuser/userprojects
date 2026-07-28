@@ -93,12 +93,6 @@ def _build_notif_id(seq: int) -> str:
     return f"NOTIF-{datetime.now(timezone.utc).year}-{seq:06d}"
 
 
-def _publish_message(target: str, body: dict[str, Any], attributes: dict[str, str]) -> str:
-    client = boto3.client("sns")
-    response = client.publish(TopicArn=target, Message=json.dumps(body), MessageAttributes={k: {"DataType": "String", "StringValue": v} for k, v in attributes.items()}, Subject=body["aeTerm"])
-    return response.get("MessageId", "")
-
-
 def create_adverse_event(request: Request, payload: AdverseEventCreateRequest) -> AdverseEventCreateResponse:
     request_id = _get_request_id(request)
     start = datetime.now(timezone.utc)
@@ -134,7 +128,7 @@ def create_adverse_event(request: Request, payload: AdverseEventCreateRequest) -
             notif_record = NotificationRecord(notification_id=notification_id, ae_id=ae_id, trial_id=payload.trialId, site_id=payload.siteId, patient_id=payload.patientId, ae_term_name=payload.aeTermName, ctcae_grade=payload.ctcaeGrade, serious=validated["serious"], outcome=validated["outcome"], priority=validated["priority"], acknowledged=False, acknowledged_by=None, acknowledged_at=None, sns_published=False, sns_message_id=None, created_at=datetime.now(timezone.utc), updated_at=datetime.now(timezone.utc))
             cursor.execute("INSERT INTO adverse_events (ae_id, trial_id, site_id, patient_id, clinician_id, event_date, ae_term_code, ae_term_name, ctcae_grade, serious, outcome, action_taken, narrative, related_drug_id, reported_by, submitted_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", (ae_record.ae_id, ae_record.trial_id, ae_record.site_id, ae_record.patient_id, ae_record.clinician_id, ae_record.event_date, ae_record.ae_term_code, ae_record.ae_term_name, ae_record.ctcae_grade, ae_record.serious, ae_record.outcome, ae_record.action_taken, ae_record.narrative, ae_record.related_drug_id, ae_record.reported_by, ae_record.submitted_at))
             cursor.execute("INSERT INTO ae_notifications (notification_id, ae_id, trial_id, site_id, patient_id, ae_term_name, ctcae_grade, serious, outcome, priority, acknowledged, acknowledged_by, acknowledged_at, sns_published, sns_message_id, created_at, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", (notif_record.notification_id, notif_record.ae_id, notif_record.trial_id, notif_record.site_id, notif_record.patient_id, notif_record.ae_term_name, notif_record.ctcae_grade, notif_record.serious, notif_record.outcome, notif_record.priority, notif_record.acknowledged, notif_record.acknowledged_by, notif_record.acknowledged_at, notif_record.sns_published, notif_record.sns_message_id, notif_record.created_at, notif_record.updated_at))
-            cursor.execute("INSERT INTO ae_audit_log (ae_id, action, performed_by, sae, notes) VALUES (%s, %s, %s, %s, %s)", (ae_record.ae_id, "CREATED", payload.reportedBy, validated["serious"], "AE created and notification queued"))
+            cursor.execute("INSERT INTO ae_audit_log (ae_id, action, performed_by, sae, notes) VALUES (%s, %s, %s, %s, %s)", (ae_record.ae_id, "CREATED", payload.reportedBy, validated["serious"], "AE created and notification stored"))
         conn.commit()
     except HTTPException:
         if conn is not None:
@@ -153,53 +147,9 @@ def create_adverse_event(request: Request, payload: AdverseEventCreateRequest) -
     finally:
         if conn is not None:
             release_conn(conn)
-    sns_published = False
-    sns_message_id = None
-    try:
-        target = _required_env("NOTIFICATION_TARGET")
-        message_body = {
-            "aeId": ae_id,
-            "notificationId": notification_id,
-            "trialId": payload.trialId,
-            "siteId": payload.siteId,
-            "patientId": payload.patientId,
-            "aeTerm": f"{payload.aeTermName} ({payload.aeTermCode})",
-            "ctcaeGrade": payload.ctcaeGrade,
-            "serious": validated["serious"],
-            "priority": validated["priority"],
-            "outcome": validated["outcome"],
-            "eventDate": validated["event_date"].isoformat().replace("+00:00", "Z"),
-            "reportedBy": payload.reportedBy,
-            "submittedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
-        }
-        attributes = {
-            "ctcae_grade": str(payload.ctcaeGrade),
-            "serious": "true" if validated["serious"] else "false",
-            "priority": validated["priority"],
-            "fatal": "true" if payload.ctcaeGrade == 5 else "false",
-            "trial_id": payload.trialId,
-            "site_id": payload.siteId,
-        }
-        sns_message_id = _publish_message(target, message_body, attributes)
-        sns_published = True
-    except Exception as exc:
-        logger.error("Messaging dispatch failed for ae_id=%s: %s", ae_id, str(exc), exc_info=True)
-    try:
-        if sns_published:
-            conn = get_conn()
-            conn.rollback()
-            conn.autocommit = False
-            with conn.cursor() as cursor:
-                cursor.execute("UPDATE ae_notifications SET sns_published = true, sns_message_id = %s WHERE notification_id = %s", (sns_message_id, notification_id))
-            conn.commit()
-    except Exception as exc:
-        logger.warning("sns_published update failed for ae_id=%s: %s", ae_id, str(exc), exc_info=True)
-    finally:
-        if conn is not None:
-            release_conn(conn)
     duration_ms = int((datetime.now(timezone.utc) - start).total_seconds() * 1000)
-    _log("INFO", "MESSAGING", "SUCCESS", request_id, trial_id=payload.trialId, patient_id=payload.patientId, ae_id=ae_id, notification_id=notification_id, ctcae_grade=payload.ctcaeGrade, serious=validated["serious"], duration_ms=duration_ms)
-    return AdverseEventCreateResponse(status="success", aeId=ae_id, notificationId=notification_id, snsPublished=sns_published, snsMessageId=sns_message_id, message="Adverse event recorded. Notification stored and dispatched." if sns_published else "Adverse event recorded. Notification stored. Dispatch failed — logged.", receivedAt=datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"))
+    _log("INFO", "DB_WRITE", "SUCCESS", request_id, trial_id=payload.trialId, patient_id=payload.patientId, ae_id=ae_id, notification_id=notification_id, ctcae_grade=payload.ctcaeGrade, serious=validated["serious"], duration_ms=duration_ms)
+    return AdverseEventCreateResponse(status="success", aeId=ae_id, notificationId=notification_id, snsPublished=False, snsMessageId=None, message="Adverse event recorded. Notification stored.", receivedAt=datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"))
 
 
 def get_notifications(request: Request, trialId: str | None, siteId: str | None, ctcaeGrade: int | None, serious: bool | None, acknowledged: bool | None, priority: str | None, dateFrom: str | None, dateTo: str | None, page: int, pageSize: int) -> NotificationListResponse:
