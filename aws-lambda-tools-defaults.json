@@ -1,0 +1,10 @@
+{
+  "profile": "",
+  "region": "",
+  "configuration": "Release",
+  "function-runtime": "dotnet8",
+  "function-memory-size": 512,
+  "function-timeout": 120,
+  "function-handler": "Csharpae1039Lambda::Csharpae1039Lambda.Function::Csharpae1039",
+  "msbuild-parameters": "--self-contained false"
+}
