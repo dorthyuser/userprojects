@@ -13,7 +13,7 @@ _KEY_MAP = {
     "host": "host",
     "port": "port",
     "database": "dbname",
-    "user": "user",
+    "user": "username",
     "password": "password"
 }
 
