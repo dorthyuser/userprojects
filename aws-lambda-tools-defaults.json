@@ -1,0 +1,12 @@
+{
+  "profile": "default",
+  "region": "us-east-1",
+  "configuration": "Release",
+  "function-runtime": "dotnet8",
+  "function-memory-size": 512,
+  "function-timeout": 120,
+  "function-handler": "Csharpae1140Lambda::Csharpae1140Lambda.Function::Csharpae1140",
+  "function-name": "csharpae1140",
+  "framework": "net8.0",
+  "self-contained": false
+}
