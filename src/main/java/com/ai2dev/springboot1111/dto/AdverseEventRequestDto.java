@@ -7,7 +7,6 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 import java.time.Instant;
 
 public record AdverseEventRequestDto(
@@ -22,7 +21,7 @@ public record AdverseEventRequestDto(
         @NotNull Boolean serious,
         @NotNull AeOutcome outcome,
         @NotNull ActionTaken actionTaken,
-        @NotBlank @Size(max = 2000) String narrative,
+        @NotBlank String narrative,
         String relatedDrugId,
         @NotBlank @Email String reportedBy)
 {
