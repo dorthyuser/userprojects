@@ -4,7 +4,9 @@ import com.ai2dev.springboot1111.dto.AdverseEventNotificationResponseDto;
 import com.ai2dev.springboot1111.dto.AdverseEventRequestDto;
 import com.ai2dev.springboot1111.dto.AdverseEventResponseDto;
 import com.ai2dev.springboot1111.dto.NotificationSearchResponseDto;
-import com.ai2dev.springboot1111.model.ActionTaken;
+import com.ai2dev.springboot1111.exception.DuplicateEventException;
+import com.ai2dev.springboot1111.exception.EntityNotFoundException;
+import com.ai2dev.springboot1111.model.AdverseEventAuditLogEntity;
 import com.ai2dev.springboot1111.model.AdverseEventEntity;
 import com.ai2dev.springboot1111.model.AdverseEventNotificationEntity;
 import com.ai2dev.springboot1111.model.AeOutcome;
@@ -15,13 +17,11 @@ import com.ai2dev.springboot1111.repository.AdverseEventNotificationRepository;
 import com.ai2dev.springboot1111.repository.AdverseEventRepository;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
@@ -42,7 +42,8 @@ public class AdverseEventService
     private final AdverseEventNotificationRepository adverseEventNotificationRepository;
     private final AdverseEventAuditLogRepository adverseEventAuditLogRepository;
 
-    public AdverseEventService(JdbcTemplate jdbcTemplate,
+    public AdverseEventService(
+            JdbcTemplate jdbcTemplate,
             NamedParameterJdbcTemplate namedParameterJdbcTemplate,
             AdverseEventRepository adverseEventRepository,
             AdverseEventNotificationRepository adverseEventNotificationRepository,
@@ -60,6 +61,7 @@ public class AdverseEventService
     {
         logger.info("service=submitAdverseEvent resource=adverse_event step=VALIDATION");
         validateRequest(request);
+
         int grade = request.ctcaeGrade();
         boolean serious = grade >= 3 || Boolean.TRUE.equals(request.serious());
         AeOutcome outcome = grade == 5 ? AeOutcome.FATAL : request.outcome();
@@ -67,10 +69,14 @@ public class AdverseEventService
 
         verifyTrialExists(request.trialId());
         verifyPatientEnrolled(request.trialId(), request.patientId());
-        String existingAeId = findDuplicateAeId(request.trialId(), request.patientId(), request.aeTermCode(), request.eventDate());
+
+        // Bug fix 1+3: SQL uses NOW()-INTERVAL — no Instant param, checks submitted_at
+        String existingAeId = findDuplicateAeId(
+                request.trialId(), request.patientId(), request.aeTermCode());
         if (existingAeId != null)
         {
-            throw new IllegalStateException("DUPLICATE_AE");
+            // Bug fix 2: DuplicateEventException → 409 Conflict (not 500)
+            throw new DuplicateEventException("DUPLICATE_AE");
         }
 
         String aeId = generateAeId();
@@ -80,15 +86,41 @@ public class AdverseEventService
         try
         {
             logger.info("table=adverse_events operation=INSERT");
-            AdverseEventEntity savedAe = adverseEventRepository.save(new AdverseEventEntity(null, aeId, request.trialId(), request.siteId(), request.patientId(), request.clinicianId(), request.eventDate(), request.aeTermCode(), request.aeTermName(), grade, serious, outcome, request.actionTaken(), request.narrative(), request.relatedDrugId(), request.reportedBy(), receivedAt, receivedAt, receivedAt));
+            AdverseEventEntity savedAe = adverseEventRepository.save(
+                    new AdverseEventEntity(
+                            null, aeId,
+                            request.trialId(), request.siteId(), request.patientId(),
+                            request.clinicianId(), request.eventDate(),
+                            request.aeTermCode(), request.aeTermName(),
+                            grade, serious, outcome,
+                            request.actionTaken(), request.narrative(),
+                            request.relatedDrugId(), request.reportedBy(),
+                            receivedAt, receivedAt, receivedAt));
 
             logger.info("table=ae_notifications operation=INSERT");
-            AdverseEventNotificationEntity savedNotification = adverseEventNotificationRepository.save(new AdverseEventNotificationEntity(null, notificationId, savedAe.aeId(), request.trialId(), request.siteId(), request.patientId(), request.aeTermName(), grade, serious, outcome, priority, false, null, null, receivedAt, receivedAt));
+            AdverseEventNotificationEntity savedNotification = adverseEventNotificationRepository.save(
+                    new AdverseEventNotificationEntity(
+                            null, notificationId, savedAe.aeId(),
+                            request.trialId(), request.siteId(), request.patientId(),
+                            request.aeTermName(), grade, serious, outcome,
+                            priority, false, null, null,
+                            receivedAt, receivedAt));
 
             logger.info("table=ae_audit_log operation=INSERT");
-            adverseEventAuditLogRepository.save(new com.ai2dev.springboot1111.model.AdverseEventAuditLogEntity(null, savedAe.aeId(), AuditAction.CREATED, request.reportedBy(), serious, "AE created", receivedAt));
+            adverseEventAuditLogRepository.save(
+                    new AdverseEventAuditLogEntity(
+                            null, savedAe.aeId(),
+                            AuditAction.CREATED,
+                            request.reportedBy(),
+                            serious, "AE created",
+                            receivedAt));
 
-            return new AdverseEventResponseDto("success", savedAe.aeId(), savedNotification.notificationId(), "Adverse event recorded and notification stored.", receivedAt);
+            return new AdverseEventResponseDto(
+                    "success",
+                    savedAe.aeId(),
+                    savedNotification.notificationId(),
+                    "Adverse event recorded and notification stored.",
+                    receivedAt);
         }
         catch (DataAccessException ex)
         {
@@ -97,73 +129,100 @@ public class AdverseEventService
         }
     }
 
-    public NotificationSearchResponseDto getNotifications(String trialId, String siteId, Integer ctcaeGrade, Boolean serious, Boolean acknowledged, String priority, Instant dateFrom, Instant dateTo, Integer page, Integer pageSize)
+    public NotificationSearchResponseDto getNotifications(
+            String trialId, String siteId, Integer ctcaeGrade,
+            Boolean serious, Boolean acknowledged, String priority,
+            Instant dateFrom, Instant dateTo,
+            Integer page, Integer pageSize)
     {
         logger.info("service=getNotifications resource=notification step=READ");
         if (pageSize != null && pageSize > 100)
         {
             throw new IllegalArgumentException("INVALID_PAGE_SIZE");
         }
-        StringBuilder sql = new StringBuilder("SELECT notification_id, ae_id, trial_id, site_id, patient_id, ae_term_name, ctcae_grade, serious, priority, outcome, acknowledged, acknowledged_by, acknowledged_at, created_at FROM ae_notifications WHERE 1=1");
+
+        // Bug fix 4: build filter clause separately so count query works even
+        // when no filters are supplied (sql.indexOf(" AND") returns -1 otherwise)
+        StringBuilder filterSql = new StringBuilder();
         MapSqlParameterSource params = new MapSqlParameterSource();
+
         if (trialId != null && !trialId.isBlank())
         {
-            sql.append(" AND trial_id = :trialId");
+            filterSql.append(" AND trial_id = :trialId");
             params.addValue("trialId", trialId);
         }
         if (siteId != null && !siteId.isBlank())
         {
-            sql.append(" AND site_id = :siteId");
+            filterSql.append(" AND site_id = :siteId");
             params.addValue("siteId", siteId);
         }
         if (ctcaeGrade != null)
         {
-            sql.append(" AND ctcae_grade = :ctcaeGrade");
+            filterSql.append(" AND ctcae_grade = :ctcaeGrade");
             params.addValue("ctcaeGrade", ctcaeGrade);
         }
         if (serious != null)
         {
-            sql.append(" AND serious = :serious");
+            filterSql.append(" AND serious = :serious");
             params.addValue("serious", serious);
         }
         if (acknowledged != null)
         {
-            sql.append(" AND acknowledged = :acknowledged");
+            filterSql.append(" AND acknowledged = :acknowledged");
             params.addValue("acknowledged", acknowledged);
         }
         if (priority != null && !priority.isBlank())
         {
-            sql.append(" AND priority = :priority");
+            filterSql.append(" AND priority = :priority");
             params.addValue("priority", priority);
         }
+        // Bug fix 5: wrap Instant in Timestamp.from() so JDBC driver maps correctly
         if (dateFrom != null)
         {
-            sql.append(" AND created_at >= :dateFrom");
-            params.addValue("dateFrom", dateFrom);
+            filterSql.append(" AND created_at >= :dateFrom");
+            params.addValue("dateFrom", Timestamp.from(dateFrom));
         }
         if (dateTo != null)
         {
-            sql.append(" AND created_at <= :dateTo");
-            params.addValue("dateTo", dateTo);
+            filterSql.append(" AND created_at <= :dateTo");
+            params.addValue("dateTo", Timestamp.from(dateTo));
         }
-        String countSql = "SELECT COUNT(*) FROM ae_notifications WHERE 1=1" + sql.substring(sql.indexOf(" AND"));
-        long total = namedParameterJdbcTemplate.queryForObject(countSql, params, Long.class);
+
+        String baseTable = "FROM ae_notifications WHERE 1=1";
+        String countSql = "SELECT COUNT(*) " + baseTable + filterSql;
+        Long total = namedParameterJdbcTemplate.queryForObject(countSql, params, Long.class);
+        long totalCount = total == null ? 0L : total;
+
         int effectivePage = page == null ? 1 : page;
         int effectivePageSize = pageSize == null ? 20 : pageSize;
-        sql.append(" ORDER BY created_at DESC LIMIT :limit OFFSET :offset");
+
+        String dataSql = "SELECT notification_id, ae_id, trial_id, site_id, patient_id, " +
+                "ae_term_name, ctcae_grade, serious, priority, outcome, " +
+                "acknowledged, acknowledged_by, acknowledged_at, created_at " +
+                baseTable + filterSql +
+                " ORDER BY created_at DESC LIMIT :limit OFFSET :offset";
         params.addValue("limit", effectivePageSize);
-        params.addValue("offset", (effectivePage - 1L) * effectivePageSize);
-        List<AdverseEventNotificationResponseDto> notifications = namedParameterJdbcTemplate.query(sql.toString(), params, (rs, rowNum) -> mapNotification(rs));
-        return new NotificationSearchResponseDto("success", total, effectivePage, effectivePageSize, notifications);
+        params.addValue("offset", (long) (effectivePage - 1) * effectivePageSize);
+
+        List<AdverseEventNotificationResponseDto> notifications =
+                namedParameterJdbcTemplate.query(dataSql, params, (rs, rowNum) -> mapNotification(rs));
+
+        return new NotificationSearchResponseDto(
+                "success", totalCount, effectivePage, effectivePageSize, notifications);
     }
+
+    // ── Private helpers ───────────────────────────────────────────────────────
 
     private void validateRequest(AdverseEventRequestDto request)
     {
-        if (request == null)
-        {
-            throw new IllegalArgumentException("MISSING_REQUIRED_FIELD");
-        }
-        if (isBlank(request.trialId()) || isBlank(request.siteId()) || isBlank(request.patientId()) || isBlank(request.clinicianId()) || request.eventDate() == null || isBlank(request.aeTermCode()) || isBlank(request.aeTermName()) || request.ctcaeGrade() == null || request.serious() == null || request.outcome() == null || request.actionTaken() == null || isBlank(request.narrative()) || isBlank(request.reportedBy()))
+        if (request == null
+                || isBlank(request.trialId()) || isBlank(request.siteId())
+                || isBlank(request.patientId()) || isBlank(request.clinicianId())
+                || request.eventDate() == null
+                || isBlank(request.aeTermCode()) || isBlank(request.aeTermName())
+                || request.ctcaeGrade() == null || request.serious() == null
+                || request.outcome() == null || request.actionTaken() == null
+                || isBlank(request.narrative()) || isBlank(request.reportedBy()))
         {
             throw new IllegalArgumentException("MISSING_REQUIRED_FIELD");
         }
@@ -171,14 +230,7 @@ public class AdverseEventService
         {
             throw new IllegalArgumentException("INVALID_CTCAE_GRADE");
         }
-        if (request.outcome() == null)
-        {
-            throw new IllegalArgumentException("INVALID_OUTCOME");
-        }
-        if (request.actionTaken() == null)
-        {
-            throw new IllegalArgumentException("INVALID_ACTION_TAKEN");
-        }
+        // Bug fix 6: @Size(max=2000) removed from DTO so this is now reachable
         if (request.narrative().length() > 2000)
         {
             throw new IllegalArgumentException("NARRATIVE_TOO_LONG");
@@ -188,47 +240,77 @@ public class AdverseEventService
     private void verifyTrialExists(String trialId)
     {
         logger.info("table=trials operation=SELECT");
-        Integer id = jdbcTemplate.query("SELECT id FROM trials WHERE trial_id = ? AND status = 'ACTIVE'", rs -> rs.next() ? rs.getInt("id") : null, trialId);
+        Integer id = jdbcTemplate.query(
+                "SELECT id FROM trials WHERE trial_id = ? AND status = 'ACTIVE'",
+                rs -> rs.next() ? rs.getInt("id") : null,
+                trialId);
         if (id == null)
         {
-            throw new com.ai2dev.springboot1111.exception.EntityNotFoundException("TRIAL_NOT_FOUND");
+            throw new EntityNotFoundException("TRIAL_NOT_FOUND");
         }
     }
 
     private void verifyPatientEnrolled(String trialId, String patientId)
     {
         logger.info("table=trial_enrolments operation=SELECT");
-        Integer id = jdbcTemplate.query("SELECT id FROM trial_enrolments WHERE trial_id = ? AND patient_id = ? AND status = 'ENROLLED'", rs -> rs.next() ? rs.getInt("id") : null, trialId, patientId);
+        Integer id = jdbcTemplate.query(
+                "SELECT id FROM trial_enrolments WHERE trial_id = ? AND patient_id = ? AND status = 'ENROLLED'",
+                rs -> rs.next() ? rs.getInt("id") : null,
+                trialId, patientId);
         if (id == null)
         {
-            throw new com.ai2dev.springboot1111.exception.EntityNotFoundException("PATIENT_NOT_FOUND");
+            throw new EntityNotFoundException("PATIENT_NOT_FOUND");
         }
     }
 
-    private String findDuplicateAeId(String trialId, String patientId, String aeTermCode, Instant eventDate)
+    // Bug fix 1+3: use NOW()-INTERVAL in SQL — no Instant param,
+    // checks submitted_at (server time) not eventDate (user-supplied)
+    private String findDuplicateAeId(String trialId, String patientId, String aeTermCode)
     {
         logger.info("table=adverse_events operation=SELECT");
-        List<String> ids = jdbcTemplate.query("SELECT ae_id FROM adverse_events WHERE trial_id = ? AND patient_id = ? AND ae_term_code = ? AND submitted_at >= ?", (rs, rowNum) -> rs.getString("ae_id"), trialId, patientId, aeTermCode, eventDate.minusSeconds(60));
+        List<String> ids = jdbcTemplate.query(
+                "SELECT ae_id FROM adverse_events " +
+                "WHERE trial_id = ? AND patient_id = ? AND ae_term_code = ? " +
+                "AND submitted_at >= NOW() - INTERVAL '60 seconds'",
+                (rs, rowNum) -> rs.getString("ae_id"),
+                trialId, patientId, aeTermCode);
         return ids.isEmpty() ? null : ids.get(0);
     }
 
+    // Bug fix 7: use Long.class — sequences return BIGINT not INTEGER
     private String generateAeId()
     {
-        Integer seq = jdbcTemplate.queryForObject("SELECT nextval('ae_id_seq')", Integer.class);
+        Long seq = jdbcTemplate.queryForObject("SELECT nextval('ae_id_seq')", Long.class);
         int year = ZonedDateTime.now(ZoneOffset.UTC).getYear();
         return String.format("AE-%d-%06d", year, seq);
     }
 
     private String generateNotificationId()
     {
-        Integer seq = jdbcTemplate.queryForObject("SELECT nextval('notif_id_seq')", Integer.class);
+        Long seq = jdbcTemplate.queryForObject("SELECT nextval('notif_id_seq')", Long.class);
         int year = ZonedDateTime.now(ZoneOffset.UTC).getYear();
         return String.format("NOTIF-%d-%06d", year, seq);
     }
 
     private AdverseEventNotificationResponseDto mapNotification(ResultSet rs) throws SQLException
     {
-        return new AdverseEventNotificationResponseDto(rs.getString("notification_id"), rs.getString("ae_id"), rs.getString("trial_id"), rs.getString("site_id"), rs.getString("patient_id"), rs.getString("ae_term_name"), rs.getInt("ctcae_grade"), rs.getBoolean("serious"), rs.getString("priority"), rs.getString("outcome"), rs.getBoolean("acknowledged"), rs.getString("acknowledged_by"), rs.getTimestamp("acknowledged_at") == null ? null : rs.getTimestamp("acknowledged_at").toInstant(), rs.getTimestamp("created_at").toInstant());
+        return new AdverseEventNotificationResponseDto(
+                rs.getString("notification_id"),
+                rs.getString("ae_id"),
+                rs.getString("trial_id"),
+                rs.getString("site_id"),
+                rs.getString("patient_id"),
+                rs.getString("ae_term_name"),
+                rs.getInt("ctcae_grade"),
+                rs.getBoolean("serious"),
+                rs.getString("priority"),
+                rs.getString("outcome"),
+                rs.getBoolean("acknowledged"),
+                rs.getString("acknowledged_by"),
+                rs.getTimestamp("acknowledged_at") == null
+                        ? null
+                        : rs.getTimestamp("acknowledged_at").toInstant(),
+                rs.getTimestamp("created_at").toInstant());
     }
 
     private boolean isBlank(String value)
