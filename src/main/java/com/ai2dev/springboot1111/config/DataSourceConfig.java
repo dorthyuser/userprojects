@@ -9,28 +9,33 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
+import org.springframework.data.jdbc.core.dialect.JdbcDialect;
+import org.springframework.data.jdbc.core.dialect.JdbcPostgresDialect;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient;
 import software.amazon.awssdk.services.secretsmanager.model.GetSecretValueRequest;
 import javax.sql.DataSource;
 
 @Configuration
-public class DataSourceConfig {
-
+public class DataSourceConfig
+{
     private static final Logger log = LoggerFactory.getLogger(DataSourceConfig.class);
 
     @Bean
     @Primary
-    public DataSource dataSource() {
+    public DataSource dataSource()
+    {
         String secretName = System.getenv("AWS_SECRET_NAME");
-        if (secretName == null || secretName.isBlank()) {
+        if (secretName == null || secretName.isBlank())
+        {
             throw new RuntimeException("AWS_SECRET_NAME environment variable is required but not set");
         }
         String region = System.getenv().getOrDefault("AWS_REGION", "eu-west-2");
         log.info("Fetching DB credentials from Secrets Manager");
         try (SecretsManagerClient client = SecretsManagerClient.builder()
                 .region(Region.of(region))
-                .build()) {
+                .build())
+        {
             String secretJson = client.getSecretValue(
                     GetSecretValueRequest.builder().secretId(secretName).build()
             ).secretString();
@@ -52,9 +57,20 @@ public class DataSourceConfig {
             cfg.addDataSourceProperty("stringtype", "unspecified");
             log.info("DataSource initialised successfully");
             return new HikariDataSource(cfg);
-        } catch (Exception e) {
+        }
+        catch (Exception e)
+        {
             log.error("Failed to initialise DataSource from Secrets Manager: {}", e.getMessage());
             throw new RuntimeException("DataSource init failed", e);
         }
+    }
+
+    // Bug fix 8: register PostgreSQL dialect so Spring Data JDBC does NOT
+    // double-quote column names — without this every INSERT/SELECT fails
+    // with "bad SQL grammar" due to quoted identifiers like "ae_id"
+    @Bean
+    public JdbcDialect jdbcDialect()
+    {
+        return JdbcPostgresDialect.INSTANCE;
     }
 }
