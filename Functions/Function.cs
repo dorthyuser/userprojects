@@ -13,13 +13,10 @@ public sealed class Function
     private readonly NpgsqlDataSource _dataSource;
     private readonly Service _service;
 
-    // Single shared HttpClient for gateway calls (thread-safe, reuse across invocations)
-    private static readonly HttpClient SharedHttpClient = new();
-
     public Function()
     {
         _dataSource = BuildDataSource();
-        _service = new Service(_dataSource, SharedHttpClient);
+        _service = new Service(_dataSource);
     }
 
     public async Task<APIGatewayProxyResponse> Paymentcsharp441(APIGatewayProxyRequest request, ILambdaContext context)
