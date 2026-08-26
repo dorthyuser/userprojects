@@ -8,12 +8,6 @@ public static class SecretsHelper
 {
     private static readonly object Sync = new();
     private static Dictionary<string, string>? _cache;
-
-    /// <summary>
-    /// Returns the value for <paramref name="secretKey"/> from the AWS Secrets Manager secret
-    /// named by <c>AWS_SECRET_NAME</c>, falling back to the environment variable
-    /// <paramref name="envFallback"/> if the secret is unavailable or the key is absent.
-    /// </summary>
     public static string Get(string secretKey, string envFallback)
     {
         if (_cache == null)
