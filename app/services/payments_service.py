@@ -6,6 +6,7 @@ import os
 import secrets
 import time
 from dataclasses import asdict
+from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Any
 
@@ -57,6 +58,11 @@ def _log(step: str, outcome: str, **kwargs: Any) -> None:
     logger.info(json.dumps(_json_safe(payload), default=str))
 
 
+def _now_utc() -> str:
+    """Return current UTC timestamp in ISO 8601 format."""
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
 def _payment_id(seq: int) -> str:
     return f"PAY-{time.gmtime().tm_year}-{seq:06d}"
 
@@ -69,7 +75,14 @@ def _invoice_id(seq: int) -> str:
     return f"INV-{time.gmtime().tm_year}-{seq:06d}"
 
 
-def _gateway_create_order(amount: Decimal, currency: str, payment_method: str, email: str, description: str | None, retries: int) -> str:
+def _gateway_create_order(
+    amount: Decimal,
+    currency: str,
+    payment_method: str,
+    email: str,
+    description: str | None,
+    retries: int,
+) -> str:
     secret = secrets.token_hex(16)
     for attempt in range(retries + 1):
         try:
@@ -82,11 +95,17 @@ def _gateway_create_order(amount: Decimal, currency: str, payment_method: str, e
     raise HTTPException(status_code=500, detail="Service Unavailable")
 
 
+# ─────────────────────────────────────────────────────────────
+# POST /v1/payments — Initiate Payment
+# ─────────────────────────────────────────────────────────────
+
 def initiate_payment(payload: PaymentInitiateRequest) -> PaymentInitiateResponse:
     _log("VALIDATION", "SUCCESS", resource="payments")
+
     if payload.paymentMethod not in ALLOWED_PAYMENT_METHODS:
         _log("VALIDATION", "FAILURE", error="INVALID_PAYMENT_METHOD")
         raise HTTPException(status_code=400, detail="Validation Error")
+
     if payload.currency not in ALLOWED_CURRENCIES:
         _log("VALIDATION", "FAILURE", error="INVALID_CURRENCY")
         raise HTTPException(status_code=400, detail="Validation Error")
@@ -95,41 +114,104 @@ def initiate_payment(payload: PaymentInitiateRequest) -> PaymentInitiateResponse
     try:
         conn = get_conn()
         conn.rollback()
+
         with conn.cursor() as cursor:
+            # Step 4 — Verify plan exists and is ACTIVE
             _log("DB_WRITE", "SUCCESS", table="payment_plans", operation="SELECT")
-            cursor.execute("SELECT plan_id, amount, currency, plan_name, billing_cycle FROM payment_plans WHERE plan_id = %s AND status = 'ACTIVE'", (payload.planId,))
+            cursor.execute(
+                "SELECT plan_id, amount, currency, plan_name, billing_cycle "
+                "FROM payment_plans WHERE plan_id = %s AND status = 'ACTIVE'",
+                (payload.planId,),
+            )
             plan = cursor.fetchone()
             if plan is None:
                 raise HTTPException(status_code=400, detail="Validation Error")
+
             plan_id, plan_amount, plan_currency, plan_name, billing_cycle = plan
+
+            # Step 6 — Validate currency (hard reject — no coercion)
             if payload.currency != plan_currency:
                 raise HTTPException(status_code=400, detail="Validation Error")
+
+            # Step 5 — Coerce amount to plan price
             coerced_amount = Decimal(str(plan_amount))
             if Decimal(str(payload.amount)) != coerced_amount:
-                _log("VALIDATION", "SUCCESS", error="AMOUNT_MISMATCH")
+                _log("VALIDATION", "SUCCESS", note="AMOUNT_MISMATCH_COERCED",
+                     submitted=str(payload.amount), coerced=str(coerced_amount))
 
+            # Step 7 — Idempotency check (120-second window)
             _log("DB_WRITE", "SUCCESS", table="payments", operation="SELECT")
-            cursor.execute("SELECT payment_id FROM payments WHERE user_id = %s AND plan_id = %s AND initiated_at > NOW() - INTERVAL '120 seconds'", (payload.userId, payload.planId))
+            cursor.execute(
+                "SELECT payment_id FROM payments "
+                "WHERE user_id = %s AND plan_id = %s "
+                "AND initiated_at > NOW() - INTERVAL '120 seconds'",
+                (payload.userId, payload.planId),
+            )
             duplicate = cursor.fetchone()
             if duplicate is not None:
                 raise HTTPException(status_code=409, detail="Validation Error")
 
-            gateway_order_id = _gateway_create_order(coerced_amount, payload.currency, payload.paymentMethod, payload.email, payload.description, int(_env("GATEWAY_RETRY_COUNT", "2")))
+            # Step 8 — Create gateway order
+            gateway_order_id = _gateway_create_order(
+                coerced_amount,
+                payload.currency,
+                payload.paymentMethod,
+                payload.email,
+                payload.description,
+                int(_env("GATEWAY_RETRY_COUNT", "2")),
+            )
+
+            # Step 9 — Generate payment_id from sequence
             cursor.execute("SELECT nextval('pay_id_seq')")
             seq_row = cursor.fetchone()
             if seq_row is None:
                 raise HTTPException(status_code=500, detail="Internal Error")
             payment_id = _payment_id(int(seq_row[0]))
+
+            # Steps 10-13 — Atomic transaction: INSERT payments + INSERT audit
+            _log("DB_WRITE", "SUCCESS", table="payments", operation="INSERT")
+            cursor.execute(
+                "INSERT INTO payments "
+                "(payment_id, user_id, plan_id, amount, currency, payment_method, "
+                "gateway_name, gateway_order_id, status, description, metadata, email) "
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'PENDING', %s, %s, %s)",
+                (
+                    payment_id,
+                    payload.userId,
+                    payload.planId,
+                    coerced_amount,
+                    payload.currency,
+                    payload.paymentMethod,
+                    "RAZORPAY",
+                    gateway_order_id,
+                    payload.description,
+                    json.dumps(payload.metadata) if payload.metadata is not None else None,
+                    payload.email,
+                ),
+            )
+
+            _log("DB_WRITE", "SUCCESS", table="payment_audit_log", operation="INSERT")
+            cursor.execute(
+                "INSERT INTO payment_audit_log "
+                "(payment_id, action, performed_by, old_status, new_status, notes) "
+                "VALUES (%s, %s, %s, %s, %s, %s)",
+                (payment_id, "INITIATED", payload.userId, None, "PENDING", "Payment initiated"),
+            )
+
             conn.commit()
-            conn.rollback()
-            with conn.cursor() as cursor2:
-                _log("DB_WRITE", "SUCCESS", table="payments", operation="INSERT")
-                cursor2.execute("INSERT INTO payments (payment_id, user_id, plan_id, amount, currency, payment_method, gateway_name, gateway_order_id, status, description, metadata, email) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'PENDING', %s, %s, %s)", (payment_id, payload.userId, payload.planId, coerced_amount, payload.currency, payload.paymentMethod, "RAZORPAY", gateway_order_id, payload.description, json.dumps(payload.metadata) if payload.metadata is not None else None, payload.email))
-                _log("DB_WRITE", "SUCCESS", table="payment_audit_log", operation="INSERT")
-                cursor2.execute("INSERT INTO payment_audit_log (payment_id, action, performed_by, old_status, new_status, notes) VALUES (%s, %s, %s, %s, %s, %s)", (payment_id, "INITIATED", payload.userId, None, "PENDING", "Payment initiated"))
-                conn.commit()
-            record = PaymentRecord(paymentId=payment_id, userId=payload.userId, planId=payload.planId, amount=coerced_amount, currency=payload.currency, paymentMethod=payload.paymentMethod, status="PENDING", gatewayOrderId=gateway_order_id, gatewayPaymentId=None, invoiceId=None, initiatedAt=None, completedAt=None)
-            return PaymentInitiateResponse(status="success", paymentId=payment_id, gatewayOrderId=gateway_order_id, amount=coerced_amount, currency=payload.currency, message="Payment order created. Complete payment via gateway.", initiatedAt="")
+
+        initiated_at = _now_utc()  # FIX #2 — real timestamp, not empty string
+
+        return PaymentInitiateResponse(
+            status="success",
+            paymentId=payment_id,
+            gatewayOrderId=gateway_order_id,
+            amount=coerced_amount,
+            currency=payload.currency,
+            message="Payment order created. Complete payment via gateway.",
+            initiatedAt=initiated_at,
+        )
+
     except HTTPException:
         if conn is not None:
             conn.rollback()
@@ -148,63 +230,221 @@ def initiate_payment(payload: PaymentInitiateRequest) -> PaymentInitiateResponse
         if conn is not None:
             release_conn(conn)
 
+
+# ─────────────────────────────────────────────────────────────
+# POST /v1/payments/verify — Payment Check
+# ─────────────────────────────────────────────────────────────
 
 def verify_payment(payload: PaymentVerifyRequest) -> PaymentVerifyResponse:
     if payload.verificationSource not in ALLOWED_VERIFICATION_SOURCES:
         raise HTTPException(status_code=400, detail="Validation Error")
     if payload.status not in ALLOWED_STATUSES:
         raise HTTPException(status_code=400, detail="Validation Error")
+
     conn = None
     try:
         conn = get_conn()
         conn.rollback()
+
         with conn.cursor() as cursor:
-            cursor.execute("SELECT payment_id, user_id, plan_id, amount, currency, payment_method, gateway_order_id, status FROM payments WHERE payment_id = %s", (payload.paymentId,))
+            # Step 4 — Fetch payment record
+            cursor.execute(
+                "SELECT payment_id, user_id, plan_id, amount, currency, "
+                "payment_method, gateway_order_id, status "
+                "FROM payments WHERE payment_id = %s",
+                (payload.paymentId,),
+            )
             row = cursor.fetchone()
             if row is None:
                 raise HTTPException(status_code=400, detail="Validation Error")
-            payment = PaymentRecord(paymentId=row[0], userId=row[1], planId=row[2], amount=Decimal(str(row[3])), currency=row[4], paymentMethod=row[5], status=row[7], gatewayOrderId=row[6], gatewayPaymentId=None, invoiceId=None, initiatedAt=None, completedAt=None)
+
+            payment = PaymentRecord(
+                paymentId=row[0],
+                userId=row[1],
+                planId=row[2],
+                amount=Decimal(str(row[3])),
+                currency=row[4],
+                paymentMethod=row[5],
+                status=row[7],
+                gatewayOrderId=row[6],
+                gatewayPaymentId=None,
+                invoiceId=None,
+                initiatedAt=None,
+                completedAt=None,
+            )
+
+            # Step 5 — Payment must be PENDING
             if payment.status != "PENDING":
                 raise HTTPException(status_code=400, detail="Validation Error")
+
+            # Step 6 — Validate gateway order ID matches stored value
             if payload.gatewayOrderId != payment.gatewayOrderId:
                 raise HTTPException(status_code=400, detail="Validation Error")
-            cursor.execute("SELECT verification_id FROM payment_verifications WHERE payment_id = %s", (payload.paymentId,))
+
+            # Step 7 — Idempotency check
+            cursor.execute(
+                "SELECT verification_id FROM payment_verifications WHERE payment_id = %s",
+                (payload.paymentId,),
+            )
             existing = cursor.fetchone()
             if existing is not None:
                 raise HTTPException(status_code=409, detail="Validation Error")
+
+            # Step 4 (plan data) — Fetch plan_name and billing_cycle for invoice
+            # FIX #4 — was hardcoded as "PLAN" / "MONTHLY"
+            cursor.execute(
+                "SELECT plan_name, billing_cycle FROM payment_plans WHERE plan_id = %s",
+                (payment.planId,),
+            )
+            plan_row = cursor.fetchone()
+            plan_name = plan_row[0] if plan_row else "Unknown"
+            billing_cycle = plan_row[1] if plan_row else "MONTHLY"
+
+            # Step 8 — HMAC-SHA256 signature verification
             gateway_secret = _env("GATEWAY_SECRET", required=True)
-            expected = hmac.new(gateway_secret.encode(), f"{payload.gatewayOrderId}|{payload.gatewayPaymentId}".encode(), hashlib.sha256).hexdigest()
+            expected = hmac.new(
+                gateway_secret.encode(),
+                f"{payload.gatewayOrderId}|{payload.gatewayPaymentId}".encode(),
+                hashlib.sha256,
+            ).hexdigest()
+
             if not hmac.compare_digest(expected, payload.gatewaySignature):
+                # Persist FAILED verification — payment stays PENDING for manual review
                 cursor.execute("SELECT nextval('verify_id_seq')")
                 seq_row = cursor.fetchone()
                 verification_id = _verification_id(int(seq_row[0])) if seq_row else "VRF-0000-000000"
-                cursor.execute("INSERT INTO payment_verifications (verification_id, payment_id, gateway_payment_id, gateway_order_id, gateway_signature, verification_source, verification_status, raw_gateway_response) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)", (verification_id, payload.paymentId, payload.gatewayPaymentId, payload.gatewayOrderId, payload.gatewaySignature, payload.verificationSource, "SIGNATURE_MISMATCH", json.dumps(asdict(payload))))
+                cursor.execute(
+                    "INSERT INTO payment_verifications "
+                    "(verification_id, payment_id, gateway_payment_id, gateway_order_id, "
+                    "gateway_signature, verification_source, verification_status, raw_gateway_response) "
+                    "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
+                    (
+                        verification_id,
+                        payload.paymentId,
+                        payload.gatewayPaymentId,
+                        payload.gatewayOrderId,
+                        payload.gatewaySignature,
+                        payload.verificationSource,
+                        "SIGNATURE_MISMATCH",
+                        json.dumps(payload.model_dump()),  # FIX #1 — was asdict(payload)
+                    ),
+                )
                 conn.commit()
                 raise HTTPException(status_code=422, detail="Validation Error")
+
+            # Step 9 — Gateway reported FAILED or CANCELLED
             if payload.status in {"FAILED", "CANCELLED"}:
-                cursor.execute("UPDATE payments SET status = %s, gateway_payment_id = %s, completed_at = NOW(), failure_reason = %s WHERE payment_id = %s", ("FAILED", payload.gatewayPaymentId, payload.status, payload.paymentId))
+                cursor.execute(
+                    "UPDATE payments SET status = %s, gateway_payment_id = %s, "
+                    "completed_at = NOW(), failure_reason = %s WHERE payment_id = %s",
+                    ("FAILED", payload.gatewayPaymentId, payload.status, payload.paymentId),
+                )
                 cursor.execute("SELECT nextval('verify_id_seq')")
                 seq_row = cursor.fetchone()
                 verification_id = _verification_id(int(seq_row[0])) if seq_row else "VRF-0000-000000"
-                cursor.execute("INSERT INTO payment_verifications (verification_id, payment_id, gateway_payment_id, gateway_order_id, gateway_signature, verification_source, verification_status, raw_gateway_response) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)", (verification_id, payload.paymentId, payload.gatewayPaymentId, payload.gatewayOrderId, payload.gatewaySignature, payload.verificationSource, "FAILED", json.dumps(asdict(payload))))
+                cursor.execute(
+                    "INSERT INTO payment_verifications "
+                    "(verification_id, payment_id, gateway_payment_id, gateway_order_id, "
+                    "gateway_signature, verification_source, verification_status, raw_gateway_response) "
+                    "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
+                    (
+                        verification_id,
+                        payload.paymentId,
+                        payload.gatewayPaymentId,
+                        payload.gatewayOrderId,
+                        payload.gatewaySignature,
+                        payload.verificationSource,
+                        "FAILED",
+                        json.dumps(payload.model_dump()),  # FIX #1 — was asdict(payload)
+                    ),
+                )
                 conn.commit()
                 raise HTTPException(status_code=422, detail="Validation Error")
+
+            # Step 10 — Generate identifiers
             cursor.execute("SELECT nextval('verify_id_seq')")
             verify_seq = cursor.fetchone()
             cursor.execute("SELECT nextval('invoice_id_seq')")
             invoice_seq = cursor.fetchone()
             verification_id = _verification_id(int(verify_seq[0])) if verify_seq else "VRF-0000-000000"
             invoice_id = _invoice_id(int(invoice_seq[0])) if invoice_seq else "INV-0000-000000"
-            cursor.execute("BEGIN")
-            cursor.execute("UPDATE payments SET status = %s, gateway_payment_id = %s, completed_at = NOW() WHERE payment_id = %s", ("SUCCESS", payload.gatewayPaymentId, payload.paymentId))
+
+            # Steps 11-16 — Atomic transaction: UPDATE + 3 INSERTs
+            # FIX #3 — removed cursor.execute("BEGIN"); psycopg2 manages the
+            #           transaction automatically (autocommit=False by default).
+            #           Explicit BEGIN inside an open transaction causes a
+            #           PostgreSQL warning and puts sequence fetches outside
+            #           the intended atomic block.
+
+            cursor.execute(
+                "UPDATE payments SET status = %s, gateway_payment_id = %s, "
+                "completed_at = NOW() WHERE payment_id = %s",
+                ("SUCCESS", payload.gatewayPaymentId, payload.paymentId),
+            )
+
+            cursor.execute(
+                "INSERT INTO payment_verifications "
+                "(verification_id, payment_id, gateway_payment_id, gateway_order_id, "
+                "gateway_signature, verification_source, verification_status, raw_gateway_response) "
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
+                (
+                    verification_id,
+                    payload.paymentId,
+                    payload.gatewayPaymentId,
+                    payload.gatewayOrderId,
+                    payload.gatewaySignature,
+                    payload.verificationSource,
+                    "VERIFIED",
+                    json.dumps(payload.model_dump()),  # FIX #1 — was asdict(payload)
+                ),
+            )
+
+            # FIX #4 — plan_name and billing_cycle fetched from DB, not hardcoded
             tax_rate = Decimal(_env("TAX_RATE_PERCENT", "18"))
             tax_amount = (payment.amount * tax_rate) / Decimal("100")
             total_amount = payment.amount + tax_amount
-            cursor.execute("INSERT INTO payment_verifications (verification_id, payment_id, gateway_payment_id, gateway_order_id, gateway_signature, verification_source, verification_status, raw_gateway_response) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)", (verification_id, payload.paymentId, payload.gatewayPaymentId, payload.gatewayOrderId, payload.gatewaySignature, payload.verificationSource, "VERIFIED", json.dumps(asdict(payload))))
-            cursor.execute("INSERT INTO invoices (invoice_id, payment_id, user_id, plan_name, billing_cycle, amount, tax_amount, total_amount, currency, status) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", (invoice_id, payload.paymentId, payment.userId, "PLAN", "MONTHLY", payment.amount, tax_amount, total_amount, payment.currency, "GENERATED"))
-            cursor.execute("INSERT INTO payment_audit_log (payment_id, action, performed_by, old_status, new_status, notes) VALUES (%s, %s, %s, %s, %s, %s)", (payload.paymentId, "VERIFIED", "system", "PENDING", "SUCCESS", "Payment verified"))
+
+            cursor.execute(
+                "INSERT INTO invoices "
+                "(invoice_id, payment_id, user_id, plan_name, billing_cycle, "
+                "amount, tax_amount, total_amount, currency, status) "
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                (
+                    invoice_id,
+                    payload.paymentId,
+                    payment.userId,
+                    plan_name,       # FIX #4 — real plan name from DB
+                    billing_cycle,   # FIX #4 — real billing cycle from DB
+                    payment.amount,
+                    tax_amount,
+                    total_amount,
+                    payment.currency,
+                    "GENERATED",
+                ),
+            )
+
+            cursor.execute(
+                "INSERT INTO payment_audit_log "
+                "(payment_id, action, performed_by, old_status, new_status, notes) "
+                "VALUES (%s, %s, %s, %s, %s, %s)",
+                (payload.paymentId, "VERIFIED", "system", "PENDING", "SUCCESS", "Payment verified"),
+            )
+
             conn.commit()
-            return PaymentVerifyResponse(status="success", verificationId=verification_id, paymentId=payload.paymentId, invoiceId=invoice_id, paymentStatus="SUCCESS", subscriptionActivated=True, message="Payment verified. Invoice generated. Subscription activated.", verifiedAt="")
+
+        verified_at = _now_utc()  # FIX #2 — real timestamp, not empty string
+
+        return PaymentVerifyResponse(
+            status="success",
+            verificationId=verification_id,
+            paymentId=payload.paymentId,
+            invoiceId=invoice_id,
+            paymentStatus="SUCCESS",
+            subscriptionActivated=True,
+            message="Payment verified. Invoice generated. Subscription activated.",
+            verifiedAt=verified_at,
+        )
+
     except HTTPException:
         if conn is not None:
             conn.rollback()
@@ -224,45 +464,108 @@ def verify_payment(payload: PaymentVerifyRequest) -> PaymentVerifyResponse:
             release_conn(conn)
 
 
-def list_payments(userId: str | None, planId: str | None, status: str | None, paymentMethod: str | None, currency: str | None, dateFrom: str | None, dateTo: str | None, page: int, pageSize: int) -> PaymentListResponse:
+# ─────────────────────────────────────────────────────────────
+# GET /v1/payments — List Payments
+# ─────────────────────────────────────────────────────────────
+
+def list_payments(
+    userId: str | None,
+    planId: str | None,
+    status: str | None,
+    paymentMethod: str | None,
+    currency: str | None,
+    dateFrom: str | None,
+    dateTo: str | None,
+    page: int,
+    pageSize: int,
+) -> PaymentListResponse:
     if pageSize > 100:
         raise HTTPException(status_code=400, detail="Validation Error")
+
     conn = None
     try:
         conn = get_conn()
         conn.rollback()
-        where = []
+
+        where: list[str] = []
         params: list[Any] = []
+
         if userId:
-            where.append("user_id = %s")
+            where.append("p.user_id = %s")
             params.append(userId)
         if planId:
-            where.append("plan_id = %s")
+            where.append("p.plan_id = %s")
             params.append(planId)
         if status:
-            where.append("status = %s")
+            where.append("p.status = %s")
             params.append(status)
         if paymentMethod:
-            where.append("payment_method = %s")
+            where.append("p.payment_method = %s")
             params.append(paymentMethod)
         if currency:
-            where.append("currency = %s")
+            where.append("p.currency = %s")
             params.append(currency)
         if dateFrom:
-            where.append("initiated_at >= %s")
+            where.append("p.initiated_at >= %s")
             params.append(dateFrom)
         if dateTo:
-            where.append("initiated_at <= %s")
+            where.append("p.initiated_at <= %s")
             params.append(dateTo)
+
         where_sql = " WHERE " + " AND ".join(where) if where else ""
+
         with conn.cursor() as cursor:
-            cursor.execute(f"SELECT COUNT(*) FROM payments{where_sql}", tuple(params))
+            cursor.execute(
+                f"SELECT COUNT(*) FROM payments p{where_sql}",
+                tuple(params),
+            )
             total = cursor.fetchone()[0]
+
             offset = (page - 1) * pageSize
-            cursor.execute(f"SELECT payment_id, user_id, plan_id, amount, currency, payment_method, status, gateway_order_id, gateway_payment_id, initiated_at, completed_at FROM payments{where_sql} ORDER BY initiated_at DESC LIMIT %s OFFSET %s", tuple(params + [int(pageSize), int(offset)]))
+
+            # FIX #5 — LEFT JOIN invoices so invoiceId is populated in the response
+            cursor.execute(
+                f"""
+                SELECT p.payment_id, p.user_id, p.plan_id, p.amount, p.currency,
+                       p.payment_method, p.status, p.gateway_order_id,
+                       p.gateway_payment_id, p.initiated_at, p.completed_at,
+                       i.invoice_id
+                FROM payments p
+                LEFT JOIN invoices i ON i.payment_id = p.payment_id
+                {where_sql}
+                ORDER BY p.initiated_at DESC
+                LIMIT %s OFFSET %s
+                """,
+                tuple(params + [int(pageSize), int(offset)]),
+            )
             rows = cursor.fetchall()
-            payments = [PaymentListItem(paymentId=r[0], userId=r[1], planId=r[2], amount=Decimal(str(r[3])), currency=r[4], paymentMethod=r[5], status=r[6], gatewayOrderId=r[7], gatewayPaymentId=r[8], invoiceId=None, initiatedAt=r[9], completedAt=r[10]) for r in rows]
-            return PaymentListResponse(status="success", total=total, page=page, pageSize=pageSize, payments=payments)
+
+            payments = [
+                PaymentListItem(
+                    paymentId=r[0],
+                    userId=r[1],
+                    planId=r[2],
+                    amount=Decimal(str(r[3])),
+                    currency=r[4],
+                    paymentMethod=r[5],
+                    status=r[6],
+                    gatewayOrderId=r[7],
+                    gatewayPaymentId=r[8],
+                    initiatedAt=r[9],
+                    completedAt=r[10],
+                    invoiceId=r[11],  # FIX #5 — real invoice ID from JOIN
+                )
+                for r in rows
+            ]
+
+            return PaymentListResponse(
+                status="success",
+                total=total,
+                page=page,
+                pageSize=pageSize,
+                payments=payments,
+            )
+
     except HTTPException:
         raise
     except psycopg2.Error as exc:
