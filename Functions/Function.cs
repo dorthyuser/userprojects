@@ -60,7 +60,7 @@ public sealed class Function
         var host = SecretsHelper.Get("host", "host");
         var port = SecretsHelper.Get("port", "port");
         var dbname = SecretsHelper.Get("dbname", "dbname");
-        var username = SecretsHelper.Get("username", "POSTGRESQLUSERNAME");
+        var username = SecretsHelper.Get("username", "username");
         var password = SecretsHelper.Get("password", "password");
         return BuildDataSource(host, port, dbname, username, password);
     }
