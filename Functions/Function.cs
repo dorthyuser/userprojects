@@ -1,4 +1,3 @@
-using System.Text.Json.Serialization;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.Core;
 using Npgsql;
@@ -14,10 +13,13 @@ public sealed class Function
     private readonly NpgsqlDataSource _dataSource;
     private readonly Service _service;
 
+    // Single shared HttpClient for gateway calls (thread-safe, reuse across invocations)
+    private static readonly HttpClient SharedHttpClient = new();
+
     public Function()
     {
         _dataSource = BuildDataSource();
-        _service = new Service(_dataSource);
+        _service = new Service(_dataSource, SharedHttpClient);
     }
 
     public async Task<APIGatewayProxyResponse> Paymentcsharp441(APIGatewayProxyRequest request, ILambdaContext context)
@@ -25,19 +27,22 @@ public sealed class Function
         var requestId = context.AwsRequestId;
         try
         {
-            if (request.HttpMethod.Equals("POST", StringComparison.OrdinalIgnoreCase) && request.Path.Equals("/v1/payments", StringComparison.OrdinalIgnoreCase))
+            if (request.HttpMethod.Equals("POST", StringComparison.OrdinalIgnoreCase) &&
+                request.Path.Equals("/v1/payments", StringComparison.OrdinalIgnoreCase))
             {
                 var result = await _service.InitiatePaymentAsync(request.Body, requestId, CancellationToken.None);
                 return ResponseFactory.Success(201, result);
             }
 
-            if (request.HttpMethod.Equals("POST", StringComparison.OrdinalIgnoreCase) && request.Path.Equals("/v1/payments/verify", StringComparison.OrdinalIgnoreCase))
+            if (request.HttpMethod.Equals("POST", StringComparison.OrdinalIgnoreCase) &&
+                request.Path.Equals("/v1/payments/verify", StringComparison.OrdinalIgnoreCase))
             {
                 var result = await _service.VerifyPaymentAsync(request.Body, requestId, CancellationToken.None);
                 return ResponseFactory.Success(200, result);
             }
 
-            if (request.HttpMethod.Equals("GET", StringComparison.OrdinalIgnoreCase) && request.Path.Equals("/v1/payments", StringComparison.OrdinalIgnoreCase))
+            if (request.HttpMethod.Equals("GET", StringComparison.OrdinalIgnoreCase) &&
+                request.Path.Equals("/v1/payments", StringComparison.OrdinalIgnoreCase))
             {
                 var result = await _service.GetPaymentsAsync(request.QueryStringParameters, requestId, CancellationToken.None);
                 return ResponseFactory.Success(200, result);
@@ -47,27 +52,25 @@ public sealed class Function
         }
         catch (PaymentServiceException ex)
         {
+            context.Logger.LogError($"[{requestId}] {ex.Code}: {ex.Message}");
             return ResponseFactory.Error(ex.StatusCode, ex.Code, ex.Message, ex.Extra);
         }
-        catch
+        catch (Exception ex)
         {
+            context.Logger.LogError($"[{requestId}] Unhandled exception: {ex}");
             return ResponseFactory.Error(500, "DB_ERROR", "An internal error occurred.");
         }
     }
 
     private static NpgsqlDataSource BuildDataSource()
     {
-        var host = SecretsHelper.Get("host", "host");
-        var port = SecretsHelper.Get("port", "port");
-        var dbname = SecretsHelper.Get("dbname", "dbname");
+        var host     = SecretsHelper.Get("host",     "host");
+        var port     = SecretsHelper.Get("port",     "port");
+        var dbname   = SecretsHelper.Get("dbname",   "dbname");
         var username = SecretsHelper.Get("username", "username");
         var password = SecretsHelper.Get("password", "password");
-        return BuildDataSource(host, port, dbname, username, password);
-    }
-
-    private static NpgsqlDataSource BuildDataSource(string host, string port, string dbname, string username, string password)
-    {
-        var builder = new NpgsqlDataSourceBuilder($"Host={host};Port={port};Database={dbname};Username={username};Password={password}");
+        var builder  = new NpgsqlDataSourceBuilder(
+            $"Host={host};Port={port};Database={dbname};Username={username};Password={password}");
         return builder.Build();
     }
 }
