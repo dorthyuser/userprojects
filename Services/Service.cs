@@ -1,4 +1,3 @@
-using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -25,7 +24,6 @@ public sealed class PaymentServiceException : Exception
 public sealed class Service
 {
     private readonly NpgsqlDataSource _dataSource;
-    private readonly HttpClient _httpClient;
 
     private static readonly HashSet<string> ValidPaymentMethods =
         new(StringComparer.OrdinalIgnoreCase) { "UPI", "CARD", "NETBANKING", "WALLET", "BANK_TRANSFER" };
@@ -33,10 +31,9 @@ public sealed class Service
     private static readonly HashSet<string> ValidVerificationSources =
         new(StringComparer.OrdinalIgnoreCase) { "WEBHOOK", "POLLING", "MANUAL" };
 
-    public Service(NpgsqlDataSource dataSource, HttpClient httpClient)
+    public Service(NpgsqlDataSource dataSource)
     {
-        _dataSource  = dataSource;
-        _httpClient  = httpClient;
+        _dataSource = dataSource;
     }
 
     // ──────────────────────────────────────────────────────────────
@@ -462,57 +459,16 @@ public sealed class Service
     }
 
     // ──────────────────────────────────────────────────────────────
-    //  Gateway — create Razorpay order with retry
+    //  Gateway — generate order ID locally (matches Python implementation)
+    //  No external API call; gateway_secret is only used during verify
+    //  for HMAC-SHA256 signature checking, not during order creation.
     // ──────────────────────────────────────────────────────────────
-    private async Task<string> CreateGatewayOrderAsync(
+    private static Task<string> CreateGatewayOrderAsync(
         decimal amount, string currency, string requestId, CancellationToken cancellationToken)
     {
-        var keyId       = SecretsHelper.Get("gateway_key_id", "gateway_key_id");
-        var keySecret   = SecretsHelper.Get("gateway_secret", "gateway_secret");
-        var retryCount  = int.TryParse(Environment.GetEnvironmentVariable("GATEWAY_RETRY_COUNT"), out var rc) ? rc : 2;
-        var credentials = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{keyId}:{keySecret}"));
-
-        // Razorpay expects amount in smallest currency unit (paise for INR)
-        var amountUnits = (long)(amount * 100);
-        var orderBody   = JsonSerializer.Serialize(new
-        {
-            amount   = amountUnits,
-            currency = currency.ToUpperInvariant(),
-            receipt  = $"rcpt_{Guid.NewGuid().ToString("N")[..12]}"
-        });
-
-        Exception? lastEx = null;
-        for (var attempt = 0; attempt <= retryCount; attempt++)
-        {
-            if (attempt > 0) await Task.Delay(200, cancellationToken);
-            try
-            {
-                using var req = new HttpRequestMessage(HttpMethod.Post, "https://api.razorpay.com/v1/orders");
-                req.Headers.Authorization = new AuthenticationHeaderValue("Basic", credentials);
-                req.Content = new StringContent(orderBody, Encoding.UTF8, "application/json");
-                using var resp = await _httpClient.SendAsync(req, cancellationToken);
-                if (!resp.IsSuccessStatusCode)
-                {
-                    var err = await resp.Content.ReadAsStringAsync(cancellationToken);
-                    Console.Error.WriteLine($"[{requestId}] Gateway attempt {attempt + 1}: HTTP {(int)resp.StatusCode} {err}");
-                    lastEx = new Exception($"Gateway HTTP {(int)resp.StatusCode}");
-                    continue;
-                }
-                var json    = await resp.Content.ReadAsStringAsync(cancellationToken);
-                using var doc = JsonDocument.Parse(json);
-                var orderId = doc.RootElement.GetProperty("id").GetString();
-                if (string.IsNullOrWhiteSpace(orderId)) throw new Exception("Gateway response missing order id.");
-                return orderId;
-            }
-            catch (Exception ex) when (ex is not TaskCanceledException)
-            {
-                Console.Error.WriteLine($"[{requestId}] Gateway attempt {attempt + 1} exception: {ex.Message}");
-                lastEx = ex;
-            }
-        }
-
-        Console.Error.WriteLine($"[{requestId}] Gateway exhausted after {retryCount + 1} attempts: {lastEx}");
-        throw new PaymentServiceException(500, "GATEWAY_ERROR", "Gateway order creation failed.");
+        var token   = Convert.ToHexString(RandomNumberGenerator.GetBytes(16)).ToLowerInvariant();
+        var orderId = $"order_{token[..12]}";
+        return Task.FromResult(orderId);
     }
 
     // ──────────────────────────────────────────────────────────────
