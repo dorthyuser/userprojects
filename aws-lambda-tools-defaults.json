@@ -1,0 +1,12 @@
+{
+  "profile": "default",
+  "region": "us-east-1",
+  "configuration": "Release",
+  "function-runtime": "dotnet8",
+  "function-memory-size": 512,
+  "function-timeout": 120,
+  "function-handler": "Paymentcsharp441Lambda::Paymentcsharp441Lambda.Function::Paymentcsharp441",
+  "function-name": "paymentcsharp441",
+  "framework": "net8.0",
+  "function-self-contained": false
+}
