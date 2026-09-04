@@ -1,0 +1,13 @@
+{
+  "profile": "default",
+  "region": "us-east-1",
+  "configuration": "Release",
+  "framework": "net8.0",
+  "function-runtime": "dotnet8",
+  "function-memory-size": 512,
+  "function-timeout": 120,
+  "function-handler": "Buyandsellgold1013Lambda::Buyandsellgold1013Lambda.Function::Buyandsellgold1013",
+  "function-name": "buyandsellgold1013",
+  "function-role": "",
+  "self-contained": false
+}
