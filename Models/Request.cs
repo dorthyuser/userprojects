@@ -1,0 +1,64 @@
+using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
+
+namespace Csharpae1140Lambda.Models;
+
+public sealed class AdverseEventRequest
+{
+    [Required]
+    [JsonPropertyName("trialId")]
+    public string? TrialId { get; set; }
+
+    [Required]
+    [JsonPropertyName("siteId")]
+    public string? SiteId { get; set; }
+
+    [Required]
+    [JsonPropertyName("patientId")]
+    public string? PatientId { get; set; }
+
+    [Required]
+    [JsonPropertyName("clinicianId")]
+    public string? ClinicianId { get; set; }
+
+    [Required]
+    [JsonPropertyName("eventDate")]
+    public DateTime? EventDate { get; set; }
+
+    [Required]
+    [JsonPropertyName("aeTermCode")]
+    public string? AeTermCode { get; set; }
+
+    [Required]
+    [JsonPropertyName("aeTermName")]
+    [MaxLength(255)]
+    public string? AeTermName { get; set; }
+
+    [Required]
+    [JsonPropertyName("ctcaeGrade")]
+    public int? CtcaeGrade { get; set; }
+
+    [Required]
+    [JsonPropertyName("serious")]
+    public bool? Serious { get; set; }
+
+    [Required]
+    [JsonPropertyName("outcome")]
+    public string? Outcome { get; set; }
+
+    [Required]
+    [JsonPropertyName("actionTaken")]
+    public string? ActionTaken { get; set; }
+
+    [Required]
+    [JsonPropertyName("narrative")]
+    [MaxLength(2000)]
+    public string? Narrative { get; set; }
+
+    [JsonPropertyName("relatedDrugId")]
+    public string? RelatedDrugId { get; set; }
+
+    [Required]
+    [JsonPropertyName("reportedBy")]
+    public string? ReportedBy { get; set; }
+}
