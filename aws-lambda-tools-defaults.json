@@ -1,0 +1,9 @@
+{
+  "profile": "default",
+  "region": "eu-west-1",
+  "configuration": "Release",
+  "function-runtime": "dotnet10",
+  "function-memory-size": 512,
+  "function-timeout": 60,
+  "function-handler": "MuleaesaMainLambda::MuleaesaMainLambda.Function::FunctionHandler"
+}
