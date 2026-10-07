@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using Amazon.Lambda.Core;
 using Amazon.Lambda.APIGatewayEvents;
+using Npgsql;
 [assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 namespace BusTravelAccountsSaMainLambda;
 
@@ -97,6 +98,12 @@ public sealed class Function
         {
             context.Logger.LogLine($"{ex.GetType().Name}: {ex.Message}");
             return BuildJsonResponse(415, JsonSerializer.Serialize(ErrorResponseFactory.UnsupportedMediaType(ex.Message), JsonOptions), correlationId);
+        }
+        catch (PostgresException ex)
+        {
+            context.Logger.LogLine($"{ex.GetType().Name}: {ex.Message}");
+            var result = AccountsService.CreateDatabaseErrorResult(ex, JsonOptions);
+            return BuildJsonResponse(result.StatusCode, result.Body, correlationId);
         }
         catch (Exception ex)
         {

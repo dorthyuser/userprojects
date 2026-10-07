@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Npgsql;
 namespace BusTravelAccountsSaMainLambda;
 
 public sealed class AccountsService
@@ -62,6 +63,20 @@ public sealed class AccountsService
         }
 
         return new ServiceResult(200, JsonSerializer.Serialize(new CreateAccountResponse(id), _jsonOptions));
+    }
+
+    public static ServiceResult CreateDatabaseErrorResult(PostgresException exception, JsonSerializerOptions jsonOptions)
+    {
+        return new ServiceResult(400, JsonSerializer.Serialize(new ErrorResponse
+        {
+            Error = new ErrorBody
+            {
+                ErrorCode = 400,
+                ErrorMessage = $"{exception.SqlState} ERROR",
+                ErrorDescription = exception.MessageText,
+                ErrorDateTime = DateTime.UtcNow
+            }
+        }, jsonOptions));
     }
 }
 

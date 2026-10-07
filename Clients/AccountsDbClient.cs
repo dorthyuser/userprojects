@@ -61,7 +61,7 @@ public sealed class AccountsDbClient
 
         await using var command = connection.CreateCommand();
         command.CommandText = @"insert into public.sa_accounts (id, salutation, first_name, last_name, person_email, person_birthdate, phone, mobile_phone, mailing_street, mailing_postal_code, mailing_city, mailing_country, account_status, account_source, hotlisted, created_at, updated_at) values (@id, @salutation, @first_name, @last_name, @person_email, @person_birthdate, @phone, @mobile_phone, @mailing_street, @mailing_postal_code, @mailing_city, @mailing_country, @account_status, @account_source, @hotlisted, now(), now())";
-        AddParameters(command, id, request.Salutation, request.FirstName, request.LastName, request.PersonEmail, request.PersonBirthdate, request.Phone, request.MobilePhone, request.MailingStreet, request.MailingPostalCode, request.MailingCity, request.MailingCountry, request.AccountStatus, request.AccountSource, request.Hotlisted);
+        AddParameters(command, id, request.Salutation, request.FirstName, request.LastName, request.PersonEmail, request.PersonBirthdate, request.Phone, request.MobilePhone, request.MailingStreet, request.MailingPostalCode, request.MailingCity, request.MailingCountry, request.AccountStatus, request.AccountSource, request.Hotlisted ?? false);
         await command.ExecuteNonQueryAsync(cancellationToken);
         return new CreatedAccountResponse(id.ToString());
     }
@@ -72,7 +72,7 @@ public sealed class AccountsDbClient
         await connection.OpenAsync(cancellationToken);
 
         await using var command = connection.CreateCommand();
-        command.CommandText = @"update public.sa_accounts set salutation = @salutation, first_name = @first_name, last_name = @last_name, person_email = @person_email, person_birthdate = @person_birthdate, phone = @phone, mobile_phone = @mobile_phone, mailing_street = @mailing_street, mailing_postal_code = @mailing_postal_code, mailing_city = @mailing_city, mailing_country = @mailing_country, account_status = @account_status, account_source = @account_source, hotlisted = @hotlisted, updated_at = now() where id = @id";
+        command.CommandText = @"update public.sa_accounts set salutation = @salutation, first_name = @first_name, last_name = @last_name, person_email = @person_email, person_birthdate = @person_birthdate, phone = @phone, mobile_phone = @mobile_phone, mailing_street = @mailing_street, mailing_postal_code = @mailing_postal_code, mailing_city = @mailing_city, mailing_country = @mailing_country, account_status = @account_status, account_source = @account_source, hotlisted = coalesce(@hotlisted, hotlisted), updated_at = now() where id = @id";
         AddParameters(command, id, request.Salutation, request.FirstName, request.LastName, request.PersonEmail, request.PersonBirthdate, request.Phone, request.MobilePhone, request.MailingStreet, request.MailingPostalCode, request.MailingCity, request.MailingCountry, request.AccountStatus, request.AccountSource, request.Hotlisted);
         var rows = await command.ExecuteNonQueryAsync(cancellationToken);
         return rows > 0;
