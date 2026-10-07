@@ -3,7 +3,7 @@ namespace BusTravelAccountsSaMainLambda;
 
 public static class RequestBodyHelper
 {
-    public static string GetBody(APIGatewayHttpApiV2ProxyRequest request)
+    public static string GetBody(APIGatewayProxyRequest request)
     {
         if (string.IsNullOrEmpty(request.Body)) return string.Empty;
         if (!request.IsBase64Encoded) return request.Body;

@@ -10,13 +10,13 @@ public sealed class Function
 {
     private static readonly JsonSerializerOptions JsonOptions = JsonHelper.CreateOptions();
 
-    public async Task<APIGatewayHttpApiV2ProxyResponse> FunctionHandler(APIGatewayHttpApiV2ProxyRequest request, ILambdaContext context)
+    public async Task<APIGatewayProxyResponse> FunctionHandler(APIGatewayProxyRequest request, ILambdaContext context)
     {
         var settings = Settings.Load();
         var correlationId = CorrelationIdHelper.GetCorrelationId(request.Headers);
-        var rawPath = request.RawPath ?? string.Empty;
+        var rawPath = request.Path ?? string.Empty;
         var path = PathHelper.StripBasePath(rawPath, settings.ListenerPath);
-        var method = request.RequestContext?.Http?.Method?.ToUpperInvariant() ?? string.Empty;
+        var method = request.HttpMethod?.ToUpperInvariant() ?? string.Empty;
         var contentType = HeaderHelper.GetHeaderValue(request.Headers, "content-type");
         var body = RequestBodyHelper.GetBody(request);
 
@@ -105,7 +105,7 @@ public sealed class Function
         }
     }
 
-    private static APIGatewayHttpApiV2ProxyResponse BuildTextResponse(int statusCode, string body, string correlationId) => new()
+    private static APIGatewayProxyResponse BuildTextResponse(int statusCode, string body, string correlationId) => new()
     {
         StatusCode = statusCode,
         Headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
@@ -117,7 +117,7 @@ public sealed class Function
         IsBase64Encoded = false
     };
 
-    private static APIGatewayHttpApiV2ProxyResponse BuildJsonResponse(int statusCode, string body, string correlationId) => new()
+    private static APIGatewayProxyResponse BuildJsonResponse(int statusCode, string body, string correlationId) => new()
     {
         StatusCode = statusCode,
         Headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
@@ -129,7 +129,7 @@ public sealed class Function
         IsBase64Encoded = false
     };
 
-    private static APIGatewayHttpApiV2ProxyResponse BuildNotFound() => BuildJsonResponse(404, JsonSerializer.Serialize(ErrorResponseFactory.NotFound("RESOURCE NOT FOUND"), JsonOptions), "");
-    private static APIGatewayHttpApiV2ProxyResponse BuildMethodNotAllowed() => BuildJsonResponse(405, JsonSerializer.Serialize(ErrorResponseFactory.MethodNotAllowed("METHOD NOT ALLOWED"), JsonOptions), "");
-    private static APIGatewayHttpApiV2ProxyResponse BuildUnsupportedMediaType() => BuildJsonResponse(415, JsonSerializer.Serialize(ErrorResponseFactory.UnsupportedMediaType("UNSUPPORTED MEDIA TYPE"), JsonOptions), "");
+    private static APIGatewayProxyResponse BuildNotFound() => BuildJsonResponse(404, JsonSerializer.Serialize(ErrorResponseFactory.NotFound("RESOURCE NOT FOUND"), JsonOptions), "");
+    private static APIGatewayProxyResponse BuildMethodNotAllowed() => BuildJsonResponse(405, JsonSerializer.Serialize(ErrorResponseFactory.MethodNotAllowed("METHOD NOT ALLOWED"), JsonOptions), "");
+    private static APIGatewayProxyResponse BuildUnsupportedMediaType() => BuildJsonResponse(415, JsonSerializer.Serialize(ErrorResponseFactory.UnsupportedMediaType("UNSUPPORTED MEDIA TYPE"), JsonOptions), "");
 }
