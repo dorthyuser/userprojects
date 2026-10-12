@@ -1,0 +1,9 @@
+@baseUrl = http://localhost:5080
+
+GET {{baseUrl}}/prime
+Accept: application/json
+
+###
+
+GET {{baseUrl}}/health
+Accept: application/json

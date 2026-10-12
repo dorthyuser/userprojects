@@ -1,0 +1,12 @@
+bin/
+obj/
+.vs/
+*.user
+*.suo
+*.cache
+*.log
+TestResults/
+coverage/
+.DS_Store
+.env
+appsettings.Local.json
