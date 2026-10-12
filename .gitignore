@@ -1,0 +1,13 @@
+bin/
+obj/
+.vs/
+.idea/
+*.user
+*.suo
+*.log
+*.db
+*.sqlite
+*.sqlite3
+appsettings.Local.json
+secrets.json
+Dockerfile
