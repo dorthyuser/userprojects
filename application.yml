@@ -1,0 +1,28 @@
+server:
+  port: 3000
+  host: 0.0.0.0
+app:
+  name: heelell
+  environment: development
+  logLevel: info
+security:
+  rateLimit:
+    max: 100
+    timeWindowMs: 60000
+  helmet: true
+  hidePoweredBy: true
+aws:
+  region: us-east-1
+  secretsManagerSecretName: ""
+database:
+  host: ""
+  port: 5432
+  name: ""
+  user: ""
+  password: ""
+  ssl: false
+api:
+  basePath: /travelcards
+  createPath: /
+  healthPath: /health
+  docsPath: /docs
