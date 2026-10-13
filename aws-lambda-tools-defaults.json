@@ -1,0 +1,10 @@
+{
+  "profile": "default",
+  "region": "eu-west-1",
+  "configuration": "Release",
+  "function-architecture": "x86_64",
+  "function-runtime": "dotnet10",
+  "function-handler": "BusTravelAccountsSaLambda::BusTravelAccountsSaLambda.Function::FunctionHandler",
+  "function-memory-size": 512,
+  "function-timeout": 60
+}
