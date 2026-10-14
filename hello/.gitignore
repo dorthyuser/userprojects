@@ -1,0 +1,14 @@
+bin/
+obj/
+.vs/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.log
+*.tmp
+*.cache
+.DS_Store
+.env
+appsettings.Development.json
