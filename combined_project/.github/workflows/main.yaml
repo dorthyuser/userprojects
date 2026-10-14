@@ -1,0 +1,45 @@
+name: combined_project CI/CD
+
+on:
+  push:
+    branches:
+      - '*'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y zip jq
+
+      - name: Make deployment script executable
+        run: chmod +x .github/scripts/deployment.sh
+
+      - name: Deploy Lambda
+        run: |
+          ./.github/scripts/deployment.sh \
+            combined_project \
+            https://github.com/${{ github.repository }}.git \
+            ${{ github.ref_name }} \
+            dotnet8 \
+            ${{ secrets.AWS_REGION }} \
+            ${{ secrets.LAMBDA_ROLE_ARN }} \
+            ${{ secrets.AWS_SECRET_NAME }}
