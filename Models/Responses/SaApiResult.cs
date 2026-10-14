@@ -1,0 +1,10 @@
+using System.Collections.Generic;
+
+namespace BusTravelAccountsLambda;
+
+public sealed class SaApiResult
+{
+    public int StatusCode { get; init; }
+    public string? Body { get; init; }
+    public IDictionary<string, string> Headers { get; init; } = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+}
