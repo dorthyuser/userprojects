@@ -46,7 +46,7 @@ public sealed class PostgresClient
         var id = Guid.NewGuid();
         await using var connection = await GetConnectionAsync(cancellationToken).ConfigureAwait(false);
         await using var command = new NpgsqlCommand(@"insert into public.sa_accounts (id, salutation, first_name, last_name, person_email, person_birthdate, phone, mobile_phone, mailing_street, mailing_postal_code, mailing_city, mailing_country, account_status, account_source, hotlisted, updated_at) values (@id, @salutation, @first_name, @last_name, @person_email, @person_birthdate, @phone, @mobile_phone, @mailing_street, @mailing_postal_code, @mailing_city, @mailing_country, @account_status, @account_source, coalesce(@hotlisted, false), now())", connection);
-        AddParameters(command, id, request, includeId: false);
+        AddParameters(command, id, request, includeId: true);
         var rows = await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
         AppLog.Info($"Database INSERT public.sa_accounts outcome rows={rows}");
         return id.ToString();
