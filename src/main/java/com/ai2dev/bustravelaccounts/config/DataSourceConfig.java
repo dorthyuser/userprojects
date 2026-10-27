@@ -1,0 +1,28 @@
+package com.ai2dev.bustravelaccounts.config;
+
+import java.util.Map;
+import javax.sql.DataSource;
+import com.zaxxer.hikari.HikariDataSource;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
+
+@Configuration
+public class DataSourceConfig {
+    @Bean
+    public DataSource dataSource(Settings settings, @Lazy SecretsLoader secretsLoader) {
+        Map<String, String> secret = secretsLoader.values();
+        String host = secret.getOrDefault("host", settings.dbHost());
+        String port = secret.getOrDefault("port", settings.dbPort());
+        String dbname = secret.getOrDefault("dbname", settings.dbName());
+        String username = secret.getOrDefault("username", settings.dbUsername());
+        String password = secret.getOrDefault("password", settings.dbPassword());
+        HikariDataSource pool = new HikariDataSource();
+        pool.setMaximumPoolSize(2);
+        pool.setMinimumIdle(0);
+        pool.setJdbcUrl("jdbc:postgresql://" + host + ":" + port + "/" + dbname);
+        pool.setUsername(username);
+        pool.setPassword(password);
+        return pool;
+    }
+}
