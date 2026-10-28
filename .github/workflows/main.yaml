@@ -1,0 +1,44 @@
+name: AWS Lambda CI/CD - Java Spring Boot (migrated from MuleSoft)
+
+# The function runs behind API Gateway (REST API, Lambda proxy integration). This workflow builds the
+# function's .zip with the project's own Gradle wrapper and deploys it; API Gateway invokes the function.
+
+on:
+  push:
+    branches:
+      - '*'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # The project's Java version (its Gradle toolchain asks for the same one)
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Build and deploy the Lambda function
+        run: |
+          chmod +x ./gradlew .github/scripts/deployment.sh
+          ./.github/scripts/deployment.sh \
+            "${{ github.ref_name }}" \
+            "java17.al2023" \
+            "${{ secrets.AWS_REGION }}" \
+            "${{ secrets.LAMBDA_ROLE_ARN }}" \
+            "${{ secrets.AWS_SECRET_NAME }}"

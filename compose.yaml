@@ -1,0 +1,17 @@
+# Written by the build: a local PostgreSQL for a local run of this project — never a real host or password.
+#   docker compose up -d   starts it; the SQL files in db/init/ run once, when the database is first created
+#                          (put the tables the code uses there)
+#   ./gradlew bootRun      runs the project with the "local" profile on http://localhost:8080
+# Set the project's database environment variables (README.md) to: host localhost, port 5432,
+# database app, user app, password app
+services:
+  database:
+    image: postgres:18
+    environment:
+      POSTGRES_DB: app
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./db/init:/docker-entrypoint-initdb.d:ro
