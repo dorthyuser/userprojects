@@ -39,7 +39,9 @@ function filterAmbiguous(chars) {
 
 function validateInput(body) {
   const errors = [];
+  const id = typeof body.id === 'string' ? body.id.trim() : '';
   const length = Number(body.length);
+  if (!id) errors.push('id is required');
   if (!Number.isInteger(length) || length < 8 || length > 128) errors.push('length must be an integer between 8 and 128');
   if (![true, false].includes(body.includeUppercase)) errors.push('includeUppercase must be boolean');
   if (![true, false].includes(body.includeLowercase)) errors.push('includeLowercase must be boolean');
@@ -47,12 +49,12 @@ function validateInput(body) {
   if (![true, false].includes(body.includeSpecialCharacters)) errors.push('includeSpecialCharacters must be boolean');
   if (![true, false].includes(body.excludeAmbiguousCharacters)) errors.push('excludeAmbiguousCharacters must be boolean');
   if (body.allowedSpecialCharacters !== undefined && !Array.isArray(body.allowedSpecialCharacters)) errors.push('allowedSpecialCharacters must be an array of strings');
-  return { errors, length };
+  return { errors, length, id };
 }
 
 exports.generatePassword = async (req, res) => {
   try {
-    const { errors, length } = validateInput(req.body || {});
+    const { errors, length, id } = validateInput(req.body || {});
     if (errors.length) {
       return res.status(400).json({
         success: false,
@@ -113,6 +115,7 @@ exports.generatePassword = async (req, res) => {
     const password = shuffle(passwordChars).join('');
 
     return res.status(200).json({
+      id,
       password,
       length,
       policy: {
@@ -125,7 +128,7 @@ exports.generatePassword = async (req, res) => {
       generatedAt: new Date().toISOString()
     });
   } catch (error) {
-    console.error(' Failed', { message: error.message, code: error.code || 'PASSWORD_GENERATION_ERROR' });
+    console.error(' Failed', { code: error.code || 'PASSWORD_GENERATION_ERROR' });
     return res.status(500).json({
       success: false,
       error: {
