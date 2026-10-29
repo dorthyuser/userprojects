@@ -1,0 +1,28 @@
+# Every version of the build (Gradle's version catalog): build.gradle.kts names its plugins and libraries
+# through "libs" (alias(libs.plugins.spring.boot), implementation(libs.spring.boot.starter.webmvc)).
+# A library without a version takes it from Spring Boot. gradle.lockfile pins every library the build
+# resolves, also the ones these bring in.
+
+[versions]
+spring-boot = "4.1.2"
+spring-dependency-management = "1.1.7"
+aws-serverless-java-container = "3.0.4"
+# Written by the build from build.gradle.kts: the versions of the libraries below
+secretsmanager = "2.57.6"
+
+[libraries]
+spring-boot-starter-webmvc = { module = "org.springframework.boot:spring-boot-starter-webmvc" }
+spring-boot-starter-restclient = { module = "org.springframework.boot:spring-boot-starter-restclient" }
+aws-serverless-java-container-springboot4 = { module = "com.amazonaws.serverless:aws-serverless-java-container-springboot4", version.ref = "aws-serverless-java-container" }
+crac = { module = "org.crac:crac" }
+spring-boot-tomcat = { module = "org.springframework.boot:spring-boot-tomcat" }
+spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
+junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
+# Written by the build from build.gradle.kts: the libraries the migrated code needs
+secretsmanager = { module = "software.amazon.awssdk:secretsmanager", version.ref = "secretsmanager" }
+spring-boot-starter-jdbc = { module = "org.springframework.boot:spring-boot-starter-jdbc" }
+postgresql = { module = "org.postgresql:postgresql" }
+
+[plugins]
+spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }
+spring-dependency-management = { id = "io.spring.dependency-management", version.ref = "spring-dependency-management" }
