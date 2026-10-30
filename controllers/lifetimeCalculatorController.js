@@ -1,16 +1,17 @@
-const calculateLifetime = (req, res) => {
-  try {
-    const { dateOfBirth } = req.body;
+const { saveLifetimeCalculation } = require('../Services/lifetimeCalculationService');
+const { validateLifetimeCalculatorRequest } = require('../Validators/lifetimeCalculatorValidator');
 
-    if (!dateOfBirth) {
+const calculateLifetime = async (req, res) => {
+  try {
+    const validation = validateLifetimeCalculatorRequest(req.body);
+
+    if (!validation.valid) {
       return res.status(400).json({
-        error: {
-          message: 'dateOfBirth is required',
-          code: 'VALIDATION_ERROR'
-        }
+        error: validation.error
       });
     }
 
+    const { dateOfBirth } = req.body;
     const dob = new Date(dateOfBirth);
     const now = new Date();
 
@@ -58,7 +59,7 @@ const calculateLifetime = (req, res) => {
     const totalMonthsLived = years * 12 + months;
     const totalYearsLived = years;
 
-    return res.status(200).json({
+    const response = {
       dateOfBirth,
       currentDate: now.toISOString(),
       age: {
@@ -79,9 +80,29 @@ const calculateLifetime = (req, res) => {
         totalMinutesLived,
         totalSecondsLived
       }
+    };
+
+    await saveLifetimeCalculation({
+      dateOfBirth,
+      currentDate: response.currentDate,
+      ageYears: years,
+      ageMonths: months,
+      ageWeeks: totalWeeksLived,
+      ageDays: days,
+      ageHours: hours,
+      ageMinutes: minutes,
+      ageSeconds: seconds,
+      totalYearsLived,
+      totalMonthsLived,
+      totalWeeksLived,
+      totalDaysLived,
+      totalHoursLived,
+      totalMinutesLived,
+      totalSecondsLived
     });
+
+    return res.status(200).json(response);
   } catch (error) {
-    console.error('Failed', error);
     return res.status(500).json({
       error: {
         message: 'Internal server error',
