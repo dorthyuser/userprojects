@@ -1,0 +1,24 @@
+api:
+  host: 0.0.0.0
+  port: "8081"
+  basePath: /api
+http:
+  listener:
+    host: 0.0.0.0
+    port: "8081"
+mysql:
+  host: secure::mysql.host
+  port: secure::mysql.port
+  user: secure::mysql.user
+  password: secure::mysql.password
+  database: secure::mysql.database
+postgresql:
+  host: secure::postgresql.host
+  port: secure::postgresql.port
+  user: secure::postgresql.user
+  password: secure::postgresql.password
+  database: secure::postgresql.database
+scheduler:
+  customer:
+    sync:
+      cron: "0 0/5 * * * ?"

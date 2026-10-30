@@ -1,0 +1,107 @@
+#%RAML 1.0
+title: customer-iintegration
+version: v1
+baseUri: https://api.example.com/api
+mediaType: application/json
+types:
+  Customer:
+    type: object
+    properties:
+      customerId: string
+      firstName: string
+      lastName: string
+      createdAt?: datetime
+      updatedAt?: datetime
+  CustomerCreateRequest:
+    type: object
+    properties:
+      firstName: string
+      lastName: string
+      email: string
+      phone: string
+  CustomerUpdateRequest:
+    type: object
+    properties:
+      firstName?: string
+      lastName?: string
+      email?: string
+      phone?: string
+  ErrorResponse:
+    type: object
+    properties:
+      success: boolean
+      error:
+        type: object
+        properties:
+          code: string
+          message: string
+          correlationId: string
+traits:
+  secured:
+    headers:
+      Authorization:
+        type: string
+        required: true
+resourceTypes:
+  collection:
+    get:
+      responses:
+        200:
+          body:
+            application/json:
+              type: Customer[]
+    post:
+      body:
+        application/json:
+          type: CustomerCreateRequest
+      responses:
+        201:
+          body:
+            application/json:
+              type: object
+securitySchemes:
+  bearerAuth:
+    type: x-custom
+    describedBy:
+      headers:
+        Authorization:
+          type: string
+      responses:
+        401:
+          body:
+            application/json:
+              type: ErrorResponse
+/customers:
+  type: collection
+  get:
+    is: [secured]
+  post:
+    is: [secured]
+  /{customerId}:
+    uriParameters:
+      customerId:
+        type: string
+    get:
+      is: [secured]
+      responses:
+        200:
+          body:
+            application/json:
+              type: Customer
+    put:
+      is: [secured]
+      body:
+        application/json:
+          type: CustomerUpdateRequest
+      responses:
+        200:
+          body:
+            application/json:
+              type: object
+    delete:
+      is: [secured]
+      responses:
+        200:
+          body:
+            application/json:
+              type: object

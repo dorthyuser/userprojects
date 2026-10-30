@@ -1,0 +1,23 @@
+<mule
+ xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:tls="http://www.mulesoft.org/schema/mule/tls" xmlns:scheduler="http://www.mulesoft.org/schema/mule/scheduler" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd http://www.mulesoft.org/schema/mule/scheduler http://www.mulesoft.org/schema/mule/scheduler/current/mule-scheduler.xsd http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd">
+ <configuration-properties file="mule-properties-${mule.env}.yaml"/>
+ <http:listener-config name="httpListenerConfig">
+ <http:listener-connection host="${secure::http.listener.host}" port="${secure::http.listener.port}"/>
+ </http:listener-config>
+ <db:config name="MySQL_DB_Config">
+ <db:my-sql-connection host="${secure::mysql.host}" port="${secure::mysql.port}" user="${secure::mysql.user}" password="${secure::mysql.password}" database="${secure::mysql.database}">
+ <reconnection>
+ <reconnect frequency="2000" count="3"/>
+ </reconnection>
+ </db:my-sql-connection>
+ </db:config>
+ <db:config name="PostgreSQL_DB_Config">
+ <db:postgresql-connection host="${secure::postgresql.host}" port="${secure::postgresql.port}" user="${secure::postgresql.user}" password="${secure::postgresql.password}" database="${secure::postgresql.database}">
+ <reconnection>
+ <reconnect frequency="2000" count="3"/>
+ </reconnection>
+ </db:postgresql-connection>
+ </db:config>
+ <scheduler:config name="Scheduler_Config"/>
+ 
+</mule>

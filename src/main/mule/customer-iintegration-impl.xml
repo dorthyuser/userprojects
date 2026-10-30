@@ -1,0 +1,119 @@
+<mule
+ xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
+ <flow name="customer-iintegration-impl-get-customers">
+ <logger level="INFO" message='#["Fetching customers from MySQL and PostgreSQL"]'/>
+ <db:select config-ref="MySQL_DB_Config">
+ <db:sql>
+ <![CDATA[SELECT customer_id, first_name, last_name, created_at, updated_at FROM customers]]>
+ </db:sql>
+ </db:select>
+ <transform doc:name="Transform Response">
+ <dw:transform-message>
+ <dw:set-payload>
+ <![CDATA[%dw 2.0
+output application/json
+---
+payload map (item) -> {
+  customerId: item.customer_id,
+  firstName: item.first_name,
+  lastName: item.last_name,
+  createdAt: item.created_at,
+  updatedAt: item.updated_at
+}]]>
+ </dw:set-payload>
+ </dw:transform-message>
+ </transform>
+ </flow>
+ <flow name="customer-iintegration-impl-get-customer-by-id">
+ <logger level="INFO" message='#["Fetching customer by id"]'/>
+ <db:select config-ref="MySQL_DB_Config">
+ <db:sql>
+ <![CDATA[SELECT customer_id, first_name, last_name, created_at, updated_at FROM customers WHERE customer_id = :customerId]]>
+ </db:sql>
+ <db:input-parameters>
+ <![CDATA[#[{customerId: attributes.uriParams.customerId}]]]>
+ </db:input-parameters>
+ </db:select>
+ <choice>
+ <when expression="# [isEmpty(payload)]">
+ <raise-error type="APP:NOT_FOUND" description="Customer not found"/>
+ </when>
+ <otherwise>
+ <transform doc:name="Transform Response">
+ <dw:transform-message>
+ <dw:set-payload>
+ <![CDATA[%dw 2.0
+output application/json
+---
+payload[0]]]>
+ </dw:set-payload>
+ </dw:transform-message>
+ </transform>
+ </otherwise>
+ </choice>
+ </flow>
+ <flow name="customer-iintegration-impl-create-customer">
+ <logger level="INFO" message='#["Creating customer"]'/>
+ <set-variable variableName="backendPayload" value="# [readUrl('classpath://dw/prepareBackendPayload.dwl', 'application/dw')]"/>
+ <db:insert config-ref="MySQL_DB_Config">
+ <db:sql>
+ <![CDATA[INSERT INTO customers (customer_id, first_name, last_name, email, phone, created_at, updated_at) VALUES (:customerId, :firstName, :lastName, :email, :phone, NOW(), NOW())]]>
+ </db:sql>
+ <db:input-parameters>
+ <![CDATA[#[vars.backendPayload]]]>
+ </db:input-parameters>
+ </db:insert>
+ <set-payload value='#[{success: true, message: "Customer created"}]'/>
+ </flow>
+ <flow name="customer-iintegration-impl-update-customer">
+ <logger level="INFO" message='#["Updating customer"]'/>
+ <set-variable variableName="updatePayload" value="# [readUrl('classpath://dw/prepareUpdatePayload.dwl', 'application/dw')]"/>
+ <db:update config-ref="MySQL_DB_Config">
+ <db:sql>
+ <![CDATA[UPDATE customers SET first_name = :firstName, last_name = :lastName, email = :email, phone = :phone, updated_at = NOW() WHERE customer_id = :customerId]]>
+ </db:sql>
+ <db:input-parameters>
+ <![CDATA[#[vars.updatePayload]]]>
+ </db:input-parameters>
+ </db:update>
+ <set-payload value='#[{success: true, message: "Customer updated"}]'/>
+ </flow>
+ <flow name="customer-iintegration-impl-delete-customer">
+ <logger level="INFO" message='#["Deleting customer"]'/>
+ <db:delete config-ref="MySQL_DB_Config">
+ <db:sql>
+ <![CDATA[DELETE FROM customers WHERE customer_id = :customerId]]>
+ </db:sql>
+ <db:input-parameters>
+ <![CDATA[#[{customerId: attributes.uriParams.customerId}]]]>
+ </db:input-parameters>
+ </db:delete>
+ <set-payload value='#[{success: true, message: "Customer deleted"}]'/>
+ </flow>
+ <flow name="customer-iintegration-impl-scheduler-sync">
+ <scheduler:listener config-ref="Scheduler_Config">
+ <scheduling-strategy>
+ <cron expression="${scheduler.customer.sync.cron}"/>
+ </scheduling-strategy>
+ </scheduler:listener>
+ <logger level="INFO" message='#["Scheduled customer sync started"]'/>
+ <db:select config-ref="PostgreSQL_DB_Config">
+ <db:sql>
+ <![CDATA[SELECT customer_id, first_name, last_name FROM customer_sync_queue WHERE processed = false]]>
+ </db:sql>
+ </db:select>
+ <foreach>
+ <logger level="INFO" message='#["Processing scheduled customer record"]'/>
+ <db:update config-ref="MySQL_DB_Config">
+ <db:sql>
+ <![CDATA[UPDATE customers SET first_name = :firstName, last_name = :lastName, email = :email, phone = :phone, updated_at = NOW() WHERE customer_id = :customerId]]>
+ </db:sql>
+ <db:input-parameters>
+ <![CDATA[#[{customerId: payload.customer_id, firstName: payload.first_name, lastName: payload.last_name}]]]>
+ </db:input-parameters>
+ </db:update>
+ </foreach>
+ <set-payload value='#[{success: true, message: "Scheduled sync completed"}]'/>
+ </flow>
+ 
+</mule>

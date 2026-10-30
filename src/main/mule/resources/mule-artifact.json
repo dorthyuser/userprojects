@@ -1,0 +1,20 @@
+{
+  "minMuleVersion": "4.6.0",
+  "secureProperties":
+    [
+      "http.listener.host",
+      "http.listener.port",
+      "api.host",
+      "api.port",
+      "mysql.host",
+      "mysql.port",
+      "mysql.user",
+      "mysql.password",
+      "mysql.database",
+      "postgresql.host",
+      "postgresql.port",
+      "postgresql.user",
+      "postgresql.password",
+      "postgresql.database",
+    ],
+}
