@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<edmx:Edmx Version="4.0" xmlns:edmx="http://docs.oasis-open.org/odata/ns/edmx">
+  <edmx:DataServices>
+    <Schema xmlns="http://docs.oasis-open.org/odata/ns/edm" Namespace="accounts.namespace">
+      <EntityType Name="Account">
+        <Key>
+          <PropertyRef Name="id" />
+        </Key>
+        <Property Name="id" Type="Edm.Guid" Nullable="false" />
+        <Property Name="salutation" Type="Edm.String" MaxLength="20" />
+        <Property Name="first_name" Type="Edm.String" MaxLength="80" />
+        <Property Name="last_name" Type="Edm.String" Nullable="false" MaxLength="80" />
+        <Property Name="person_email" Type="Edm.String" Nullable="false" MaxLength="120" />
+        <Property Name="person_birthdate" Type="Edm.Date" />
+        <Property Name="phone" Type="Edm.String" MaxLength="40" />
+        <Property Name="mobile_phone" Type="Edm.String" MaxLength="40" />
+        <Property Name="mailing_street" Type="Edm.String" MaxLength="120" />
+        <Property Name="mailing_postal_code" Type="Edm.String" MaxLength="20" />
+        <Property Name="mailing_city" Type="Edm.String" MaxLength="80" />
+        <Property Name="mailing_country" Type="Edm.String" MaxLength="80" />
+        <Property Name="account_status" Type="Edm.String" MaxLength="30" />
+        <Property Name="account_source" Type="Edm.String" MaxLength="40" />
+        <Property Name="hotlisted" Type="Edm.Boolean" Nullable="false" />
+        <Property Name="created_at" Type="Edm.DateTimeOffset" />
+        <Property Name="updated_at" Type="Edm.DateTimeOffset" />
+      </EntityType>
+      <EntityContainer Name="AccountsContainer">
+        <EntitySet Name="sa_accounts" EntityType="accounts.namespace.Account" />
+      </EntityContainer>
+    </Schema>
+  </edmx:DataServices>
+</edmx:Edmx>
