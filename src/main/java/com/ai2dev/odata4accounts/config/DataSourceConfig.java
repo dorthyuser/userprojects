@@ -10,11 +10,15 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 @Configuration
 public class DataSourceConfig {
     @Bean
-    public DataSource dataSource(Settings settings) {
+    public DataSource dataSource(Settings settings, SecretsLoader secretsLoader) {
+        java.util.Map<String, String> values = secretsLoader.values();
         HikariDataSource pool = new HikariDataSource();
-        pool.setJdbcUrl(jdbcUrl(settings.dbHost(), settings.dbPort(), settings.dbName()));
-        pool.setUsername(settings.dbUsername());
-        pool.setPassword(settings.dbPassword());
+        pool.setJdbcUrl(jdbcUrl(
+                values.getOrDefault("host", settings.dbHost()),
+                values.getOrDefault("port", settings.dbPort()),
+                values.getOrDefault("dbname", settings.dbName())));
+        pool.setUsername(values.getOrDefault("username", settings.dbUsername()));
+        pool.setPassword(values.getOrDefault("password", settings.dbPassword()));
         pool.setMaximumPoolSize(2);
         pool.setMinimumIdle(0);
         pool.setAllowPoolSuspension(true);

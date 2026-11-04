@@ -45,6 +45,7 @@ dependencies {
     // Added by the migration: libraries the migrated code needs
     implementation(libs.odata.server.core)
     implementation(libs.olingo.odata.server.core.ext)
+    implementation(libs.secretsmanager)
     implementation(libs.spring.boot.starter.jdbc)
     runtimeOnly(libs.postgresql)
 }

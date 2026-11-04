@@ -12,6 +12,7 @@ springdoc = "3.1.1"
 # Written by the build from build.gradle.kts: the versions of the libraries below
 odata-server-core = "5.0.0"
 olingo-odata-server-core-ext = "5.0.0"
+secretsmanager = "2.57.8"
 
 [libraries]
 spring-boot-starter-webmvc = { module = "org.springframework.boot:spring-boot-starter-webmvc" }
@@ -25,6 +26,7 @@ junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher
 # Written by the build from build.gradle.kts: the libraries the migrated code needs
 odata-server-core = { module = "org.apache.olingo:odata-server-core", version.ref = "odata-server-core" }
 olingo-odata-server-core-ext = { module = "org.apache.olingo:odata-server-core-ext", version.ref = "olingo-odata-server-core-ext" }
+secretsmanager = { module = "software.amazon.awssdk:secretsmanager", version.ref = "secretsmanager" }
 spring-boot-starter-jdbc = { module = "org.springframework.boot:spring-boot-starter-jdbc" }
 postgresql = { module = "org.postgresql:postgresql" }
 

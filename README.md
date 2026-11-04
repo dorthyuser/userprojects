@@ -7,11 +7,12 @@ Java 17 Spring Boot AWS Lambda migration of the MuleSoft OData v4 API.
 The application reads these environment variables:
 
 - `HTTP_PORT` — listener base path default source in the original Mule app's inventory; used as the public base path default when the listener path is resolved
-- `DS_DB_HOST` — PostgreSQL host
-- `DS_DB_PORT` — PostgreSQL port
-- `DS_DB_DATABASE` — PostgreSQL database name
-- `DS_DB_USER` — PostgreSQL username
-- `DS_DB_PASSWORD` — PostgreSQL password
+- `AWS_SECRET_NAME` — Secrets Manager secret name for database credentials; when set, the secret must contain `username`, `password`, `host`, `dbname`, and `port`
+- `DS_DB_HOST` — PostgreSQL host fallback when `AWS_SECRET_NAME` is not set or the secret omits a field
+- `DS_DB_PORT` — PostgreSQL port fallback when `AWS_SECRET_NAME` is not set or the secret omits a field
+- `DS_DB_DATABASE` — PostgreSQL database name fallback when `AWS_SECRET_NAME` is not set or the secret omits a field
+- `DS_DB_USER` — PostgreSQL username fallback when `AWS_SECRET_NAME` is not set or the secret omits a field
+- `DS_DB_PASSWORD` — PostgreSQL password fallback when `AWS_SECRET_NAME` is not set or the secret omits a field
 - `SERVICE_ACCOUNTS_PAGE_SIZE` — OData page size for `sa_accounts`
 
 ## OData service
