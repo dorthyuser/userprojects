@@ -1,0 +1,75 @@
+package com.ai2dev.odata4accounts.repository;
+
+import com.ai2dev.odata4accounts.util.ODataSql;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public class AccountRepository implements ODataEntitySet {
+    private static final String TABLE = "sa_accounts";
+    private static final Logger log = LoggerFactory.getLogger(AccountRepository.class);
+    private final JdbcClient jdbc;
+
+    public AccountRepository(JdbcClient jdbc) {
+        this.jdbc = jdbc;
+    }
+
+    @Override
+    public String name() {
+        return "sa_accounts";
+    }
+
+    @Override
+    public List<Map<String, Object>> read(ODataSql.Read read) {
+        ODataSql.Statement s = read.select(TABLE);
+        List<Map<String, Object>> rows = jdbc.sql(s.sql()).params(s.parameters()).query().listOfRows();
+        log.info("SELECT {}: {} rows", TABLE, rows.size());
+        return rows;
+    }
+
+    @Override
+    public long count(ODataSql.Read read) {
+        ODataSql.Statement s = read.count(TABLE);
+        long count = jdbc.sql(s.sql()).params(s.parameters()).query(Long.class).single();
+        log.info("COUNT {}: {}", TABLE, count);
+        return count;
+    }
+
+    @Override
+    public Optional<Map<String, Object>> readOne(Map<String, Object> key) {
+        ODataSql.Statement s = ODataSql.byKey(TABLE, key);
+        Optional<Map<String, Object>> row = jdbc.sql(s.sql()).params(s.parameters()).query().listOfRows().stream().findFirst();
+        log.info("SELECT {} BY KEY: {}", TABLE, row.isPresent() ? 1 : 0);
+        return row;
+    }
+
+    @Override
+    public Map<String, Object> create(Map<String, Object> values) {
+        ODataSql.Statement s = ODataSql.insert(TABLE, values);
+        jdbc.sql(s.sql()).params(s.parameters()).update();
+        log.info("INSERT {}", TABLE);
+        return Map.of("id", values.get("id"));
+    }
+
+    @Override
+    public boolean update(Map<String, Object> key, Map<String, Object> values) {
+        ODataSql.Statement s = ODataSql.update(TABLE, key, values);
+        boolean updated = jdbc.sql(s.sql()).params(s.parameters()).update() > 0;
+        log.info("UPDATE {}: {}", TABLE, updated);
+        return updated;
+    }
+
+    @Override
+    public boolean delete(Map<String, Object> key) {
+        ODataSql.Statement s = ODataSql.delete(TABLE, key);
+        boolean deleted = jdbc.sql(s.sql()).params(s.parameters()).update() > 0;
+        log.info("DELETE {}: {}", TABLE, deleted);
+        return deleted;
+    }
+}
