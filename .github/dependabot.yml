@@ -1,0 +1,17 @@
+# Dependabot keeps the deploy workflow's pinned actions current: one weekly pull request that moves the actions
+# to their newest releases, updating both the commit SHA and its "# vX.Y.Z" comment. A release is proposed only
+# once it is 7 days old (a freshly published, possibly compromised release is never picked up the same day);
+# security updates are not delayed. Review and merge it like any change: it can move an action to a new major
+# version. Its branches (dependabot/...) do not start the deploy: the workflow runs on branches without a "/".
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+    groups:
+      github-actions:
+        patterns:
+          - "*"

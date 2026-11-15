@@ -1,0 +1,12 @@
+.gradle/
+build/
+out/
+*.class
+.idea/
+*.iml
+.vscode/
+# AI2Dev's files for this machine only, never committed: the migration review and the local database (compose.yaml,
+# the SQL of db/init/)
+MIGRATION_REVIEW.md
+compose.yaml
+db/
