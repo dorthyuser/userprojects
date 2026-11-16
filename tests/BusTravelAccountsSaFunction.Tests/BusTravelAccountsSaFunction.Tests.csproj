@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- AI2Dev's unit tests of the business rules: xUnit v3 (on VSTest: xunit.runner.visualstudio and the test SDK),
+       NSubstitute for the data access, the function project referenced — added with the tests -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="xunit.v3" Version="4.0.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="4.0.1" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.12.0" />
+    <PackageReference Include="NSubstitute" Version="6.2.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\BusTravelAccountsSaFunction\BusTravelAccountsSaFunction.csproj" />
+  </ItemGroup>
+</Project>

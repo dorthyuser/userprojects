@@ -1,0 +1,17 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "Salesforce__Username": "",
+    "Salesforce__LoginUrl": "",
+    "Salesforce__ConsumerKey": "",
+    "Salesforce__PrivateKey": "",
+    "Salesforce__ResponseTimeoutMilliseconds": "",
+    "Salesforce__ConnectTimeoutMilliseconds": "",
+    "Aws__AccessKeyId": "",
+    "Aws__SecretAccessKey": "",
+    "Aws__Region": "",
+    "Aws__Bucket": "",
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true"
+  }
+}

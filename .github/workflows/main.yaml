@@ -1,0 +1,59 @@
+name: .NET Function CI/CD
+
+on:
+  push:
+    branches:
+      - 'BusTravelAccountsSa'
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      # 1. Checkout
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      # 2. Azure Login
+      - name: Azure Login
+        uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      # 3. Install dependencies
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y zip
+
+      # 4. Set execute permission
+      - name: Make script executable
+        run: chmod +x .github/scripts/deployment.sh
+
+      # 5. Run your deployment script
+      - name: Build & Deploy Azure Function
+        env:
+          # App settings the code reads, from the repo secret of the same name (added by the migration)
+          APPSETTING_Salesforce__Username: ${{ secrets.Salesforce__Username }}
+          APPSETTING_Salesforce__LoginUrl: ${{ secrets.Salesforce__LoginUrl }}
+          APPSETTING_Salesforce__ConsumerKey: ${{ secrets.Salesforce__ConsumerKey }}
+          APPSETTING_Salesforce__PrivateKey: ${{ secrets.Salesforce__PrivateKey }}
+          APPSETTING_Salesforce__ResponseTimeoutMilliseconds: ${{ secrets.Salesforce__ResponseTimeoutMilliseconds }}
+          APPSETTING_Salesforce__ConnectTimeoutMilliseconds: ${{ secrets.Salesforce__ConnectTimeoutMilliseconds }}
+          APPSETTING_Aws__AccessKeyId: ${{ secrets.Aws__AccessKeyId }}
+          APPSETTING_Aws__SecretAccessKey: ${{ secrets.Aws__SecretAccessKey }}
+          APPSETTING_Aws__Region: ${{ secrets.Aws__Region }}
+          APPSETTING_Aws__Bucket: ${{ secrets.Aws__Bucket }}
+        run: |
+          ./.github/scripts/deployment.sh \
+            https://github.com/${{ github.repository }}.git \
+            ${{ github.ref_name }} \
+            ${{ secrets.AZURE_RG_NAME }} \
+            ${{ secrets.AZURE_REGION }} \
+            auto \
+            8.0

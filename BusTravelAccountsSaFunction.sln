@@ -1,0 +1,36 @@
+
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{AE88FC2E-1C16-16BB-4899-3B263575E258}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BusTravelAccountsSaFunction", "src\BusTravelAccountsSaFunction\BusTravelAccountsSaFunction.csproj", "{FB1A2214-407D-8B89-D245-2B841B3219DB}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{EF460537-D372-90B3-1C21-248C2306D245}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BusTravelAccountsSaFunction.Tests", "tests\BusTravelAccountsSaFunction.Tests\BusTravelAccountsSaFunction.Tests.csproj", "{8FB0F1ED-9C3A-DE60-480B-DE8D44642F9A}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{FB1A2214-407D-8B89-D245-2B841B3219DB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FB1A2214-407D-8B89-D245-2B841B3219DB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FB1A2214-407D-8B89-D245-2B841B3219DB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FB1A2214-407D-8B89-D245-2B841B3219DB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8FB0F1ED-9C3A-DE60-480B-DE8D44642F9A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8FB0F1ED-9C3A-DE60-480B-DE8D44642F9A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8FB0F1ED-9C3A-DE60-480B-DE8D44642F9A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8FB0F1ED-9C3A-DE60-480B-DE8D44642F9A}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{FB1A2214-407D-8B89-D245-2B841B3219DB} = {AE88FC2E-1C16-16BB-4899-3B263575E258}
+		{8FB0F1ED-9C3A-DE60-480B-DE8D44642F9A} = {EF460537-D372-90B3-1C21-248C2306D245}
+	EndGlobalSection
+EndGlobal

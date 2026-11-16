@@ -1,0 +1,12 @@
+bin/
+obj/
+publish/
+TestResults/
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+__azurite_db*__.json
+__blobstorage__/
+__queuestorage__/
