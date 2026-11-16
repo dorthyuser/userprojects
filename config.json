@@ -1,0 +1,13 @@
+{
+  "schedule": "0 0 * * *",
+  "timezone": "UTC",
+  "logging": {
+    "level": "info",
+    "format": "json"
+  },
+  "aws": {
+    "region": "us-east-1",
+    "secretsManagerSecretId": "ai2dev/scheduler",
+    "parameterStorePath": "/ai2dev/scheduler/"
+  }
+}
