@@ -1,0 +1,17 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "node",
+    "MONGODB_HOST": "localhost",
+    "MONGODB_PORT": "27017",
+    "MONGODB_USERNAME": "",
+    "MONGODB_PASSWORD": "",
+    "MONGODB_DATABASE": "hotel_booking",
+    "properties": "./config/properties.json",
+    "LOG_LEVEL": "INFO",
+    "DEFAULT_PAGE_SIZE": "20",
+    "MAX_PAGE_SIZE": "100",
+    "IDENTITY_HEADER_NAME": "Idempotency-Key"
+  }
+}
