@@ -1,0 +1,14 @@
+{
+  "name": "hotel-booking-service",
+  "version": "1.0.0",
+  "description": "Hotel booking AWS Lambda service with clean architecture and Salesforce downstream integration",
+  "main": "index.js",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "jsforce": "3.10.7"
+  }
+}
