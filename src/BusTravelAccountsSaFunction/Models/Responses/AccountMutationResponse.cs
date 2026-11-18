@@ -1,0 +1,9 @@
+using System.Text.Json.Serialization;
+
+namespace BusTravelAccountsSaFunction;
+
+public sealed class AccountMutationResponse
+{
+    [JsonPropertyName("id")]
+    public string Id { get; set; } = string.Empty;
+}

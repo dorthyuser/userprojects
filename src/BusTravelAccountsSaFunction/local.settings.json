@@ -1,0 +1,14 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "Database__KeyVault": "",
+    "Database__Username": "",
+    "Database__Password": "",
+    "Database__Host": "",
+    "Database__Dbname": "",
+    "Database__Port": "",
+    "Database__ResponseTimeoutMilliseconds": "",
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true"
+  }
+}

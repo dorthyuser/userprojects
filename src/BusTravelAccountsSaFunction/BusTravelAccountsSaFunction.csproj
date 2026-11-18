@@ -1,0 +1,25 @@
+<Project Sdk="Azure.Functions.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <!-- The SDK sets it too; the deploy script reads it from here -->
+    <AzureFunctionsVersion>v4</AzureFunctionsVersion>
+    <AssemblyName>BusTravelAccountsSaFunction</AssemblyName>
+    <RootNamespace>BusTravelAccountsSaFunction</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker" Version="2.52.0" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Http.AspNetCore" Version="2.1.1" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker.OpenTelemetry" Version="1.2.0" />
+    <PackageReference Include="Azure.Monitor.OpenTelemetry.Exporter" Version="1.10.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- The SDK makes every *.json a content file: the package lock file is no part of the app -->
+    <Content Update="packages.lock.json" CopyToOutputDirectory="Never" CopyToPublishDirectory="Never" />
+  </ItemGroup>
+  <!-- Added by migration: packages required by the migrated code -->
+  <ItemGroup>
+    <PackageReference Include="Dapper" Version="2.1.89" />
+    <PackageReference Include="Npgsql" Version="10.0.3" />
+  </ItemGroup>
+</Project>
